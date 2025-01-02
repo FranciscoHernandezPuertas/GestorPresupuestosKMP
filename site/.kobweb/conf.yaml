@@ -1,0 +1,14 @@
+site:
+  title: "GeneradorPresupuestosKMP"
+
+server:
+  files:
+    dev:
+      contentRoot: "build/processedResources/js/main/public"
+      script: "build/kotlin-webpack/js/developmentExecutable/tfg.js"
+      api: "build/libs/tfg.jar"
+    prod:
+      script: "build/kotlin-webpack/js/productionExecutable/tfg.js"
+      siteRoot: ".kobweb/site"
+
+  port: 8080
