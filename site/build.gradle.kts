@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kobweb.application)
     // alias(libs.plugins.kobwebx.markdown)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 group = "org.dam.tfg"
@@ -24,6 +25,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.compose.runtime)
+            implementation(libs.kotlinx.serialization.json)
         }
 
         jsMain.dependencies {
@@ -36,6 +38,9 @@ kotlin {
         }
         jvmMain.dependencies {
             compileOnly(libs.kobweb.api) // Provided by Kobweb backend at runtime
+            implementation(libs.mongodb.driver.kotlin.coroutine)
+            implementation(libs.bson.kotlinx)
+
         }
     }
 }
