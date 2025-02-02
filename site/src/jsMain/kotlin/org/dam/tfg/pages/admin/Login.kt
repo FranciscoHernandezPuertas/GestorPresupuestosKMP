@@ -34,7 +34,6 @@ import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.toModifier
 import org.dam.tfg.models.Theme
 import org.dam.tfg.styles.LoginInputStyle
-import org.dam.tfg.util.Constants
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Res
 import org.jetbrains.compose.web.attributes.InputType
