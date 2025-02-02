@@ -1,5 +1,7 @@
 package org.dam.tfg.data
 
+import org.dam.tfg.models.User
+
 interface MongoRepository {
-    fun checkUserExistence()
+    suspend fun checkUserExistence(user: User): User?
 }
