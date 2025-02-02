@@ -9,3 +9,8 @@ object Res {
         const val logo = "/Generador de Presupuestos KMP Logo.svg"
     }
 }
+
+object Id {
+    const val usernameInput = "usernameInput"
+    const val passwordInput = "passwordInput"
+}
