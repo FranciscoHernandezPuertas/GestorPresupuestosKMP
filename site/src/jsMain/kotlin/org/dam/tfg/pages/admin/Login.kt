@@ -181,6 +181,7 @@ fun LoginScreen() {
                 modifier = Modifier
                     .width(350.px)
                     .color(Colors.Red)
+                    .fontFamily(FONT_FAMILY)
                     .textAlign(TextAlign.Center),
                 text = errorText
             )

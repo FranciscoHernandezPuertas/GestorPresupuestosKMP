@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kobweb.application)
     // alias(libs.plugins.kobwebx.markdown)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.ksp)
 }
 
 group = "org.dam.tfg"
@@ -42,6 +43,9 @@ kotlin {
             implementation(libs.mongodb.driver.kotlin.coroutine)
             implementation(libs.bson.kotlinx)
 
+        }
+        dependencies {
+            add("kspCommonMainMetadata", libs.ksp.api)
         }
     }
 }

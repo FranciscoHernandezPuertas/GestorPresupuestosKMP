@@ -31,10 +31,10 @@ class MongoDB(private val context: InitApiContext): MongoRepository {
         return try {
             userCollection.find(
                 and(
-                    eq(User::username.name, user.username), // Usamos el nombre de la propiedad
+                    eq(User::username.name, user.username),
                     eq(User::password.name, user.password)
                 )
-            ).first() // Usamos first() del driver oficial
+            ).first() // Devolvemos el objeto User completo
         } catch (e: Exception) {
             context.logger.error(e.message.toString())
             null
