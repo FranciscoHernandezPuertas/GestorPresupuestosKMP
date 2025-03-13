@@ -1,13 +1,15 @@
 [versions]
 jetbrains-compose = "1.7.1"
 kobweb = "0.20.0"
-kotlin = "2.1.0"
+kotlin = "2.1.10"
 mongodb = "5.3.0"
 ksp = "2.1.10-1.0.31"
+serialization = "1.4.1"
 
 [libraries]
 # MongoDB Official Driver
 mongodb-driver-kotlin-coroutine = { module = "org.mongodb:mongodb-driver-kotlin-coroutine", version.ref = "mongodb" }
+mongodb-database = { module = "org.mongodb:mongodb-coroutine-serialization", version.ref = "mongodb" }
 bson-kotlinx = { module = "org.mongodb:bson-kotlinx", version.ref = "mongodb" }
 compose-html-core = { module = "org.jetbrains.compose.html:html-core", version.ref = "jetbrains-compose" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "jetbrains-compose" }
@@ -20,7 +22,7 @@ kobwebx-serialization-kotlinx = { module = "com.varabyte.kobwebx:kobwebx-seriali
 silk-foundation = { module = "com.varabyte.kobweb:silk-foundation", version.ref = "kobweb" }
 silk-icons-fa = { module = "com.varabyte.kobwebx:silk-icons-fa", version.ref = "kobweb" }
 silk-icons-mdi = { module = "com.varabyte.kobwebx:silk-icons-mdi", version.ref = "kobweb" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.7.0" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 ksp-api = { group = "com.google.devtools.ksp", name = "symbol-processing-api", version.ref = "ksp" }
 
 [plugins]

@@ -13,28 +13,22 @@ import kotlinx.coroutines.flow.first
 
 @InitApi
 fun initMongoDB(context: InitApiContext) {
-    /* System.setProperty(
-        "org.litote.mongo.test.mapping.service",
-        "org.litote.kmongo.serialization.SerializationClassMappingTypeService"
-    ) */
     context.data.add(MongoDB(context))
 }
 
-class MongoDB(private val context: InitApiContext): MongoRepository {
-    //private val client = KMongo.createClient()
+class MongoDB(private val context: InitApiContext) {
     private val client = MongoClient.create("mongodb://localhost:27017")
-    private val database = client.getDatabase(DATABASE_NAME) //tfg
-    //private val userCollection = database.getCollection<User>()
+    private val database = client.getDatabase(DATABASE_NAME)
     private val userCollection: MongoCollection<User> = database.getCollection("users")
 
-    override suspend fun checkUserExistence(user: User): User? {
+    suspend fun checkUserExistence(user: User): User? {
         return try {
             userCollection.find(
                 and(
                     eq(User::username.name, user.username),
                     eq(User::password.name, user.password)
                 )
-            ).first() // Devolvemos el objeto User completo
+            ).first()
         } catch (e: Exception) {
             context.logger.error(e.message.toString())
             null

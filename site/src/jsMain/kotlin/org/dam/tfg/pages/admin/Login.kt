@@ -158,7 +158,7 @@ fun LoginScreen() {
                                 )
                                 if(user != null) {
                                     rememberLoggedIn(remember = true, user = user)
-                                    context.router.navigateTo("admin/home")
+                                    context.router.navigateTo("/admin")
                                 }
                                 else {
                                     errorText = "Usuario no encontrado"
