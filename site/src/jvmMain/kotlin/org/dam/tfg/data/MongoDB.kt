@@ -16,12 +16,12 @@ fun initMongoDB(context: InitApiContext) {
     context.data.add(MongoDB(context))
 }
 
-class MongoDB(private val context: InitApiContext) {
+class MongoDB(private val context: InitApiContext) : MongoRepository{
     private val client = MongoClient.create("mongodb://localhost:27017")
     private val database = client.getDatabase(DATABASE_NAME)
     private val userCollection: MongoCollection<User> = database.getCollection("users")
 
-    suspend fun checkUserExistence(user: User): User? {
+    override suspend fun checkUserExistence(user: User): User? {
         return try {
             userCollection.find(
                 and(
@@ -32,6 +32,16 @@ class MongoDB(private val context: InitApiContext) {
         } catch (e: Exception) {
             context.logger.error(e.message.toString())
             null
+        }
+    }
+
+    override suspend fun checkUserId(id: String): Boolean {
+        return try {
+            val documentCount = userCollection.countDocuments(eq(User::id.name, id))
+            documentCount > 0
+        } catch (e: Exception) {
+            context.logger.error(e.message.toString())
+            false
         }
     }
 }
