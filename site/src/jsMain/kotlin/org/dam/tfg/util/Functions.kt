@@ -13,23 +13,34 @@ import org.w3c.dom.get
 @Composable
 fun isUserLoggedIn(content: @Composable () -> Unit) {
     val context = rememberPageContext()
-    val remembered = remember { localStorage["remember"].toBoolean() }
-    val userId = remember { localStorage["userId"] }
-    var userIdExists by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isAuthenticated by remember { mutableStateOf(false) }
 
-    LaunchedEffect(key1 = Unit) {
-        userIdExists = if (!userId.isNullOrEmpty()) {
-            checkUserId(id = userId)
-        } else false
+    LaunchedEffect(Unit) {
+        // Leer los valores actuales
+        val remembered = localStorage["remember"]?.toBoolean() ?: false
+        val userId = localStorage["userId"]
+        console.log("Datos de sesión: remembered = $remembered, userId = $userId")
 
-        if(!(remembered && userIdExists)) {
+        if (remembered && !userId.isNullOrEmpty()) {
+            val userIdExists = checkUserId(id = userId)
+            console.log("Resultado de checkUserId: $userIdExists")
+            if (userIdExists) {
+                isAuthenticated = true
+            } else {
+                console.log("Verificación fallida, redirigiendo a /admin/login")
+                context.router.navigateTo("/admin/login")
+            }
+        } else {
+            console.log("No hay datos de sesión, redirigiendo a /admin/login")
             context.router.navigateTo("/admin/login")
         }
+        isLoading = false
     }
 
-    if(remembered && userIdExists) {
+    if (isLoading) {
+        console.log("Cargando...")
+    } else if (isAuthenticated) {
         content()
-    } else {
-        println("Loading...")
     }
 }
