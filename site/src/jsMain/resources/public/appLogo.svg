@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <!-- Fondo transparente -->
+    
+    <!-- Cuadrado con bordes redondeados - Material Design Blue 500 -->
+    <rect x="16" y="16" width="480" height="480" rx="64" ry="64" fill="#2196F3"/>
+    
+    <!-- Documento/presupuesto - Material Design Paper -->
+    <rect x="146" y="96" width="220" height="240" rx="10" ry="10" fill="#FFFFFF"/>
+    
+    <!-- Líneas del documento - Material Design Grey 300 -->
+    <line x1="186" y1="146" x2="326" y2="146" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round"/>
+    <line x1="186" y1="186" x2="326" y2="186" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round"/>
+    <line x1="186" y1="226" x2="286" y2="226" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round"/>
+    
+    <!-- Símbolo de moneda - Material Design Yellow 700 -->
+    <circle cx="316" cy="286" r="40" fill="#FBC02D"/>
+    <text x="316" y="303" text-anchor="middle" font-family="Roboto, sans-serif" font-size="48" font-weight="bold" fill="#37474F">€</text>
+    
+    <!-- Mesa de cocina profesional -->
+    <rect x="156" y="350" width="200" height="15" rx="2" ry="2" fill="#9E9E9E" stroke="#757575" stroke-width="1"/>
+    <rect x="176" y="365" width="160" height="25" fill="#757575"/>
+    <rect x="166" y="390" width="180" height="4" rx="1" ry="1" fill="#616161"/>
+    
+    <!-- Patas de la mesa -->
+    <rect x="186" y="365" width="8" height="25" fill="#616161"/>
+    <rect x="318" y="365" width="8" height="25" fill="#616161"/>
+    
+    <!-- Utensilio de cocina combinado -->
+    <g transform="translate(150, 250) scale(2.2)">
+        <path fill="#BDBDBD" d="M19 1.5a1.5 1.5 0 1 0-3 0V11a1 1 0 0 1-2 0V1.5a1.5 1.5 0 1 0-3 0V11a1 1 0 0 1-2 0V1.5a1.5 1.5 0 1 0-3 0v9c0 .127.021.249.051.367c-.03.207-.051.417-.051.633c0 2.316 1.75 5.957 4 6.442V33.5a2.5 2.5 0 1 0 5 0V17.942c2.25-.485 4-4.126 4-6.442c0-.216-.021-.426-.051-.633c.03-.118.051-.24.051-.367v-9zM27.5 0c-.104 0-.204.019-.306.031C27.13.021 27.067 0 27 0c-2.209 0-5 5.477-5 11c0 4.658 1.275 8.56 3 9.672V33.5a2.5 2.5 0 1 0 5 0v-31A2.5 2.5 0 0 0 27.5 0z"/>
+    </g>
+    
+    <!-- Texto "Generador de Presupuestos" - parte inferior -->
+    <text x="256" y="430" text-anchor="middle" font-family="Roboto, sans-serif" font-size="32" font-weight="500" fill="#FFFFFF">Generador de</text>
+    <text x="256" y="470" text-anchor="middle" font-family="Roboto, sans-serif" font-size="36" font-weight="700" fill="#FFFFFF">Presupuestos</text>
+</svg>
