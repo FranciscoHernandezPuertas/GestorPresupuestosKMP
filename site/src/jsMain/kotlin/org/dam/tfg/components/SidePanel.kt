@@ -16,6 +16,7 @@ import com.varabyte.kobweb.compose.ui.modifiers.font
 import com.varabyte.kobweb.compose.ui.modifiers.fontFamily
 import com.varabyte.kobweb.compose.ui.modifiers.fontSize
 import com.varabyte.kobweb.compose.ui.modifiers.height
+import com.varabyte.kobweb.compose.ui.modifiers.id
 import com.varabyte.kobweb.compose.ui.modifiers.left
 import com.varabyte.kobweb.compose.ui.modifiers.margin
 import com.varabyte.kobweb.compose.ui.modifiers.onClick
@@ -24,9 +25,13 @@ import com.varabyte.kobweb.compose.ui.modifiers.position
 import com.varabyte.kobweb.compose.ui.modifiers.top
 import com.varabyte.kobweb.compose.ui.modifiers.width
 import com.varabyte.kobweb.compose.ui.modifiers.zIndex
+import com.varabyte.kobweb.compose.ui.styleModifier
+import com.varabyte.kobweb.compose.ui.thenIf
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.components.text.SpanText
+import com.varabyte.kobweb.silk.style.toModifier
+import org.dam.tfg.styles.NavigationItemStyle
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Constants.SIDE_PANEL_WIDTH
 import org.dam.tfg.util.Res
@@ -102,21 +107,27 @@ fun NavigationItem(
     onClick: () -> Unit
     ) {
     Row(
-        modifier = modifier
+        modifier = NavigationItemStyle.toModifier()
+            .then(modifier)
             .cursor(Cursor.Pointer)
             .onClick { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         VectorIcon(
             modifier = Modifier.margin(right = 10.px),
+            selected = selected,
             pathData = icon,
-            color = if(selected) Theme.Primary.hex else Theme.White.hex
+            //color = if(selected) Theme.Primary.hex else Theme.White.hex
         )
         SpanText(
             modifier = Modifier
+                .id("navigationText")
                 .fontFamily(FONT_FAMILY)
                 .fontSize(16.px)
-                .color(if(selected) Theme.Primary.rgb else Theme.White.rgb),
+                .thenIf(
+                    condition = selected,
+                    other = Modifier.color(Theme.Primary.rgb)
+                ),
             text = title
         )
     }
@@ -126,26 +137,33 @@ fun NavigationItem(
 fun VectorIcon(
     modifier: Modifier = Modifier,
     pathData: String,
-    color: String
+    selected: Boolean
 ) {
     Svg(
         attrs = modifier
+            .id("svgParent")
             .width(24.px)
             .height(24.px)
             .toAttrs {
                 attr("viewBox", "0 0 840 840")
-                attr("fill", "none")
             }
     ) {
         Path(
-            attrs = Modifier.toAttrs {
-                attr("d", pathData)
-                attr("stroke", "#${color}")
-                attr("stroke-width", "2")
-                attr("stroke-linecap", "round")
-                attr("stroke-linejoin", "round")
-                attr("fill", "#${color}")
-            }
+            attrs = Modifier
+                .id("vectorIcon")
+                .thenIf(
+                    condition = selected,
+                    other = Modifier.styleModifier {
+                        property("stroke", "#${Theme.Primary.hex}")
+                        property("fill", "#${Theme.Primary.hex}")
+                    }
+                )
+                .toAttrs {
+                    attr("d", pathData)
+                    attr("stroke-width", "2")
+                    attr("stroke-linecap", "round")
+                    attr("stroke-linejoin", "round")
+                }
         )
     }
 }
