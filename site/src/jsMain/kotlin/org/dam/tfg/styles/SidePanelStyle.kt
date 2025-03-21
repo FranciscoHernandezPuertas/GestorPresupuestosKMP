@@ -13,12 +13,13 @@ import com.varabyte.kobweb.silk.style.CssStyle
 import com.varabyte.kobweb.silk.style.cssRule
 import com.varabyte.kobweb.silk.style.selectors.focus
 import org.dam.tfg.models.Theme
+import org.dam.tfg.util.Id
 import org.jetbrains.compose.web.css.LineStyle
 import org.jetbrains.compose.web.css.ms
 import org.jetbrains.compose.web.css.px
 
-val NavigationItemStyle = CssStyle {
-    cssRule(" > #svgParent > #vectorIcon") {
+val SideNavigationItemStyle = CssStyle {
+    cssRule(" > #${Id.svgParent} > #${Id.vectorIcon}") {
         Modifier
             .transition(
                 Transition.of(
@@ -34,7 +35,7 @@ val NavigationItemStyle = CssStyle {
             }
     }
 
-    cssRule(":hover > #svgParent > #vectorIcon") {
+    cssRule(":hover > #${Id.svgParent} > #${Id.vectorIcon}") {
         Modifier
             .transition(
                 Transition.of(
@@ -49,7 +50,7 @@ val NavigationItemStyle = CssStyle {
                 property("fill", "#${Theme.Primary.hex}")
         }
     }
-    cssRule(" > #navigationText") {
+    cssRule(" > #${Id.navigationText}") {
         Modifier
             .transition(
                 Transition.of(
@@ -62,7 +63,7 @@ val NavigationItemStyle = CssStyle {
             .color(Theme.White.rgb)
     }
 
-    cssRule(":hover > #navigationText") {
+    cssRule(":hover > #${Id.navigationText}") {
         Modifier.color(Theme.Primary.rgb)
     }
 }

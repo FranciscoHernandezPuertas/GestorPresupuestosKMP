@@ -8,10 +8,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.varabyte.kobweb.core.rememberPageContext
 import kotlinx.browser.localStorage
+import org.dam.tfg.navigation.Screen
 import org.w3c.dom.get
+import org.w3c.dom.set
 
 @Composable
-fun isUserLoggedIn(content: @Composable () -> Unit) {
+fun isUserLoggedInCheck(content: @Composable () -> Unit) {
     val context = rememberPageContext()
     var isLoading by remember { mutableStateOf(true) }
     var isAuthenticated by remember { mutableStateOf(false) }
@@ -29,11 +31,11 @@ fun isUserLoggedIn(content: @Composable () -> Unit) {
                 isAuthenticated = true
             } else {
                 console.log("Verificación fallida, redirigiendo a /admin/login")
-                context.router.navigateTo("/admin/login")
+                context.router.navigateTo(Screen.AdminLogin.route)
             }
         } else {
             console.log("No hay datos de sesión, redirigiendo a /admin/login")
-            context.router.navigateTo("/admin/login")
+            context.router.navigateTo(Screen.AdminLogin.route)
         }
         isLoading = false
     }
@@ -43,4 +45,10 @@ fun isUserLoggedIn(content: @Composable () -> Unit) {
     } else if (isAuthenticated) {
         content()
     }
+}
+
+fun logout() {
+    localStorage["remember"] = "false"
+    localStorage["userId"] = ""
+    localStorage["username"] = ""
 }

@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.User
 import org.dam.tfg.models.UserWithoutPassword
+import org.dam.tfg.navigation.Screen
 import org.dam.tfg.styles.LoginInputStyle
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Id
@@ -158,7 +159,7 @@ fun LoginScreen() {
                                 )
                                 if(user != null) {
                                     rememberLoggedIn(remember = true, user = user)
-                                    context.router.navigateTo("/admin")
+                                    context.router.navigateTo(Screen.AdminHome.route)
                                 }
                                 else {
                                     errorText = "Usuario no encontrado"
