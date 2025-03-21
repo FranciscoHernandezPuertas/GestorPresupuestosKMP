@@ -2,7 +2,16 @@ package org.dam.tfg.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import com.varabyte.kobweb.compose.css.CSSTransition
 import com.varabyte.kobweb.compose.css.Cursor
+import com.varabyte.kobweb.compose.css.Overflow
+import com.varabyte.kobweb.compose.css.ScrollBehavior
+import com.varabyte.kobweb.compose.css.Transition
 import com.varabyte.kobweb.compose.dom.svg.Path
 import com.varabyte.kobweb.compose.dom.svg.Svg
 import com.varabyte.kobweb.compose.ui.modifiers.backgroundColor
@@ -41,7 +50,14 @@ import com.varabyte.kobweb.silk.style.toModifier
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import com.varabyte.kobweb.compose.foundation.layout.Box
 import com.varabyte.kobweb.compose.ui.modifiers.fillMaxHeight
+import com.varabyte.kobweb.compose.ui.modifiers.opacity
+import com.varabyte.kobweb.compose.ui.modifiers.overflow
+import com.varabyte.kobweb.compose.ui.modifiers.scrollBehavior
+import com.varabyte.kobweb.compose.ui.modifiers.transition
+import com.varabyte.kobweb.compose.ui.modifiers.translateX
 import com.varabyte.kobweb.silk.components.icons.fa.FaXmark
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.styles.SideNavigationItemStyle
 import org.dam.tfg.util.Constants.COLLAPSED_PANEL_HEIGHT
@@ -51,6 +67,7 @@ import org.dam.tfg.util.Id
 import org.dam.tfg.util.Res
 import org.dam.tfg.util.logout
 import org.jetbrains.compose.web.css.Position
+import org.jetbrains.compose.web.css.ms
 import org.jetbrains.compose.web.css.percent
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.vh
@@ -239,11 +256,24 @@ private fun CollapsedSidePanel(onMenuClick: () -> Unit ) {
 
 @Composable
 fun OverflowSidePanel(onMenuClose: () -> Unit) {
+    val scope = rememberCoroutineScope()
     val breakpoint = rememberBreakpoint()
-
+    var translateX by remember {
+        mutableStateOf((-100).percent)
+    }
+    var opacity by remember {
+        mutableStateOf(0.percent)
+    }
     LaunchedEffect(breakpoint) {
+        translateX = 0.percent
+        opacity = 100.percent
         if (breakpoint > Breakpoint.MD) {
-            onMenuClose()
+            scope.launch {
+                translateX = (-100).percent
+                opacity = 0.percent
+                delay(500)
+                onMenuClose()
+            }
         }
     }
 
@@ -253,6 +283,15 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
             .height(100.vh)
             .position(Position.Fixed)
             .zIndex(9)
+            .opacity(opacity)
+            .transition(
+                Transition.of(
+                    property = "opacity",
+                    duration = 300.ms,
+                    timingFunction = null,
+                    delay = null
+                )
+            )
             .backgroundColor(Theme.HalfBlack.rgb),
     ) {
         Column(
@@ -261,10 +300,21 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
                 .fillMaxWidth()
                 .fillMaxHeight()
                 .width( if(breakpoint < Breakpoint.MD) 50.percent else 25.percent)
+                .translateX(translateX)
+                .transition(
+                    Transition.of(
+                        property = "translate",
+                        duration = 300.ms,
+                        timingFunction = null,
+                        delay = null
+                    )
+                )
+                .overflow(Overflow.Auto)
+                .scrollBehavior(ScrollBehavior.Smooth)
                 .backgroundColor(Theme.Secondary.rgb),
         ) {
             Row(
-                modifier = Modifier.margin(bottom = 60.px),
+                modifier = Modifier.margin(bottom = 60.px, top = 24.px),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FaXmark(
@@ -272,7 +322,12 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
                         .margin(right = 20.px)
                         .color(Colors.White)
                         .onClick {
-                            onMenuClose()
+                            scope.launch {
+                                translateX = (-100).percent
+                                opacity = 0.percent
+                                delay(500)
+                                onMenuClose()
+                            }
                         },
                     size = IconSize.LG
                 )
