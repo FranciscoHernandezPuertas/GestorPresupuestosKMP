@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <!-- Fondo con degradado sutil -->
+  <rect width="800" height="500" fill="#f5f5f5"/>
+  <rect width="800" height="60" fill="#2196F3" y="0"/>
+  <rect width="800" height="60" fill="#2196F3" y="440"/>
+  
+  <!-- Título principal - Con fuente tecnológica -->
+  <text x="400" y="40" text-anchor="middle" font-family="'Segoe UI', 'SF Pro Display', Arial, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF" letter-spacing="1">GENERADOR DE PRESUPUESTOS</text>
+  
+  <!-- Subtítulo - Con fuente tecnológica -->
+  <text x="400" y="480" text-anchor="middle" font-family="'Segoe UI', 'SF Pro Display', Arial, sans-serif" font-size="22" font-weight="500" fill="#FFFFFF" letter-spacing="0.5">Equipamiento Hostelero en Kotlin Multiplatform</text>
+  
+  <!-- Logo central - nuevo logo reemplazando elementos anteriores -->
+  <g transform="translate(260, 100) scale(0.5)">
+    <!-- Cuadrado con bordes redondeados - Material Design Blue 500 -->
+    <rect x="16" y="16" width="480" height="480" rx="64" ry="64" fill="#2196F3"/>
+    
+    <!-- Documento/presupuesto - Material Design Paper -->
+    <rect x="146" y="96" width="220" height="240" rx="10" ry="10" fill="#FFFFFF"/>
+    
+    <!-- Líneas del documento - Material Design Grey 300 -->
+    <line x1="186" y1="146" x2="326" y2="146" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round"/>
+    <line x1="186" y1="186" x2="326" y2="186" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round"/>
+    <line x1="186" y1="226" x2="286" y2="226" stroke="#E0E0E0" stroke-width="12" stroke-linecap="round"/>
+    
+    <!-- Símbolo de moneda - Material Design Yellow 700 -->
+    <circle cx="316" cy="286" r="40" fill="#FBC02D"/>
+    <text x="316" y="303" text-anchor="middle" font-family="'Fira Code', monospace" font-size="48" font-weight="bold" fill="#37474F">€</text>
+    
+    <!-- Mesa de cocina profesional -->
+    <rect x="156" y="350" width="200" height="15" rx="2" ry="2" fill="#9E9E9E" stroke="#757575" stroke-width="1"/>
+    <rect x="176" y="365" width="160" height="25" fill="#757575"/>
+    <rect x="166" y="390" width="180" height="4" rx="1" ry="1" fill="#616161"/>
+    
+    <!-- Patas de la mesa -->
+    <rect x="186" y="365" width="8" height="25" fill="#616161"/>
+    <rect x="318" y="365" width="8" height="25" fill="#616161"/>
+    
+    <!-- Utensilio de cocina combinado -->
+    <g transform="translate(150, 250) scale(2.2)">
+      <path fill="#BDBDBD" d="M19 1.5a1.5 1.5 0 1 0-3 0V11a1 1 0 0 1-2 0V1.5a1.5 1.5 0 1 0-3 0V11a1 1 0 0 1-2 0V1.5a1.5 1.5 0 1 0-3 0v9c0 .127.021.249.051.367c-.03.207-.051.417-.051.633c0 2.316 1.75 5.957 4 6.442V33.5a2.5 2.5 0 1 0 5 0V17.942c2.25-.485 4-4.126 4-6.442c0-.216-.021-.426-.051-.633c.03-.118.051-.24.051-.367v-9zM27.5 0c-.104 0-.204.019-.306.031C27.13.021 27.067 0 27 0c-2.209 0-5 5.477-5 11c0 4.658 1.275 8.56 3 9.672V33.5a2.5 2.5 0 1 0 5 0v-31A2.5 2.5 0 0 0 27.5 0z"/>
+    </g>
+  </g>
+  
+  <!-- Kotlin Logo -->
+  <g transform="translate(220, 300) scale(0.3)">
+    <rect width="256" height="256" rx="60" fill="#242938"/>
+    <path d="M218 218H38V38H218L128 128L218 218Z" fill="url(#paint0_linear_7_120)"/>
+    <defs>
+      <linearGradient id="paint0_linear_7_120" x1="218" y1="38" x2="38" y2="218" gradientUnits="userSpaceOnUse">
+        <stop offset="0.00343514" stop-color="#E44857"/>
+        <stop offset="0.4689" stop-color="#C711E1"/>
+        <stop offset="1" stop-color="#7F52FF"/>
+      </linearGradient>
+    </defs>
+  </g>
+  
+  <!-- Android Logo -->
+  <g transform="translate(478, 300) scale(0.3)">
+    <svg width="256" height="256" viewBox="0 0 256 256" fill="none">
+      <rect width="256" height="256" rx="60" fill="#242938"/>
+      <path d="M107.028 48.8181H60.7888C51.5798 48.8181 44.0108 56.6801 44.0108 66.4151C43.6818 75.8111 50.9178 83.6701 59.9698 84.0111H107.522L107.028 48.8181Z" fill="#073042"/>
+      <path d="M211.835 205.303H60.7887C51.4147 205.303 44.0107 197.445 44.0107 187.707V66.2461C44.0107 75.9821 51.5797 83.8411 60.7887 84.0111H187.321C187.321 84.0111 212 81.7931 212 101.097V205.303H211.835Z" fill="#4285F4"/>
+      <path d="M141.413 143.12C148.159 137.825 149.475 127.917 144.379 121.082C141.579 117.324 137.301 114.933 132.692 114.761H133.186C134.011 114.591 134.997 114.591 135.823 114.761V105.024C135.823 103.828 135.327 102.803 134.34 102.292C132.858 101.437 131.049 101.95 130.227 103.487C129.897 104 129.733 104.512 129.897 105.195V115.102C121.671 116.469 115.912 124.499 117.225 133.213V133.383C117.886 137.483 120.027 141.242 123.316 143.633L95.5088 205.474H113.609L126.441 177.116C127.925 173.698 131.872 172.162 135.327 173.87C136.646 174.554 137.795 175.749 138.453 177.116L151.783 205.474H170.209L141.413 143.12ZM132.036 140.387C126.77 140.387 122.657 135.945 122.657 130.48C122.657 125.011 126.935 120.741 132.199 120.911C134.667 120.911 136.81 121.937 138.617 123.647C142.401 127.403 142.401 133.554 138.781 137.483C137.137 139.192 134.667 140.387 132.036 140.387Z" fill="#3870B2"/>
+      <path d="M96.9917 57.363H161.818V69.662H96.9917V57.363Z" fill="white"/>
+      <path d="M127.1 120.741C132.199 120.741 136.48 125.183 136.316 130.649C136.316 135.945 132.036 140.387 126.77 140.216C121.671 140.216 117.556 135.775 117.556 130.48C117.556 127.917 118.542 125.524 120.357 123.647C122.164 121.766 124.63 120.741 127.1 120.741ZM130.72 115.102V104.853C130.72 103.657 130.227 102.633 129.24 102.119C127.76 101.265 125.949 101.778 125.123 103.316C124.793 103.828 124.63 104.341 124.793 105.024V114.933C116.567 116.298 110.808 124.33 112.129 133.042V133.213C112.788 137.31 114.924 141.07 118.215 143.46L83.1688 221.532C81.8538 224.268 82.0178 227.682 83.8278 230.245C86.4568 234.173 91.5618 235.198 95.3418 232.466C96.6628 231.611 97.6488 230.245 98.3058 228.878L121.671 176.944C123.151 173.528 127.1 171.99 130.556 173.698C131.872 174.382 133.022 175.579 133.681 176.944L157.539 228.366C159.516 232.636 164.449 234.344 168.566 232.293C172.676 230.245 174.323 225.119 172.347 220.848L136.316 143.12C142.896 137.652 144.049 127.575 138.781 120.741C136.81 118.007 134.011 116.128 130.72 115.102Z" fill="#073042"/>
+      <path d="M152.276 68.296C149.805 68.296 147.831 66.415 147.831 63.854C147.831 62.658 148.323 61.292 149.146 60.437C150.957 58.73 153.591 58.73 155.401 60.437C156.222 61.292 156.716 62.487 156.716 63.683C156.552 66.246 154.742 68.125 152.276 68.296ZM103.572 68.125C101.1 68.125 99.1288 66.075 99.1288 63.683C99.1288 62.487 99.6238 61.292 100.443 60.437C101.925 58.559 104.726 58.216 106.533 59.756H106.698C108.506 61.463 108.67 64.366 107.028 66.246L106.533 66.927C105.712 67.782 104.562 68.296 103.406 68.296L103.572 68.125ZM153.591 40.62L162.311 24.904C162.804 24.05 162.475 23.025 161.818 22.342C160.995 22 160.174 22.171 159.681 22.855L150.629 39.083C136.151 32.421 119.698 32.421 105.383 39.083L96.4978 23.025C96.1688 22.513 95.5088 22 94.8488 22C94.1918 22 93.5328 22.342 93.2018 23.025C92.8738 23.538 92.8738 24.391 93.2018 24.904L102.09 40.62C86.6208 49.33 76.5848 65.734 75.1078 83.841H180.737C179.424 65.564 169.221 49.33 153.755 40.62" fill="#3DDC84"/>
+      <path d="M197.37 117.839H190.459C190.128 118.007 189.8 118.349 189.8 118.861V232.466C189.8 232.977 190.128 233.319 190.625 233.319H197.863C206.254 233.319 213 226.143 213 217.603V101.95C213 110.662 206.254 117.667 197.863 117.667H197.37V117.839Z" fill="#073042"/>
+    </svg>
+  </g>
+  
+  <!-- Kotlin Multiplatform símbolo (simplificado) -->
+  <g transform="translate(390, 390) scale(0.9)">
+    <image href="banner-mpp-removebg-preview.svg" width="140" height="80" x="-70" y="-40"/>
+  </g>
+  
+  <!-- Decoración - Líneas tecnológicas conectando los símbolos -->
+  <!-- Línea conectando Kotlin logo con Multiplatform logo -->
+  <defs>
+    <marker id="arrow-kotlin" viewBox="0 0 10 10" refX="5" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7F52FF"/>
+    </marker>
+    <marker id="arrow-android" viewBox="0 0 10 10" refX="5" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3DDC84"/>
+    </marker>
+    <linearGradient id="kotlin-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7F52FF" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#7F52FF" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="android-line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3DDC84" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#3DDC84" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  
+  <path d="M256,378 Q315,390 375,410" stroke="url(#kotlin-line-gradient)" stroke-width="2.5" 
+    fill="none" marker-end="url(#arrow-kotlin)" filter="drop-shadow(0 1px 1px rgba(0,0,0,0.3))"/>
+  
+  <!-- Línea conectando Android logo con Multiplatform logo -->
+  <path d="M513,378 Q459,390 405,410" stroke="url(#android-line-gradient)" stroke-width="2.5" 
+    fill="none" marker-end="url(#arrow-android)" filter="drop-shadow(0 1px 1px rgba(0,0,0,0.3))"/>
+  
+  <!-- Efectos tecnológicos en las líneas -->
+  <circle cx="300" cy="396" r="3" fill="#7F52FF" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="345" cy="405" r="2" fill="#7F52FF" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.2;0.7" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  
+  <circle cx="459" cy="396" r="3" fill="#3DDC84" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.2;0.7" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="425" cy="405" r="2" fill="#3DDC84" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.2;0.7" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Texto TFG - Con fuente tecnológica moderna -->
+  <text x="400" y="455" text-anchor="middle" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="16" font-weight="500" fill="#616161" letter-spacing="1.2">TRABAJO FIN DE GRADO</text>
+</svg>

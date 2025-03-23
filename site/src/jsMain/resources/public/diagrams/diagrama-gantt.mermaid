@@ -1,0 +1,22 @@
+gantt
+    title Cronograma del Proyecto
+    dateFormat  YYYY-MM-DD
+    
+    section Análisis y Diseño
+    Definir requisitos                     :a1, 2024-03-11, 7d
+    Diseñar interfaz                       :a2, after a1, 7d
+    
+    section Desarrollo
+    Implementar backend con MongoDB        :b1, after a2, 10d
+    Desarrollar interfaz multiplataforma   :b2, after b1, 10d
+    Implementar lógica de presupuestos     :b3, after b2, 10d
+    Autenticación y seguridad              :b4, after b3, 10d
+    
+    section Pruebas y Ajustes
+    Pruebas funcionales                    :c1, after b4, 7d
+    Corrección de errores                  :c2, after c1, 7d
+    
+    section Documentación y Entrega
+    Redactar manuales de usuario           :d1, after c2, 7d
+    Documentación técnica                  :d2, after d1, 7d
+    Entrega final                          :milestone, 2024-06-06, 0d

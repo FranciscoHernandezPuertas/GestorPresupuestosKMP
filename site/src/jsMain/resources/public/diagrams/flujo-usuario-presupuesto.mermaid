@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor U as Usuario
+    participant I as Interfaz
+    participant VM as ViewModel
+    participant API as API
+    participant DB as MongoDB
+    
+    U->>I: Iniciar sesión
+    I->>API: Verificar credenciales
+    API-->>I: Sesión iniciada
+    
+    U->>I: Seleccionar productos
+    I->>VM: Actualizar selección
+    
+    U->>I: Establecer cantidades
+    I->>VM: Calcular subtotales
+    
+    U->>I: Solicitar presupuesto
+    I->>VM: Generar presupuesto
+    VM->>API: Guardar presupuesto
+    API->>DB: Almacenar datos
+    DB-->>API: Confirmación
+    API-->>VM: Presupuesto guardado
+    VM-->>I: Mostrar resultado
+    I-->>U: Visualizar presupuesto
+    
+    U->>I: Exportar informe
+    I->>VM: Solicitar documento
+    VM-->>I: Generar documento
+    I-->>U: Descargar informe

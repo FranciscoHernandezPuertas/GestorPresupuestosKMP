@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant U as Usuario
+    participant FE as Frontend (Compose)
+    participant API as API REST (Kobweb)
+    participant DB as MongoDB
+    
+    U->>FE: Introducir credenciales
+    FE->>API: Enviar username/password
+    API->>API: Aplicar hash SHA-256 a password
+    API->>DB: Verificar credenciales
+    DB-->>API: Resultado autenticación
+    
+    alt Autenticación exitosa
+        API-->>FE: Generar token de sesión
+        FE->>FE: Almacenar token en localStorage
+        FE-->>U: Redirigir a panel principal
+    else Autenticación fallida
+        API-->>FE: Error de autenticación
+        FE-->>U: Mostrar mensaje de error
+    end
