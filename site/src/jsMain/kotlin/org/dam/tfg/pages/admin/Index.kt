@@ -65,7 +65,7 @@ fun HomeScreenContent() {
     AdminPageLayout {
         HomeContent(HomeContentData(
             title = "Control Panel",
-            description = "Bienvenido al panel de control de la aplicación.\nAquí podrás gestionar los datos de la aplicación.",
+            description = "Bienvenido al panel de control de la aplicación.\nAquí podrás gestionar los datos.",
         ))
         EditButton()
     }
@@ -91,7 +91,7 @@ fun HomeContent(homeContentData: HomeContentData) {
             ) {
                 Image(
                     modifier = Modifier
-                        .size(150.px)
+                        .size(250.px)
                         .margin(bottom = 50.px),
                     src = Res.Image.controlPanelLogo,
                     alt = "Control Panel Logo",
