@@ -31,11 +31,11 @@ fun isUserLoggedInCheck(content: @Composable () -> Unit) {
                 isAuthenticated = true
             } else {
                 console.log("Verificación fallida, redirigiendo a /admin/login")
-                context.router.navigateTo(Screen.AdminLogin.route)
+                context.router.navigateTo(Screen.Login.route)
             }
         } else {
             console.log("No hay datos de sesión, redirigiendo a /admin/login")
-            context.router.navigateTo(Screen.AdminLogin.route)
+            context.router.navigateTo(Screen.Login.route)
         }
         isLoading = false
     }

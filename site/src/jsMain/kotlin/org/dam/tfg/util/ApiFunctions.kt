@@ -1,5 +1,4 @@
 package org.dam.tfg.util
-
 import com.varabyte.kobweb.browser.api
 import kotlinx.browser.window
 import kotlinx.serialization.encodeToString
@@ -13,7 +12,6 @@ suspend fun checkUserExistence(user: User): UserWithoutPassword? {
         val result = window.api.tryPost(
             apiPath = "usercheck",
             body = Json.encodeToString(user).encodeToByteArray()
-
         )
         result?.decodeToString()?.let { Json.decodeFromString<UserWithoutPassword>(it) }
     } catch (e: Exception) {

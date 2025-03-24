@@ -35,6 +35,7 @@ kotlin {
             implementation(libs.kobweb.silk)
             implementation(libs.silk.icons.fa)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.client.auth)
             // implementation(libs.kobwebx.markdown)
             
         }
@@ -42,6 +43,7 @@ kotlin {
             compileOnly(libs.kobweb.api) // Provided by Kobweb backend at runtime
             implementation(libs.mongodb.driver.kotlin.coroutine)
             implementation(libs.bson.kotlinx)
+            implementation(libs.java.jwt)
 
         }
         dependencies {

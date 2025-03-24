@@ -149,11 +149,20 @@ private fun NavigationItems() {
     )
     NavigationItem(
         modifier = Modifier.margin(bottom = 24.px),
+        title = "Pantalla Principal",
+        icon = Res.PathIcon.index,
+        onClick = {
+            logout()
+            context.router.navigateTo(Screen.Home.route)
+        }
+    )
+    NavigationItem(
+        modifier = Modifier.margin(bottom = 24.px),
         title = "Cerrar Sesión",
         icon = Res.PathIcon.logout,
         onClick = {
             logout()
-            context.router.navigateTo(Screen.AdminLogin.route)
+            context.router.navigateTo(Screen.Login.route)
         }
     )
 }

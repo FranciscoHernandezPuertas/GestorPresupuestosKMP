@@ -1,4 +1,4 @@
-package org.dam.tfg.pages.admin
+package org.dam.tfg.pages
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
