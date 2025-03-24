@@ -10,6 +10,7 @@ object Constants {
 object Res {
     object Image{
         const val logo = "/appLogo.svg"
+        const val controlPanelLogo = "/controlPanelLogo.svg"
     }
 
     object PathIcon {

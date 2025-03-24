@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <!-- Fondo transparente -->
+
+    <!-- Cuadrado con bordes redondeados - Material Design Blue 500 -->
+    <rect x="16" y="16" width="480" height="480" rx="64" ry="64" fill="#2196F3"/>
+
+    <!-- Panel de control principal -->
+    <rect x="106" y="80" width="300" height="240" rx="16" ry="16" fill="#FFFFFF" stroke="#EEEEEE" stroke-width="2"/>
+
+    <!-- Elementos del panel de control -->
+    <!-- Diales/Medidores -->
+    Voy a cambiar de lugar los dos diales seleccionados, colocando el primero en la posición del segundo y viceversa.
+
+    <!-- replace lines 12 to 18 -->
+
+    <circle cx="256" cy="156" r="40" fill="#EEEEEE" stroke="#BDBDBD" stroke-width="2"/>
+    <path d="M256 156 L276 136" stroke="#37474F" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="256" cy="156" r="4" fill="#37474F"/>
+
+    <circle cx="166" cy="156" r="40" fill="#EEEEEE" stroke="#BDBDBD" stroke-width="2"/>
+    <path d="M166 156 L166 126" stroke="#37474F" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="166" cy="156" r="4" fill="#37474F"/>
+
+    <circle cx="346" cy="156" r="40" fill="#EEEEEE" stroke="#BDBDBD" stroke-width="2"/>
+    <path d="M346 156 L326 136" stroke="#37474F" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="346" cy="156" r="4" fill="#37474F"/>
+
+    <!-- Interruptores -->
+    <rect x="146" y="226" width="40" height="20" rx="10" ry="10" fill="#4CAF50"/>
+    <circle cx="176" cy="236" r="10" fill="white"/>
+
+    <rect x="236" y="226" width="40" height="20" rx="10" ry="10" fill="#F44336"/>
+    <circle cx="246" cy="236" r="10" fill="white"/>
+
+    <rect x="326" y="226" width="40" height="20" rx="10" ry="10" fill="#4CAF50"/>
+    <circle cx="356" cy="236" r="10" fill="white"/>
+
+    <!-- Gráfico de barras -->
+    <rect x="156" y="276" width="20" height="30" fill="#FBC02D"/>
+    <rect x="186" y="286" width="20" height="20" fill="#FBC02D"/>
+    <rect x="216" y="266" width="20" height="40" fill="#FBC02D"/>
+    <rect x="246" y="290" width="20" height="15" fill="#FBC02D"/>
+    <rect x="276" y="282" width="20" height="25" fill="#FBC02D"/>
+    <rect x="306" y="272" width="20" height="35" fill="#FBC02D"/>
+    <rect x="336" y="278" width="20" height="28" fill="#FBC02D"/>
+    <line x1="146" y1="306" x2="366" y2="306" stroke="#757575" stroke-width="2"/>
+
+    <!-- Símbolo de engranaje para configuración -->
+    <g transform="translate(235, 320) scale(1.8)">
+        <path fill="#BDBDBD" d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+    </g>
+
+    <!-- Texto "Generador de Presupuestos" - parte inferior -->
+    <text x="256" y="390" text-anchor="middle" font-family="Roboto, sans-serif" font-size="32" font-weight="900" fill="#FFFFFF">Panel de Control</text>
+    <text x="256" y="430" text-anchor="middle" font-family="Roboto, sans-serif" font-size="32" font-weight="500" fill="#FFFFFF">Generador de</text>
+    <text x="256" y="470" text-anchor="middle" font-family="Roboto, sans-serif" font-size="36" font-weight="500" fill="#FFFFFF">Presupuestos</text>
+</svg>
