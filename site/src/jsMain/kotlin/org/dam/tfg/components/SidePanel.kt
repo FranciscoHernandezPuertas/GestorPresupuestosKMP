@@ -273,6 +273,7 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
     var opacity by remember {
         mutableStateOf(0.percent)
     }
+
     LaunchedEffect(breakpoint) {
         translateX = 0.percent
         opacity = 100.percent
@@ -286,6 +287,7 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
         }
     }
 
+    // Este Box exterior captura los clics en cualquier parte de la pantalla
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,14 +303,24 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
                     delay = null
                 )
             )
-            .backgroundColor(Theme.HalfBlack.rgb),
+            .backgroundColor(Theme.HalfBlack.rgb)
+            .onClick {
+                // Cerrar el panel al hacer clic en el fondo
+                scope.launch {
+                    translateX = (-100).percent
+                    opacity = 0.percent
+                    delay(500)
+                    onMenuClose()
+                }
+            }
     ) {
+        // El panel lateral con mayor zIndex para evitar que se cierre al hacer clic dentro
         Column(
             modifier = Modifier
                 .padding(all = 24.px)
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .width( if(breakpoint < Breakpoint.MD) 50.percent else 25.percent)
+                .width(if(breakpoint < Breakpoint.MD) 50.percent else 25.percent)
                 .translateX(translateX)
                 .transition(
                     Transition.of(
@@ -320,7 +332,11 @@ fun OverflowSidePanel(onMenuClose: () -> Unit) {
                 )
                 .overflow(Overflow.Auto)
                 .scrollBehavior(ScrollBehavior.Smooth)
-                .backgroundColor(Theme.Secondary.rgb),
+                .backgroundColor(Theme.Secondary.rgb)
+                .onClick {
+                    // Detener la propagación del clic para que no llegue al Box exterior
+                    it.stopPropagation()
+                }
         ) {
             Row(
                 modifier = Modifier.margin(bottom = 60.px, top = 24.px),

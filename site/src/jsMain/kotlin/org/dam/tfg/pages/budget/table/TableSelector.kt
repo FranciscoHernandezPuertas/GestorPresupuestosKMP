@@ -1,5 +1,4 @@
-// site/src/jsMain/kotlin/org/dam/tfg/pages/Index.kt
-package org.dam.tfg.pages
+package org.dam.tfg.pages.budget.table
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,7 +17,27 @@ import com.varabyte.kobweb.compose.foundation.layout.Spacer
 import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.graphics.Colors
-import com.varabyte.kobweb.compose.ui.modifiers.*
+import com.varabyte.kobweb.compose.ui.modifiers.backgroundColor
+import com.varabyte.kobweb.compose.ui.modifiers.borderRadius
+import com.varabyte.kobweb.compose.ui.modifiers.boxShadow
+import com.varabyte.kobweb.compose.ui.modifiers.color
+import com.varabyte.kobweb.compose.ui.modifiers.cursor
+import com.varabyte.kobweb.compose.ui.modifiers.fillMaxSize
+import com.varabyte.kobweb.compose.ui.modifiers.fillMaxWidth
+import com.varabyte.kobweb.compose.ui.modifiers.fontFamily
+import com.varabyte.kobweb.compose.ui.modifiers.fontSize
+import com.varabyte.kobweb.compose.ui.modifiers.fontWeight
+import com.varabyte.kobweb.compose.ui.modifiers.height
+import com.varabyte.kobweb.compose.ui.modifiers.left
+import com.varabyte.kobweb.compose.ui.modifiers.margin
+import com.varabyte.kobweb.compose.ui.modifiers.onClick
+import com.varabyte.kobweb.compose.ui.modifiers.padding
+import com.varabyte.kobweb.compose.ui.modifiers.position
+import com.varabyte.kobweb.compose.ui.modifiers.right
+import com.varabyte.kobweb.compose.ui.modifiers.textAlign
+import com.varabyte.kobweb.compose.ui.modifiers.top
+import com.varabyte.kobweb.compose.ui.modifiers.width
+import com.varabyte.kobweb.compose.ui.modifiers.zIndex
 import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.graphics.Image
@@ -31,7 +50,6 @@ import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.returnUserType
 import org.dam.tfg.models.Theme
 import org.dam.tfg.navigation.Screen
-import org.dam.tfg.util.Constants
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Res
 import org.dam.tfg.util.isUserLoggedInCheck
@@ -43,14 +61,14 @@ import org.w3c.dom.get
 
 @Page
 @Composable
-fun HomePage() {
+fun TableSelectorPage() {
     isUserLoggedInCheck {
-        HomePageContent()
+        TableSelectorPageContent()
     }
 }
 
 @Composable
-fun HomePageContent() {
+fun TableSelectorPageContent() {
     val context = rememberPageContext()
     val breakpoint = rememberBreakpoint()
 
@@ -69,14 +87,14 @@ fun HomePageContent() {
             AppHeader()
 
             // Contenido específico para usuarios
-            HomeContent()
+            TableSelectorContent()
         }
     }
 }
 
 
 @Composable
-private fun HomeContent() {
+private fun TableSelectorContent() {
     val context = rememberPageContext()
 
     // Título de la sección
@@ -88,41 +106,6 @@ private fun HomeContent() {
             .fontWeight(FontWeight.Medium)
             .textAlign(TextAlign.Center)
             .color(Theme.Secondary.rgb),
-        text = "¿Qué presupuesto desea generar?"
+        text = "¿Qué mesa desea?"
     )
-
-    // Opciones según tipo de usuario
-    Column(
-        modifier = Modifier
-            .margin(bottom = 30.px)
-            .padding(10.px)
-            .backgroundColor(Colors.White)
-            .borderRadius(8.px)
-            .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray)
-            .width(250.px)
-            .cursor(Cursor.Pointer)
-            .onClick {
-                // Aquí iría la navegación al wizard de mesas
-                context.router.navigateTo(Screen.TableSelector.route)
-            },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            modifier = Modifier
-                .width(200.px)
-                .height(150.px)
-                .margin(bottom = 15.px),
-            src = Res.Image.formTableIcon,
-            alt = "Mesa"
-        )
-
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(20.px)
-                .fontWeight(FontWeight.Bold)
-                .color(Theme.Secondary.rgb),
-            text = "Mesas"
-        )
-    }
 }

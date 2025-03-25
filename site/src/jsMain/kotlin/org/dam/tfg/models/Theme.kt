@@ -32,4 +32,8 @@ enum class Theme (
         hex = "000000",
         rgb = rgba(r = 0, g = 0, b = 0, a = 0.5)
     ),
+    Black(
+        hex = "000000",
+        rgb = rgb(r = 0, g = 0, b = 0)
+    ),
 }
