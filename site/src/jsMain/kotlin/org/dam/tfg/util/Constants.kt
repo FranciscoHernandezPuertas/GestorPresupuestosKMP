@@ -12,6 +12,13 @@ object Res {
         const val logo = "/appLogo.svg"
         const val controlPanelLogo = "/controlPanelLogo.svg"
         const val formTableIcon = "/form/tableIcon.svg"
+
+        const val noSeleccionado = "/form/noSeleccionado.svg"
+
+        const val mesaTramos1 = "/form/mesaTramos1.svg"
+        const val mesaTramos2 = "/form/mesaTramos2.svg"
+        const val mesaTramos3 = "/form/mesaTramos3.svg"
+        const val mesaTramos4 = "/form/mesaTramos4.svg"
     }
 
     object PathIcon {
