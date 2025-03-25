@@ -8,47 +8,68 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.varabyte.kobweb.core.rememberPageContext
 import kotlinx.browser.localStorage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.dam.tfg.navigation.Screen
 import org.w3c.dom.get
-import org.w3c.dom.set
 
+/**
+ * Comprueba si el usuario está autenticado y ejecuta el contenido si lo está.
+ * Si no está autenticado, redirige a la página de login.
+ */
 @Composable
 fun isUserLoggedInCheck(content: @Composable () -> Unit) {
     val context = rememberPageContext()
-    var isLoading by remember { mutableStateOf(true) }
-    var isAuthenticated by remember { mutableStateOf(false) }
+    var isAuthorized by remember { mutableStateOf(false) }
+    var isChecking by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        // Leer los valores actuales
-        val remembered = localStorage["remember"]?.toBoolean() ?: false
-        val userId = localStorage["userId"]
-        console.log("Datos de sesión: remembered = $remembered, userId = $userId")
+        val token = localStorage["jwt_token"]
 
-        if (remembered && !userId.isNullOrEmpty()) {
-            val userIdExists = checkUserId(id = userId)
-            console.log("Resultado de checkUserId: $userIdExists")
-            if (userIdExists) {
-                isAuthenticated = true
-            } else {
-                console.log("Verificación fallida, redirigiendo a /admin/login")
-                context.router.navigateTo(Screen.Login.route)
-            }
-        } else {
-            console.log("No hay datos de sesión, redirigiendo a /admin/login")
+        if (token == null) {
             context.router.navigateTo(Screen.Login.route)
+        } else {
+            // Validar el token en el servidor
+            val user = validateToken()
+            if (user == null) {
+                logout()
+                context.router.navigateTo(Screen.Login.route)
+            } else {
+                isAuthorized = true
+            }
         }
-        isLoading = false
+        isChecking = false
     }
 
-    if (isLoading) {
-        console.log("Cargando...")
-    } else if (isAuthenticated) {
+    if (!isChecking && isAuthorized) {
         content()
     }
 }
 
-fun logout() {
-    localStorage["remember"] = "false"
-    localStorage["userId"] = ""
-    localStorage["username"] = ""
+/**
+ * Verifica si el usuario actual es administrador.
+ * Si no lo es, redirige a la página principal.
+ */
+@Composable
+fun isAdminCheck(content: @Composable () -> Unit) {
+    val context = rememberPageContext()
+    var isAdmin by remember { mutableStateOf(false) }
+    var isChecking by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        // Validar el token en el servidor y obtener el tipo de usuario
+        val user = validateToken()
+
+        if (user?.type != "admin") {
+            // Si el token no es válido o el usuario no es admin, redirigir
+            context.router.navigateTo(Screen.Home.route)
+        } else {
+            isAdmin = true
+        }
+        isChecking = false
+    }
+
+    if (!isChecking && isAdmin) {
+        content()
+    }
 }

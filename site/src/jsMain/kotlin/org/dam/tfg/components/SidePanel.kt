@@ -150,9 +150,9 @@ private fun NavigationItems() {
     NavigationItem(
         modifier = Modifier.margin(bottom = 24.px),
         title = "Pantalla Principal",
+        selected = context.route.path == Screen.Home.route,
         icon = Res.PathIcon.index,
         onClick = {
-            logout()
             context.router.navigateTo(Screen.Home.route)
         }
     )

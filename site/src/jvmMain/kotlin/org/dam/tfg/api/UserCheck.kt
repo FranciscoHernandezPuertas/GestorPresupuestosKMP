@@ -9,8 +9,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import org.dam.tfg.data.MongoDB
+import org.dam.tfg.models.AuthResponse
+import org.dam.tfg.models.ErrorResponse
 import org.dam.tfg.models.User
 import org.dam.tfg.models.UserWithoutPassword
+import org.dam.tfg.util.JwtManager
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
@@ -24,16 +27,30 @@ suspend fun userCheck(context: ApiContext){
             )
         }
         if(user != null){
+            // Crear objeto sin contraseña para el token
+            val userWithoutPassword = UserWithoutPassword(
+                id = user.id,
+                username = user.username,
+                type = user.type
+            )
+
+            // Generar token JWT
+            val token = JwtManager.generateToken(userWithoutPassword)
+
+            // Devolver respuesta con usuario y token
             context.res.setBodyText(
                 Json.encodeToString(
-                    UserWithoutPassword(id = user.id, username = user.username)
+                    AuthResponse(
+                        user = userWithoutPassword,
+                        token = token
+                    )
                 )
             )
-        }else{
-            context.res.setBodyText(Json.encodeToString(Exception("User doesn't exist.")))
+        } else {
+            context.res.setBodyText(Json.encodeToString(ErrorResponse("El usuario no existe.")))
         }
-    }catch (e: Exception){
-        context.res.setBodyText(Json.encodeToString(Exception(e.message)))
+    } catch (e: Exception) {
+        context.res.setBodyText(Json.encodeToString(ErrorResponse(e.message ?: "Error desconocido")))
     }
 }
 

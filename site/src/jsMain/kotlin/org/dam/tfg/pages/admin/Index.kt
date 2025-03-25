@@ -46,6 +46,7 @@ import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Constants.PAGE_WIDTH
 import org.dam.tfg.util.Constants.SIDE_PANEL_WIDTH
 import org.dam.tfg.util.Res
+import org.dam.tfg.util.isAdminCheck
 import org.dam.tfg.util.isUserLoggedInCheck
 import org.jetbrains.compose.web.css.Position
 import org.jetbrains.compose.web.css.percent
@@ -55,7 +56,7 @@ import org.jetbrains.compose.web.css.vh
 @Page
 @Composable
 fun AdminHomePage() {
-    isUserLoggedInCheck {
+    isAdminCheck {
         HomeScreenContent()
     }
 }
