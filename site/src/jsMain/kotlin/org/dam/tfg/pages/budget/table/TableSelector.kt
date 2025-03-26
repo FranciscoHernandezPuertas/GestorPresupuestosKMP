@@ -50,9 +50,13 @@ import com.varabyte.kobweb.compose.ui.modifiers.outline
 import com.varabyte.kobweb.compose.ui.modifiers.size
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.style.toModifier
+import org.dam.tfg.components.BudgetFooter
+import org.dam.tfg.navigation.Screen
 import org.dam.tfg.styles.LoginInputStyle
+import org.dam.tfg.util.BudgetManager
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.LineStyle
+import org.jetbrains.compose.web.css.vh
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Label
 
@@ -88,8 +92,17 @@ fun TableSelectorPageContent() {
 
     @Composable
     fun TableSelectorContent() {
+        var mesa by remember { mutableStateOf(BudgetManager.loadMesa()) }
         val breakpoint = rememberBreakpoint()
         var selectedTable by remember { mutableStateOf(1) }
+
+        fun validateData(): Boolean {
+            return mesa.tramos.all { it.isValid() }
+        }
+
+        fun saveData() {
+            BudgetManager.updateMesa(mesa)
+        }
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -115,7 +128,7 @@ fun TableSelectorPageContent() {
                         .fillMaxWidth(80.percent)
                         .maxWidth(1200.px)
                         .height(400.px)
-                        .margin(bottom = 30.px)
+                        .margin(bottom = 2.px)
                         .padding(20.px)
                         .backgroundColor(Colors.White)
                         .borderRadius(8.px)
@@ -169,7 +182,7 @@ fun TableSelectorPageContent() {
             // Imagen de la mesa
             Box(
                 modifier = Modifier
-                    .margin(top = 20.px, bottom = 40.px)
+                    .margin(top = 2.px, bottom = 80.px)
                     .fillMaxWidth(80.percent)
                     .maxWidth(600.px),
                 contentAlignment = Alignment.Center
@@ -184,6 +197,17 @@ fun TableSelectorPageContent() {
                         else -> Res.Image.noSeleccionado
                     },
                     alt = "Mesa de ${selectedTable} tramo${if (selectedTable > 1) "s" else ""}"
+                )
+            }
+
+            Box(
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                BudgetFooter(
+                    previousScreen = Screen.Home,
+                    nextScreen = Screen.TableElements,
+                    validateData = { validateData() },
+                    saveData = { saveData() }
                 )
             }
         }

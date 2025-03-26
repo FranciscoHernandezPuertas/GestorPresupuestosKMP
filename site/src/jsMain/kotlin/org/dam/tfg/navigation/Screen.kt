@@ -8,4 +8,5 @@ sealed class Screen(val route: String) {
     object AdminList: Screen(route = "/admin/list")
 
     object TableSelector: Screen(route = "/budget/table/table-selector")
+    object TableElements: Screen(route = "/budget/table/table-elements")
 }
