@@ -1,0 +1,50 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Base del kit lavamanos -->
+  <rect x="50" y="30" width="100" height="80" rx="10" fill="#E0E0E0" stroke="#888888" stroke-width="2" />
+
+  <!-- Cuenca del lavamanos -->
+  <ellipse cx="100" cy="70" rx="35" ry="25" fill="#FFFFFF" stroke="#AAAAAA" stroke-width="2" />
+
+  <!-- Sombra interior del lavamanos para dar profundidad -->
+  <ellipse cx="100" cy="70" rx="28" ry="18" fill="none" stroke="#CCCCCC" stroke-width="1" />
+
+  <!-- Representación del agua -->
+  <ellipse cx="100" cy="70" rx="25" ry="15" fill="#E6F7FF" stroke="none" opacity="0.5" />
+
+  <!-- Grifo/dispensador -->
+  <rect x="120" y="40" width="8" height="15" rx="2" fill="#A0A0A0" stroke="#888888" stroke-width="1" />
+  <circle cx="124" cy="40" r="5" fill="#A0A0A0" stroke="#888888" stroke-width="1" />
+
+  <!-- Pulsador -->
+  <circle cx="140" cy="55" r="8" fill="#66AADD" stroke="#4488CC" stroke-width="2" />
+  <circle cx="140" cy="55" r="5" fill="#99CCEE" stroke="#4488CC" stroke-width="1" />
+
+  <!-- Tubo que conecta el pulsador al grifo -->
+  <path d="M 140 55 L 124 55" fill="none" stroke="#A0A0A0" stroke-width="2" />
+
+  <!-- Desagüe -->
+  <circle cx="100" cy="70" r="3" fill="#808080" stroke="#666666" stroke-width="1" />
+
+  <!-- Tubo de desagüe -->
+  <path d="M 100 70 L 80 100 L 80 120" fill="none" stroke="#A0A0A0" stroke-width="2" />
+
+  <!-- Recipiente de agua usada -->
+  <rect x="70" y="120" width="20" height="15" rx="2" fill="#C0C0C0" stroke="#888888" stroke-width="1" />
+
+  <!-- Tubería de agua limpia -->
+  <path d="M 140 63 L 140 100 L 120 120" fill="none" stroke="#A0A0A0" stroke-width="2" />
+
+  <!-- Depósito de agua limpia -->
+  <rect x="110" y="120" width="20" height="15" rx="2" fill="#C0E0FF" stroke="#888888" stroke-width="1" />
+
+  <!-- Detalles de la estructura -->
+  <rect x="55" y="35" width="90" height="70" rx="8" fill="none" stroke="#CCCCCC" stroke-width="1" />
+
+  <!-- Etiqueta del pulsador -->
+  <text x="140" y="45" font-family="Arial" font-size="6" text-anchor="middle" fill="#000">Pulsador</text>
+
+  <!-- Texto descriptor -->
+  <text x="100" y="150" font-family="Arial" font-size="10" text-anchor="middle" fill="#000">
+    Kit Lavamanos Pulsador
+  </text>
+</svg>

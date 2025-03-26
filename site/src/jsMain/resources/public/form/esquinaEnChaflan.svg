@@ -1,0 +1,57 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Superficie principal de la mesa con chaflán (vista aérea) -->
+  <path d="M 30,20
+           L 150,20
+           L 180,50
+           L 180,130
+           Q 180,140 170,140
+           L 30,140
+           Q 20,140 20,130
+           L 20,30
+           Q 20,20 30,20
+           Z"
+        fill="#E0E0E0"
+        stroke="#888888"
+        stroke-width="2" />
+
+  <!-- Sombreado del chaflán para dar profundidad -->
+  <path d="M 150,20
+           L 180,50
+           L 150,50
+           Z"
+        fill="#D0D0D0"
+        stroke="#AAAAAA"
+        stroke-width="1" />
+
+  <!-- Sombra interna para dar profundidad a toda la mesa -->
+  <path d="M 30,25
+           L 148,25
+           L 175,52
+           L 175,130
+           Q 175,135 170,135
+           L 30,135
+           Q 25,135 25,130
+           L 25,30
+           Q 25,25 30,25
+           Z"
+        fill="none"
+        stroke="#CCCCCC"
+        stroke-width="1" />
+
+  <!-- Líneas de detalle horizontales en la superficie de la mesa -->
+  <line x1="40" y1="40" x2="160" y2="40" stroke="#CCCCCC" stroke-width="1" />
+  <line x1="40" y1="60" x2="170" y2="60" stroke="#CCCCCC" stroke-width="1" />
+  <line x1="40" y1="80" x2="170" y2="80" stroke="#CCCCCC" stroke-width="1" />
+  <line x1="40" y1="100" x2="170" y2="100" stroke="#CCCCCC" stroke-width="1" />
+  <line x1="40" y1="120" x2="170" y2="120" stroke="#CCCCCC" stroke-width="1" />
+
+  <!-- Líneas de detalle verticales en la superficie de la mesa -->
+  <line x1="60" y1="30" x2="60" y2="130" stroke="#CCCCCC" stroke-width="1" />
+  <line x1="100" y1="30" x2="100" y2="130" stroke="#CCCCCC" stroke-width="1" />
+  <line x1="140" y1="30" x2="140" y2="130" stroke="#CCCCCC" stroke-width="1" />
+
+  <!-- Texto descriptor -->
+  <text x="100" y="150" font-family="Arial" font-size="10" text-anchor="middle" fill="#000">
+    Esquina en Chaflán
+  </text>
+</svg>

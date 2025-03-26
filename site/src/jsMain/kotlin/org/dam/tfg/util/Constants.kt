@@ -19,6 +19,19 @@ object Res {
         const val mesaTramos2 = "/form/mesaTramos2.svg"
         const val mesaTramos3 = "/form/mesaTramos3.svg"
         const val mesaTramos4 = "/form/mesaTramos4.svg"
+
+        const val petoLateral = "/form/petoLateral.svg"
+        const val esquinaEnChaflan = "/form/esquinaEnChaflan.svg"
+        const val esquinaRedondeada = "/form/esquinaRedondeada.svg"
+        const val cajeadoColumna = "/form/cajeadoColumna.svg"
+        const val aroDeDesbrace = "/form/arcoDeDesbrace.svg"
+        const val kitLavamanosPulsador = "/form/kitLavamanosPulsador.svg"
+        const val kitLavamanosPedalSimple = "/form/kitLavamanosPedalSimple.svg"
+        const val kitLavamanosPedalDoble = "/form/kitLavamanosPedalDoble.svg"
+        const val baquetonEnSeno = "/form/baquetonEnSeno.svg"
+        const val baquetonPerimetrico = "/form/baquetonPerimetrico.svg"
+
+        const val cubeta = "/form/cubeta.svg"
     }
 
     object PathIcon {

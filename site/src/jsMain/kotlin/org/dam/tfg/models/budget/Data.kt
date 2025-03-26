@@ -36,12 +36,34 @@ data class Tramo(
 sealed class Extra {
     abstract val tipo: String
     abstract val numero: Int
-    abstract val largo: Double
-    abstract val ancho: Double
+    abstract val largo: Double?
+    abstract val ancho: Double?
+    abstract val alto: Double? // opcional, en milímetros
     abstract val precio: Double
     abstract fun calcularPrecio(): Double
     abstract fun isValid(): Boolean
     abstract var error: String
+}
+
+@Serializable
+data class ElementosGenerales (
+    override val tipo: String = "ElementosGenerales",
+    override val numero: Int = 0,
+    override val largo: Double? = null,
+    override val ancho: Double? = null,
+    override val alto: Double? = null,
+    override val precio: Double = 0.0,
+    override var error: String = ""
+) : Extra() {
+    override fun calcularPrecio(): Double {
+        // Lógica pendiente
+        return 0.0
+    }
+
+    override fun isValid(): Boolean {
+        error = ""
+        return true
+    }
 }
 
 @Serializable
@@ -50,12 +72,14 @@ data class Peto(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     val material: Material? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return material?.precioPorMilimetroCuadrado?.times(largo * ancho) ?: 0.0
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -75,20 +99,21 @@ data class Peto(
         return true
     }
 }
-
+/*
 @Serializable
 data class Seno(
     override val tipo: String = "Seno",
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     val profundidad: Double = 0.0,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        // Ejemplo de lógica de cálculo para el seno
-        return largo * ancho * 10 + profundidad * 5
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -108,7 +133,7 @@ data class Seno(
         return true
     }
 }
-
+*/
 // Extra: SoporteParaBandejas
 @Serializable
 data class SoporteParaBandejas(
@@ -116,11 +141,13 @@ data class SoporteParaBandejas(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 8 // Factor arbitrario para el cálculo
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -144,11 +171,13 @@ data class Cubeta(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 7
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -172,11 +201,13 @@ data class Panel(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 9
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -200,11 +231,13 @@ data class Estante(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 6
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -228,11 +261,13 @@ data class Cajon(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 5
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -256,11 +291,13 @@ data class SoporteParaBatidoras(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 4
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -284,11 +321,13 @@ data class Cajonera(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 5.5
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -312,11 +351,13 @@ data class SoporteFrontalParaBotellas(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 7.5
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -340,11 +381,13 @@ data class CubaParaHielo(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 6.5
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {
@@ -368,11 +411,13 @@ data class CubaParaDesperdicios(
     override val numero: Int = 0,
     override val largo: Double = 0.0,
     override val ancho: Double = 0.0,
+    override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""
 ) : Extra() {
     override fun calcularPrecio(): Double {
-        return largo * ancho * 6.0
+        // Lógica pendiente
+        return 0.0
     }
 
     override fun isValid(): Boolean {

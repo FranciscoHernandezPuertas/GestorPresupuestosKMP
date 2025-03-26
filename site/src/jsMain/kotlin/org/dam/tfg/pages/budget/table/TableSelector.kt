@@ -115,7 +115,7 @@ fun TableSelectorPageContent() {
                     .margin(top = 40.px, bottom = 30.px)
                     .fontFamily(FONT_FAMILY)
                     .fontSize(24.px)
-                    .fontWeight(FontWeight.Medium)
+                    .fontWeight(FontWeight.Bold)
                     .color(Theme.Secondary.rgb),
                 text = "Seleccione el tipo de mesa"
             )
