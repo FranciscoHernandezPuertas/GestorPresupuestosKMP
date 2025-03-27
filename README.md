@@ -112,11 +112,11 @@ El módulo Android tendrá UI nativa utilizando Compose y aprovechará las venta
 
 ```
 - Kotlin Multiplatform: 2.1.10
-- Kobweb: 0.20.0
+- Kobweb: 0.20.4
 - MongoDB Driver: 5.3.0
-- Compose: 1.7.1
+- Compose: 1.7.3
 - KotlinX Serialization: 1.4.1
-- JWT: 4.0.0
+- JWT: 4.2.1
 ```
 
 ## Licencia
