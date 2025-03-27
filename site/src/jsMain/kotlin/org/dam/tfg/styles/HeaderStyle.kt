@@ -5,7 +5,6 @@ import com.varabyte.kobweb.compose.css.Transition
 import com.varabyte.kobweb.compose.css.TransitionProperty
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.graphics.Colors
-import com.varabyte.kobweb.compose.ui.modifiers.backgroundColor
 import com.varabyte.kobweb.compose.ui.modifiers.border
 import com.varabyte.kobweb.compose.ui.modifiers.color
 import com.varabyte.kobweb.compose.ui.modifiers.transition
@@ -44,5 +43,21 @@ val MenuItemStyle = CssStyle {
     }
     hover {
         Modifier.color(Theme.Primary.rgb)
+    }
+}
+
+val IconHoverStyle = CssStyle {
+    base {
+        Modifier
+            .transition(
+                Transition.of(
+                    property = TransitionProperty.All,
+                    duration = 300.ms
+                )
+            )
+            .color(Theme.White.rgb)
+    }
+    hover {
+        Modifier.color(Theme.Secondary.rgb)
     }
 }

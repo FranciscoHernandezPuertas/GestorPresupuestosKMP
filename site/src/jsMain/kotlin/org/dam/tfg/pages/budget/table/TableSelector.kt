@@ -55,6 +55,7 @@ import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.models.budget.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.styles.LoginInputStyle
+import org.dam.tfg.styles.TableSelectorStyle
 import org.dam.tfg.util.BudgetManager
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.LineStyle
@@ -372,7 +373,7 @@ fun TableSelectorContent() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
+                modifier = TableSelectorStyle.toModifier()
                     .size(20.px)
                     .border(
                         width = 2.px,
@@ -576,19 +577,13 @@ fun DimensionField(
 
         Input(
             type = InputType.Number,
-            attrs = LoginInputStyle.toModifier()
+            attrs = TableSelectorStyle.toModifier()
                 .id(id)
                 .width(100.percent)
                 .height(40.px)
                 .padding(leftRight = 15.px)
-                .backgroundColor(Colors.White)
                 .fontSize(14.px)
                 .fontFamily(FONT_FAMILY)
-                .outline(
-                    width = 0.px,
-                    style = LineStyle.None,
-                    color = Colors.Transparent
-                )
                 .toAttrs {
                     attr("placeholder", "0")
                     attr("step", "1")

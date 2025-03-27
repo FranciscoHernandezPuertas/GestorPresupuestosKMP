@@ -43,7 +43,9 @@ import com.varabyte.kobweb.silk.style.toModifier
 import kotlinx.browser.localStorage
 import org.dam.tfg.models.Theme
 import org.dam.tfg.navigation.Screen
+import org.dam.tfg.styles.IconHoverStyle
 import org.dam.tfg.styles.MenuItemStyle
+import org.dam.tfg.styles.SideNavigationItemStyle
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.logout
 import org.dam.tfg.util.validateToken
@@ -100,11 +102,12 @@ fun AppHeader(
 
         if (showSettings) {
             // Mostrar el icono de engranaje para todos los usuarios
-            Box {
+            Box(
+                modifier = IconHoverStyle.toModifier()
+            ) {
                 FaGear(
                     modifier = Modifier
                         .margin(left = 15.px)
-                        .color(Theme.White.rgb)
                         .cursor(Cursor.Pointer)
                         .onClick { showDropdown = !showDropdown },
                     size = IconSize.XL

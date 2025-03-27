@@ -260,8 +260,19 @@ fun ElementosGeneralesSection(
                 .fontSize(20.px)
                 .fontWeight(FontWeight.Medium)
                 .color(Theme.Secondary.rgb)
-                .margin(bottom = 20.px),
+                .margin(bottom = 2.px),
             text = "Elementos Generales"
+        )
+
+        SpanText(
+            modifier = Modifier
+                .fontFamily(FONT_FAMILY)
+                .fontSize(14.px)
+                .fontStyle(FontStyle.Italic)
+                .color(Theme.Secondary.rgb)
+                .margin(bottom = 18.px)
+                .textAlign(TextAlign.Center),
+            text = "Puede editar la cantidad más abajo, en el listado de elementos añadidos"
         )
 
         // Grid de elementos

@@ -22,6 +22,7 @@ import com.varabyte.kobweb.compose.ui.modifiers.color
 import com.varabyte.kobweb.compose.ui.modifiers.cursor
 import com.varabyte.kobweb.compose.ui.modifiers.fillMaxSize
 import com.varabyte.kobweb.compose.ui.modifiers.fillMaxWidth
+import com.varabyte.kobweb.compose.ui.modifiers.flexShrink
 import com.varabyte.kobweb.compose.ui.modifiers.fontFamily
 import com.varabyte.kobweb.compose.ui.modifiers.fontSize
 import com.varabyte.kobweb.compose.ui.modifiers.fontWeight
@@ -260,6 +261,7 @@ fun ConfirmDialog(
                             .padding(10.px)
                             .backgroundColor(Theme.Secondary.rgb)
                             .borderRadius(6.px)
+                            .flexShrink(0)
                             .padding(topBottom = 10.px, leftRight = 20.px)
                             .cursor(Cursor.Pointer)
                             .onClick { onDismiss() },
