@@ -21,6 +21,11 @@ import kotlinx.serialization.json.Json
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.ConfirmDialog
+import org.dam.tfg.components.ExtraItemsSection
+import org.dam.tfg.components.QuantitySelector
+import org.dam.tfg.components.StandardItemRenderer
+import org.dam.tfg.components.crearSelectorCantidad
+import org.dam.tfg.components.extractDimensions
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.budget.*
 import org.dam.tfg.navigation.Screen
@@ -404,8 +409,8 @@ fun ElementosGeneralesSection(
                         onValueChange = { cantidad ->
                             onCantidadChanged(index, cantidad)
                         },
-                        min = 1,
-                        max = 10
+                        min = 0,
+                        max = 20
                     )
 
                     // Botón de eliminar
@@ -439,322 +444,30 @@ fun CubetasSection(
     onCantidadChanged: (Int, Int) -> Unit,
     onDeleteClick: (Int) -> Unit
 ) {
-    val breakpoint = rememberBreakpoint()
-    var cubetaSeleccionada by remember { mutableStateOf("") }
-    val isMobile = breakpoint <= Breakpoint.MD
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .margin(bottom = 40.px)
-            .padding(20.px)
-            .backgroundColor(Colors.White)
-            .borderRadius(8.px)
-            .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray),
-    ) {
-        // Título de la sección
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(20.px)
-                .fontWeight(FontWeight.Medium)
-                .color(Theme.Secondary.rgb)
-                .margin(bottom = 20.px),
-            text = "Cubetas"
-        )
-
-        // Selector para añadir cubeta
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .margin(bottom = 20.px),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Select(
-                attrs = Modifier
-                    .fillMaxWidth(if (breakpoint <= Breakpoint.MD) 70.percent else 85.percent)
-                    .height(40.px)
-                    .margin(right = 10.px)
-                    .border(1.px, LineStyle.Solid, Theme.Secondary.rgb)
-                    .borderRadius(4.px)
-                    .fontFamily(FONT_FAMILY)
-                    .toAttrs {
-                        onChange { event ->
-                            cubetaSeleccionada = event.target.value
-                        }
-                    }
-            ) {
-                Option(
-                    value = "",
-                    attrs = Modifier.toAttrs {
-                        if (cubetaSeleccionada.isEmpty()) {
-                            selected()
-                        }
-                    }
-                ) {
-                    Text("Seleccionar cubeta...")
+    ExtraItemsSection(
+        title = "Cubetas",
+        description = "Seleccione cubetas desde el desplegable superior",
+        imageSrc = Res.Image.cubeta,
+        items = cubetas,
+        itemOptions = cubetasPredefinidas,
+        onItemAdded = { tipo, numero ->
+            val (largo, ancho) = extractDimensions(tipo)
+            onCubetaAdded(Cubeta(tipo = tipo, numero = numero, largo = largo, ancho = ancho))
+        },
+        onQuantityChanged = onCantidadChanged,
+        onDeleteClick = onDeleteClick,
+        itemRenderer = { cubeta, index ->
+            StandardItemRenderer(
+                item = cubeta,
+                index = index,
+                quantitySelector = crearSelectorCantidad(min = 1, max = 10),
+                onQuantityChanged = onCantidadChanged,
+                onDeleteClick = onDeleteClick,
+                getDimensionsText = { extra ->
+                    val dimensiones = extra.tipo.replace(Regex(".*?(\\d+[xX×]\\d+([xX×]\\d+)?).*"), "$1")
+                    "Dimensiones: $dimensiones mm"
                 }
-
-                cubetasPredefinidas.forEach { cubeta ->
-                    Option(
-                        value = cubeta,
-                        attrs = Modifier.toAttrs {
-                            if (cubetaSeleccionada == cubeta) {
-                                selected()
-                            }
-                        }
-                    ) {
-                        Text(cubeta)
-                    }
-                }
-            }
-
-            Button(
-                attrs = Modifier
-                    .backgroundColor(Theme.Primary.rgb)
-                    .color(Colors.White)
-                    .borderRadius(4.px)
-                    .padding(topBottom = 8.px, leftRight = 16.px)
-                    .border(0.px, LineStyle.None, Colors.Transparent)
-                    .cursor(Cursor.Pointer)
-                    .onClick {
-                        if (cubetaSeleccionada.isNotEmpty()) {
-                            // Verificar si ya existe esta cubeta
-                            val cubetaExistente = cubetas.find { it.tipo == cubetaSeleccionada }
-                            if (cubetaExistente != null) {
-                                // Si existe, incrementar cantidad
-                                val index = cubetas.indexOf(cubetaExistente)
-                                onCantidadChanged(index, cubetaExistente.numero + 1)
-                            } else {
-                                // Extraer dimensiones de manera más robusta
-                                val dimPattern = "(\\d+)[xX×](\\d+)".toRegex()
-                                val match = dimPattern.find(cubetaSeleccionada)
-                                
-                                val largo = match?.groupValues?.getOrNull(1)?.toDoubleOrNull() ?: 500.0
-                                val ancho = match?.groupValues?.getOrNull(2)?.toDoubleOrNull() ?: 400.0
-                                
-                                // Añadir nueva cubeta con el nombre específico
-                                onCubetaAdded(Cubeta(
-                                    tipo = cubetaSeleccionada,
-                                    numero = 1,
-                                    largo = largo,
-                                    ancho = ancho
-                                ))
-                            }
-                            cubetaSeleccionada = ""
-                        }
-                    }
-                    .toAttrs()
-            ) {
-                Text("Añadir")
-            }
-        }
-
-        // Diseño de dos columnas (imagen + listado)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .styleModifier {
-                    if (isMobile) {
-                        property("flex-direction", "column")
-                    }
-                },
-            verticalAlignment = Alignment.Top
-        ) {
-            // Columna izquierda: Imagen de cubeta (siempre visible)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(if (isMobile) 100.percent else 25.percent)
-                    .margin(bottom = if (isMobile) 20.px else 0.px)
-                    .padding(16.px),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    modifier = Modifier
-                        .size(150.px)
-                        .margin(bottom = 16.px),
-                    src = Res.Image.cubeta,
-                    alt = "Cubeta"
-                )
-                
-                // Texto informativo debajo de la imagen
-                SpanText(
-                    modifier = Modifier
-                        .fontFamily(FONT_FAMILY)
-                        .fontSize(14.px)
-                        .fontStyle(FontStyle.Italic)
-                        .color(Theme.Secondary.rgb)
-                        .textAlign(TextAlign.Center),
-                    text = "Seleccione cubetas desde el desplegable superior y haga click en el botón de añadir"
-                )
-            }
-
-            // Columna derecha: Listado de cubetas
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(if (isMobile) 100.percent else 75.percent)
-                    .padding(left = if (isMobile) 0.px else 20.px)
-            ) {
-                // Solo mostrar el contenido si hay cubetas
-                if (cubetas.isNotEmpty()) {
-                    SpanText(
-                        modifier = Modifier
-                            .fontFamily(FONT_FAMILY)
-                            .fontSize(18.px)
-                            .fontWeight(FontWeight.Medium)
-                            .color(Theme.Secondary.rgb)
-                            .margin(bottom = 10.px),
-                        text = "Cubetas seleccionadas"
-                    )
-
-                    cubetas.forEachIndexed { index, cubeta ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .margin(bottom = 10.px)
-                                .padding(16.px)
-                                .backgroundColor(Theme.LightGray.rgb)
-                                .borderRadius(8.px),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Datos de la cubeta
-                            Column(
-                                modifier = Modifier.fillMaxWidth(60.percent)
-                            ) {
-                                SpanText(
-                                    modifier = Modifier
-                                        .fontFamily(FONT_FAMILY)
-                                        .fontSize(16.px)
-                                        .fontWeight(FontWeight.Medium)
-                                        .color(Theme.Secondary.rgb),
-                                    text = cubeta.tipo
-                                )
-
-                                // Extraer dimensiones del nombre de la cubeta para mostrar
-                                val dimensiones = cubeta.tipo.replace(Regex(".*?(\\d+[xX×]\\d+([xX×]\\d+)?).*"), "$1")
-                                
-                                SpanText(
-                                    modifier = Modifier
-                                        .fontFamily(FONT_FAMILY)
-                                        .fontSize(14.px)
-                                        .color(Theme.Secondary.rgb),
-                                    text = "Dimensiones: $dimensiones mm"
-                                )
-                            }
-
-                            Spacer()
-
-                            // Selector de cantidad
-                            QuantitySelector(
-                                value = cubeta.numero,
-                                onValueChange = { cantidad ->
-                                    onCantidadChanged(index, cantidad)
-                                },
-                                min = 1,
-                                max = 5
-                            )
-
-                            // Botón de eliminar
-                            Box(
-                                modifier = Modifier
-                                    .margin(left = 15.px)
-                                    .size(30.px)
-                                    .backgroundColor(Colors.Red)
-                                    .flexShrink(0)
-                                    .borderRadius(4.px)
-                                    .cursor(Cursor.Pointer)
-                                    .onClick { onDeleteClick(index) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                FaTrash(
-                                    modifier = Modifier.color(Colors.White),
-                                    size = IconSize.SM
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // Mensaje cuando no hay cubetas seleccionadas
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.px)
-                            .backgroundColor(Theme.LightGray.rgb)
-                            .borderRadius(8.px),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        SpanText(
-                            modifier = Modifier
-                                .fontFamily(FONT_FAMILY)
-                                .fontSize(16.px)
-                                .color(Theme.Secondary.rgb)
-                                .padding(20.px),
-                            text = "No hay cubetas seleccionadas"
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun QuantitySelector(
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    min: Int = 1,
-    max: Int = 10
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(16.px)
-                .fontWeight(FontWeight.Normal)
-                .color(Theme.Secondary.rgb),
-            text = "Cantidad: "
-        )
-        Box(
-            modifier = Modifier
-                .size(30.px)
-                .backgroundColor(if (value > min) Theme.Primary.rgb else Theme.LightGray.rgb)
-                .borderRadius(4.px)
-                .cursor(if (value > min) Cursor.Pointer else Cursor.NotAllowed)
-                .onClick { if (value > min) onValueChange(value - 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            FaMinus(
-                modifier = Modifier.color(Colors.White),
-                size = IconSize.SM
             )
         }
-
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(16.px)
-                .color(Theme.Secondary.rgb)
-                .margin(leftRight = 15.px)
-                .width(20.px)
-                .textAlign(TextAlign.Center),
-            text = value.toString()
-        )
-
-        Box(
-            modifier = Modifier
-                .size(30.px)
-                .backgroundColor(if (value < max) Theme.Primary.rgb else Theme.LightGray.rgb)
-                .borderRadius(4.px)
-                .cursor(if (value < max) Cursor.Pointer else Cursor.NotAllowed)
-                .onClick { if (value < max) onValueChange(value + 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            FaPlus(
-                modifier = Modifier.color(Colors.White),
-                size = IconSize.SM
-            )
-        }
-    }
+    )
 }

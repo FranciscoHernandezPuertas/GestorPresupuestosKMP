@@ -28,33 +28,43 @@ import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.models.Theme
-import org.dam.tfg.models.budget.Cubeta
+import org.dam.tfg.models.budget.Extra
 import org.dam.tfg.util.Constants.FONT_FAMILY
-import org.dam.tfg.util.Res
-import org.jetbrains.compose.web.attributes.selected
 import org.jetbrains.compose.web.css.LineStyle
-import org.jetbrains.compose.web.dom.Text
-import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.percent
+import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.Select
+import org.jetbrains.compose.web.dom.Text
+import org.jetbrains.compose.web.attributes.selected
 
 /**
- * Componente genérico para selección de elementos
+ * Componente genérico para manejar diferentes tipos de extras
+ *
+ * @param title Título de la sección
+ * @param description Descripción del componente
+ * @param imageSrc Ruta de la imagen a mostrar
+ * @param items Lista de elementos actuales
+ * @param itemOptions Lista de opciones disponibles para añadir
+ * @param onItemAdded Callback cuando se añade un nuevo elemento
+ * @param onQuantityChanged Callback cuando cambia la cantidad de un elemento
+ * @param onDeleteClick Callback cuando se elimina un elemento
+ * @param itemRenderer Composable para renderizar cada elemento
+ * @param extractDimensions Función para extraer dimensiones del tipo de elemento
  */
 @Composable
-fun <T> GenericItemsSection(
+fun <T : Extra> ExtraItemsSection(
     title: String,
     description: String,
     imageSrc: String,
     items: List<T>,
     itemOptions: List<String>,
-    onItemAdded: (String, Int, Double, Double) -> Unit,
+    onItemAdded: (String, Int) -> Unit,
     onQuantityChanged: (Int, Int) -> Unit,
     onDeleteClick: (Int) -> Unit,
     itemRenderer: @Composable (T, Int) -> Unit,
-    itemCreator: (String, Int, Double, Double) -> T
+    extractDimensions: (String) -> Pair<Double, Double> = { Pair(0.0, 0.0) }
 ) {
     val breakpoint = rememberBreakpoint()
     var selectedOption by remember { mutableStateOf("") }
@@ -136,14 +146,7 @@ fun <T> GenericItemsSection(
                     .cursor(Cursor.Pointer)
                     .onClick {
                         if (selectedOption.isNotEmpty()) {
-                            // Extraer dimensiones de manera robusta
-                            val dimPattern = "(\\d+)[xX×](\\d+)".toRegex()
-                            val match = dimPattern.find(selectedOption)
-
-                            val largo = match?.groupValues?.getOrNull(1)?.toDoubleOrNull() ?: 500.0
-                            val ancho = match?.groupValues?.getOrNull(2)?.toDoubleOrNull() ?: 400.0
-
-                            onItemAdded(selectedOption, 1, largo, ancho)
+                            onItemAdded(selectedOption, 1)
                             selectedOption = ""
                         }
                     }
@@ -238,163 +241,102 @@ fun <T> GenericItemsSection(
 }
 
 /**
- * Implementación específica para cubetas
+ * Implementación estándar del renderizador de elementos para la mayoría de extras
  */
 @Composable
-fun CubetasSection(
-    cubetas: List<Cubeta>,
-    cubetasPredefinidas: List<String>,
-    onCubetaAdded: (Cubeta) -> Unit,
-    onCantidadChanged: (Int, Int) -> Unit,
-    onDeleteClick: (Int) -> Unit
+fun StandardItemRenderer(
+    item: Extra,
+    index: Int,
+    quantitySelector: @Composable (Int, (Int) -> Unit) -> Unit,
+    onQuantityChanged: (Int, Int) -> Unit,
+    onDeleteClick: (Int) -> Unit,
+    getDimensionsText: (Extra) -> String = { "" }
 ) {
-    GenericItemsSection(
-        title = "Cubetas",
-        description = "Seleccione cubetas desde el desplegable superior",
-        imageSrc = Res.Image.cubeta,
-        items = cubetas,
-        itemOptions = cubetasPredefinidas,
-        onItemAdded = { tipo, numero, largo, ancho ->
-            onCubetaAdded(Cubeta(
-                tipo = tipo,
-                numero = numero,
-                largo = largo,
-                ancho = ancho
-            ))
-        },
-        onQuantityChanged = onCantidadChanged,
-        onDeleteClick = onDeleteClick,
-        itemCreator = { tipo, numero, largo, ancho ->
-            Cubeta(tipo = tipo, numero = numero, largo = largo, ancho = ancho)
-        },
-        itemRenderer = { cubeta, index ->
-            Row(
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .margin(bottom = 10.px)
+            .padding(16.px)
+            .backgroundColor(Theme.LightGray.rgb)
+            .borderRadius(8.px),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Datos del elemento
+        Column(
+            modifier = Modifier.fillMaxWidth(60.percent)
+        ) {
+            SpanText(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .margin(bottom = 10.px)
-                    .padding(16.px)
-                    .backgroundColor(Theme.LightGray.rgb)
-                    .borderRadius(8.px),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Datos de la cubeta
-                Column(
-                    modifier = Modifier.fillMaxWidth(60.percent)
-                ) {
-                    SpanText(
-                        modifier = Modifier
-                            .fontFamily(FONT_FAMILY)
-                            .fontSize(16.px)
-                            .fontWeight(FontWeight.Medium)
-                            .color(Theme.Secondary.rgb),
-                        text = cubeta.tipo
-                    )
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(16.px)
+                    .fontWeight(FontWeight.Medium)
+                    .color(Theme.Secondary.rgb),
+                text = item.tipo
+            )
 
-                    // Extraer dimensiones del nombre de la cubeta para mostrar
-                    val dimensiones = cubeta.tipo.replace(Regex(".*?(\\d+[xX×]\\d+([xX×]\\d+)?).*"), "$1")
-
-                    SpanText(
-                        modifier = Modifier
-                            .fontFamily(FONT_FAMILY)
-                            .fontSize(14.px)
-                            .color(Theme.Secondary.rgb),
-                        text = "Dimensiones: $dimensiones mm"
-                    )
-                }
-
-                Spacer()
-
-                // Selector de cantidad
-                QuantitySelector(
-                    value = cubeta.numero,
-                    onValueChange = { cantidad ->
-                        onCantidadChanged(index, cantidad)
-                    },
-                    min = 1,
-                    max = 5
-                )
-
-                // Botón de eliminar
-                Box(
+            // Mostrar dimensiones si están disponibles
+            val dimensionesText = getDimensionsText(item)
+            if (dimensionesText.isNotEmpty()) {
+                SpanText(
                     modifier = Modifier
-                        .margin(left = 15.px)
-                        .size(30.px)
-                        .backgroundColor(Colors.Red)
-                        .borderRadius(4.px)
-                        .cursor(Cursor.Pointer)
-                        .onClick { onDeleteClick(index) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    FaTrash(
-                        modifier = Modifier.color(Colors.White),
-                        size = IconSize.SM
-                    )
-                }
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(14.px)
+                        .color(Theme.Secondary.rgb),
+                    text = dimensionesText
+                )
             }
         }
-    )
+
+        Spacer()
+
+        // Selector de cantidad
+        quantitySelector(item.numero) { newQuantity ->
+            onQuantityChanged(index, newQuantity)
+        }
+
+
+        // Botón de eliminar
+        Box(
+            modifier = Modifier
+                .margin(left = 10.px)
+                .size(30.px)
+                .backgroundColor(Colors.Red)
+                .flexShrink(0)
+                .borderRadius(4.px)
+                .cursor(Cursor.Pointer)
+                .onClick { onDeleteClick(index) },
+            contentAlignment = Alignment.Center
+        ) {
+            FaTrash(
+                modifier = Modifier.color(Colors.White),
+                size = IconSize.SM
+            )
+        }
+    }
 }
 
 /**
- * QuantitySelector modularizado
+ * Función de utilidad para extraer dimensiones de un string
  */
-@Composable
-fun QuantitySelector(
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    min: Int = 1,
-    max: Int = 10
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(16.px)
-                .fontWeight(FontWeight.Normal)
-                .color(Theme.Secondary.rgb),
-            text = "Cantidad: "
-        )
-        Box(
-            modifier = Modifier
-                .size(30.px)
-                .backgroundColor(if (value > min) Theme.Primary.rgb else Theme.LightGray.rgb)
-                .borderRadius(4.px)
-                .cursor(if (value > min) Cursor.Pointer else Cursor.NotAllowed)
-                .onClick { if (value > min) onValueChange(value - 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            FaMinus(
-                modifier = Modifier.color(Colors.White),
-                size = IconSize.SM
-            )
-        }
+fun extractDimensions(text: String): Pair<Double, Double> {
+    val dimPattern = "(\\d+)[xX×](\\d+)".toRegex()
+    val match = dimPattern.find(text)
 
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(16.px)
-                .color(Theme.Secondary.rgb)
-                .margin(leftRight = 15.px)
-                .width(20.px)
-                .textAlign(TextAlign.Center),
-            text = value.toString()
-        )
+    val largo = match?.groupValues?.getOrNull(1)?.toDoubleOrNull() ?: 0.0
+    val ancho = match?.groupValues?.getOrNull(2)?.toDoubleOrNull() ?: 0.0
 
-        Box(
-            modifier = Modifier
-                .size(30.px)
-                .backgroundColor(if (value < max) Theme.Primary.rgb else Theme.LightGray.rgb)
-                .borderRadius(4.px)
-                .cursor(if (value < max) Cursor.Pointer else Cursor.NotAllowed)
-                .onClick { if (value < max) onValueChange(value + 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            FaPlus(
-                modifier = Modifier.color(Colors.White),
-                size = IconSize.SM
-            )
-        }
+    return Pair(largo, ancho)
+}
+
+// Función que crea un adaptador para QuantitySelector
+fun crearSelectorCantidad(min: Int, max: Int): @Composable (Int, (Int) -> Unit) -> Unit {
+    return { valor, onCambioValor ->
+        QuantitySelector(
+            value = valor,
+            onValueChange = onCambioValor,
+            min = min,
+            max = max,
+            showText = false // Opcional: no mostrar texto en el contexto de una lista
+        )
     }
 }
