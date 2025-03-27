@@ -1,6 +1,7 @@
 package org.dam.tfg.pages.budget.table
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ import com.varabyte.kobweb.compose.ui.modifiers.size
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.style.toModifier
 import org.dam.tfg.components.BudgetFooter
+import org.dam.tfg.models.budget.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.styles.LoginInputStyle
 import org.dam.tfg.util.BudgetManager
@@ -90,19 +92,83 @@ fun TableSelectorPageContent() {
     }
 }
 
-    @Composable
-    fun TableSelectorContent() {
-        var mesa by remember { mutableStateOf(BudgetManager.loadMesa()) }
-        val breakpoint = rememberBreakpoint()
-        var selectedTable by remember { mutableStateOf(1) }
+@Composable
+fun TableSelectorContent() {
+    // Inicializamos la mesa desde BudgetManager
+    var mesa by remember { mutableStateOf(BudgetManager.loadMesa()) }
+    val breakpoint = rememberBreakpoint()
+    var errorMessage by remember { mutableStateOf("") }
 
-        fun validateData(): Boolean {
-            return mesa.tramos.all { it.isValid() }
+    // Determinar el número de tramos basado en el tipo de mesa guardado
+    var selectedTable by remember {
+        val numTramos = when {
+            mesa.tipo.contains("4") -> 4
+            mesa.tipo.contains("3") -> 3
+            mesa.tipo.contains("2") -> 2
+            else -> 1
+        }
+        mutableStateOf(numTramos)
+    }
+
+    // Mapa para almacenar las dimensiones de los tramos
+    var dimensiones by remember {
+        val dims = mutableMapOf<String, String>()
+        // Inicializar con valores guardados o vacíos
+        for (i in 0 until 4) {
+            if (i < mesa.tramos.size) {
+                dims["largo${i+1}"] = mesa.tramos[i].largo.toString()
+                dims["ancho${i+1}"] = mesa.tramos[i].ancho.toString()
+            } else {
+                dims["largo${i+1}"] = ""
+                dims["ancho${i+1}"] = ""
+            }
+        }
+        mutableStateOf(dims)
+    }
+
+    fun validateData(): Boolean {
+        // Crear tramos actualizados basados en las dimensiones ingresadas
+        val nuevosTramos = (0 until selectedTable).map { i ->
+            val largo = dimensiones["largo${i+1}"]?.toDoubleOrNull() ?: 0.0
+            val ancho = dimensiones["ancho${i+1}"]?.toDoubleOrNull() ?: 0.0
+            Tramo(numero = i + 1, largo = largo, ancho = ancho)
         }
 
-        fun saveData() {
-            BudgetManager.updateMesa(mesa)
+        // Verificar que todos los tramos sean válidos
+        val isValid = nuevosTramos.all { it.isValid() }
+
+        if (!isValid) {
+            errorMessage = "Por favor, rellene correctamente todos los campos de dimensiones para la mesa de $selectedTable tramo${if (selectedTable > 1) "s" else ""}"
+        } else {
+            errorMessage = ""
         }
+
+        return isValid
+    }
+
+    fun saveData() {
+        // Primero guardamos el tipo de mesa
+        BudgetManager.setTipoMesa("Mesa ${selectedTable} tramo${if (selectedTable > 1) "s" else ""}")
+
+        // Convertimos las dimensiones en tramos
+        val tramosActualizados = mutableListOf<Tramo>()
+
+        // Validamos que tengamos los datos necesarios
+        for (i in 1..selectedTable) {
+            val largo = dimensiones["largo$i"]?.toDoubleOrNull() ?: 0.0
+            val ancho = dimensiones["ancho$i"]?.toDoubleOrNull() ?: 0.0
+
+            // Crear el tramo con sus dimensiones
+            tramosActualizados.add(Tramo(
+                numero = i,
+                largo = largo,
+                ancho = ancho
+            ))
+        }
+
+        // Guardar todos los tramos en el BudgetManager
+        BudgetManager.setTramos(tramosActualizados)
+    }
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -144,14 +210,26 @@ fun TableSelectorPageContent() {
                     Column(
                         modifier = Modifier.width(40.percent).padding(right = 20.px)
                     ) {
-                        RadioOptions(selectedTable) { selectedTable = it }
+                        RadioOptions(selectedTable) {
+                            selectedTable = it
+                            errorMessage = ""
+                        }
                     }
 
                     // Campos de dimensiones
                     Column(
                         modifier = Modifier.width(60.percent).padding(left = 20.px)
                     ) {
-                        DimensionFields(selectedTable)
+                        DimensionFields(
+                            selectedTable = selectedTable,
+                            dimensiones = dimensiones,
+                            onDimensionChange = { key, value ->
+                                errorMessage = ""
+                                dimensiones = dimensiones.toMutableMap().apply {
+                                    this[key] = value
+                                }
+                            }
+                        )
                     }
                 }
             } else {
@@ -175,7 +253,32 @@ fun TableSelectorPageContent() {
 
                     Spacer()
 
-                    DimensionFields(selectedTable)
+                    DimensionFields(selectedTable, dimensiones) { key, value ->
+                        dimensiones = dimensiones.toMutableMap().apply {
+                            this[key] = value
+                        }
+                    }
+                }
+            }
+
+            // Mensaje de error (solo se muestra cuando hay un error)
+            if (errorMessage.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(90.percent)
+                        .margin(top = 20.px)
+                        .backgroundColor(Colors.LightPink)
+                        .borderRadius(4.px)
+                        .padding(10.px),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SpanText(
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .color(Colors.Red),
+                        text = errorMessage
+                    )
                 }
             }
 
@@ -301,7 +404,11 @@ fun TableSelectorPageContent() {
     }
 
     @Composable
-    fun DimensionFields(selectedTable: Int) {
+    fun DimensionFields(
+        selectedTable: Int,
+        dimensiones: Map<String, String>,
+        onDimensionChange: (String, String) -> Unit
+    ) {
         val breakpoint = rememberBreakpoint()
         val isMobile = breakpoint <= Breakpoint.MD
 
@@ -325,18 +432,34 @@ fun TableSelectorPageContent() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                    DimensionField("largo1", "Largo tramo 1 (mm)")
+                    DimensionField(
+                        id = "largo1",
+                        label = "Largo tramo 1 (mm)",
+                        value = dimensiones["largo1"] ?: "",
+                        onValueChange = { onDimensionChange("largo1", it) }
+                    )
                 }
+
                 if (!isMobile) {
                     Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                        DimensionField("ancho1", "Ancho tramo 1 (mm)")
+                        DimensionField(
+                            id = "ancho1",
+                            label = "Ancho tramo 1 (mm)",
+                            value = dimensiones["ancho1"] ?: "",
+                            onValueChange = { onDimensionChange("ancho1", it) }
+                        )
                     }
                 }
             }
 
             if (isMobile) {
                 Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                    DimensionField("ancho1", "Ancho tramo 1 (mm)")
+                    DimensionField(
+                        id = "ancho1",
+                        label = "Ancho tramo 1 (mm)",
+                        value = dimensiones["ancho1"] ?: "",
+                        onValueChange = { onDimensionChange("ancho1", it) }
+                    )
                 }
             }
 
@@ -347,18 +470,24 @@ fun TableSelectorPageContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                        DimensionField("largo2", "Largo tramo 2 (mm)")
+                        DimensionField("largo2", "Largo tramo 2 (mm)", dimensiones["largo2"] ?: "") {
+                            onDimensionChange("largo2", it)
+                        }
                     }
                     if (!isMobile) {
                         Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                            DimensionField("ancho2", "Ancho tramo 2 (mm)")
+                            DimensionField("ancho2", "Ancho tramo 2 (mm)", dimensiones["ancho2"] ?: "") {
+                                onDimensionChange("ancho2", it)
+                            }
                         }
                     }
                 }
 
                 if (isMobile) {
                     Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                        DimensionField("ancho2", "Ancho tramo 2 (mm)")
+                        DimensionField("ancho2", "Ancho tramo 2 (mm)", dimensiones["ancho2"] ?: "") {
+                            onDimensionChange("ancho2", it)
+                        }
                     }
                 }
             }
@@ -370,18 +499,24 @@ fun TableSelectorPageContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                        DimensionField("largo3", "Largo tramo 3 (mm)")
+                        DimensionField("largo3", "Largo tramo 3 (mm)", dimensiones["largo3"] ?: "") {
+                            onDimensionChange("largo3", it)
+                        }
                     }
                     if (!isMobile) {
                         Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                            DimensionField("ancho3", "Ancho tramo 3 (mm)")
+                            DimensionField("ancho3", "Ancho tramo 3 (mm)", dimensiones["ancho3"] ?: "") {
+                                onDimensionChange("ancho3", it)
+                            }
                         }
                     }
                 }
 
                 if (isMobile) {
                     Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                        DimensionField("ancho3", "Ancho tramo 3 (mm)")
+                        DimensionField("ancho3", "Ancho tramo 3 (mm)", dimensiones["ancho3"] ?: "") {
+                            onDimensionChange("ancho3", it)
+                        }
                     }
                 }
             }
@@ -393,62 +528,77 @@ fun TableSelectorPageContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                        DimensionField("largo4", "Largo tramo 4 (mm)")
+                        DimensionField("largo4", "Largo tramo 4 (mm)", dimensiones["largo4"] ?: "") {
+                            onDimensionChange("largo4", it)
+                        }
                     }
                     if (!isMobile) {
                         Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                            DimensionField("ancho4", "Ancho tramo 4 (mm)")
+                            DimensionField("ancho4", "Ancho tramo 4 (mm)", dimensiones["ancho4"] ?: "") {
+                                onDimensionChange("ancho4", it)
+                            }
                         }
                     }
                 }
 
                 if (isMobile) {
                     Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                        DimensionField("ancho4", "Ancho tramo 4 (mm)")
+                        DimensionField("ancho4", "Ancho tramo 4 (mm)", dimensiones["ancho4"] ?: "") {
+                            onDimensionChange("ancho4", it)
+                        }
                     }
                 }
             }
         }
     }
 
-    @Composable
-    fun DimensionField(id: String, label: String) {
-        Column(
-            modifier = Modifier.fillMaxWidth().margin(bottom = 10.px)
+@Composable
+fun DimensionField(
+    id: String,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().margin(bottom = 10.px)
+    ) {
+        Label(
+            attrs = Modifier
+                .fontFamily(FONT_FAMILY)
+                .fontSize(14.px)
+                .color(Theme.Secondary.rgb)
+                .margin(bottom = 5.px)
+                .toAttrs(),
+            forId = id
         ) {
-            Label(
-                attrs = Modifier
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(14.px)
-                    .color(Theme.Secondary.rgb)
-                    .margin(bottom = 5.px)
-                    .toAttrs(),
-                forId = id
-            ) {
-                SpanText(text = label)
-            }
-
-            Input(
-                type = InputType.Number,
-                attrs = LoginInputStyle.toModifier()
-                    .id(id)
-                    .width(100.percent)
-                    .height(40.px)
-                    .padding(leftRight = 15.px)
-                    .backgroundColor(Colors.White)
-                    .fontSize(14.px)
-                    .fontFamily(FONT_FAMILY)
-                    .outline(
-                        width = 0.px,
-                        style = LineStyle.None,
-                        color = Colors.Transparent
-                    )
-                    .toAttrs {
-                        attr("placeholder", "0")
-                        attr("step", "1")
-                        attr("min", "0")
-                        attr("max", "10000")
-                    }
-            )
+            SpanText(text = label)
         }
+
+        Input(
+            type = InputType.Number,
+            attrs = LoginInputStyle.toModifier()
+                .id(id)
+                .width(100.percent)
+                .height(40.px)
+                .padding(leftRight = 15.px)
+                .backgroundColor(Colors.White)
+                .fontSize(14.px)
+                .fontFamily(FONT_FAMILY)
+                .outline(
+                    width = 0.px,
+                    style = LineStyle.None,
+                    color = Colors.Transparent
+                )
+                .toAttrs {
+                    attr("placeholder", "0")
+                    attr("step", "1")
+                    attr("min", "0")
+                    attr("max", "10000")
+                    attr("value", value)
+                    onChange { event ->
+                        onValueChange(event.target.value)
+                    }
+                }
+        )
     }
+}

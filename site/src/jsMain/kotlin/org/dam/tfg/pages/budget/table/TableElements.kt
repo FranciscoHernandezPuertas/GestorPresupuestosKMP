@@ -38,15 +38,14 @@ fun TableElementsPage() {
 
 @Composable
 fun TableElementsScreen() {
-    // Estado para almacenar los elementos seleccionados
-    var elementosGenerales by remember { mutableStateOf(listOf<ElementosGenerales>()) }
-    var cubetas by remember { mutableStateOf(listOf<Cubeta>()) }
+    var elementosGenerales by remember { mutableStateOf(emptyList<ElementosGenerales>()) }
+    var cubetas by remember { mutableStateOf(emptyList<Cubeta>()) }
 
-    // Estado para el elemento a eliminar
+    // Estados para diálogo de confirmación
     var showDeleteDialog by remember { mutableStateOf(false) }
     var elementoAEliminar by remember { mutableStateOf<Pair<String, Int>?>(null) }
 
-    // Elementos predefinidos
+    // Listas predefinidas (sin cambios)...
     val elementosGeneralesPredefinidos = remember {
         listOf(
             "Peto lateral",
@@ -90,13 +89,11 @@ fun TableElementsScreen() {
         )
     }
 
-    // Función para guardar datos
     fun saveData() {
         val extras = mutableListOf<Extra>().apply {
             addAll(elementosGenerales)
             addAll(cubetas)
         }
-
         try {
             val extrasJson = Json.encodeToString(extras)
             localStorage.setItem("table_elements", extrasJson)
@@ -105,33 +102,41 @@ fun TableElementsScreen() {
         }
     }
 
-    // Función para cargar datos
     LaunchedEffect(Unit) {
+        // Filtramos cubetas vacías para evitar la 'cubeta fantasma'
         try {
             val savedElementsJson = localStorage.getItem("table_elements")
-            if (savedElementsJson != null) {
+            if (!savedElementsJson.isNullOrBlank()) {
                 val savedElements = Json.decodeFromString<List<Extra>>(savedElementsJson)
 
-                // Filtrar y asignar elementos por tipo
-                elementosGenerales = savedElements.filterIsInstance<ElementosGenerales>()
-                cubetas = savedElements.filterIsInstance<Cubeta>()
+                elementosGenerales = savedElements
+                    .filterIsInstance<ElementosGenerales>()
+                    .filter { it.tipo.isNotBlank() }
+
+                cubetas = savedElements
+                    .filterIsInstance<Cubeta>()
+                    .filter { it.tipo.isNotBlank() }  // Evita cubetas de tipo vacío
             }
         } catch (e: Exception) {
             console.log("Error al cargar los elementos: ${e.message}")
         }
     }
 
-    // Función para validar datos
     fun validateData(): Boolean {
-        return true // Implementa validaciones específicas si es necesario
+        return true
     }
 
-    // Función para eliminar un elemento
+    // Aquí, cada vez que agreguemos o modifiquemos algo, llamamos a saveData()
     fun eliminarElemento(tipo: String, indice: Int) {
         when (tipo) {
-            "ElementosGenerales" -> elementosGenerales = elementosGenerales.filterIndexed { i, _ -> i != indice }
-            "Cubeta" -> cubetas = cubetas.filterIndexed { i, _ -> i != indice }
+            "ElementosGenerales" -> {
+                elementosGenerales = elementosGenerales.filterIndexed { i, _ -> i != indice }
+            }
+            "Cubeta" -> {
+                cubetas = cubetas.filterIndexed { i, _ -> i != indice }
+            }
         }
+        saveData()
     }
 
     Column(
@@ -140,10 +145,7 @@ fun TableElementsScreen() {
     ) {
         AppHeader(title = "Elementos de la mesa")
 
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth(90.percent)
@@ -163,15 +165,17 @@ fun TableElementsScreen() {
 
                 // Sección de Elementos Generales
                 ElementosGeneralesSection(
-                    elementosGenerales,
-                    elementosGeneralesPredefinidos,
+                    elementosGenerales = elementosGenerales,
+                    elementosPredefinidos = elementosGeneralesPredefinidos,
                     onElementoAdded = { elemento ->
                         elementosGenerales = elementosGenerales + elemento
+                        saveData() // Guardar enseguida
                     },
                     onCantidadChanged = { index, cantidad ->
                         elementosGenerales = elementosGenerales.mapIndexed { i, elem ->
                             if (i == index) elem.copy(numero = cantidad) else elem
                         }
+                        saveData() // Guardar enseguida
                     },
                     onDeleteClick = { index ->
                         elementoAEliminar = Pair("ElementosGenerales", index)
@@ -181,15 +185,17 @@ fun TableElementsScreen() {
 
                 // Sección de Cubetas
                 CubetasSection(
-                    cubetas,
-                    cubetasPredefinidas,
+                    cubetas = cubetas,
+                    cubetasPredefinidas = cubetasPredefinidas,
                     onCubetaAdded = { cubeta ->
                         cubetas = cubetas + cubeta
+                        saveData() // Guardar enseguida
                     },
                     onCantidadChanged = { index, cantidad ->
                         cubetas = cubetas.mapIndexed { i, elem ->
                             if (i == index) elem.copy(numero = cantidad) else elem
                         }
+                        saveData() // Guardar enseguida
                     },
                     onDeleteClick = { index ->
                         elementoAEliminar = Pair("Cubeta", index)
@@ -201,16 +207,14 @@ fun TableElementsScreen() {
             }
         }
 
-        // Footer de navegación
         BudgetFooter(
             previousScreen = Screen.TableSelector,
-            nextScreen = Screen.Home, // Cambiar a la siguiente pantalla cuando exista
+            nextScreen = Screen.Home,
             validateData = { validateData() },
             saveData = { saveData() }
         )
     }
 
-    // Diálogo de confirmación para eliminar
     if (showDeleteDialog && elementoAEliminar != null) {
         ConfirmDialog(
             message = "¿Está seguro que desea eliminar este elemento?",
@@ -331,7 +335,16 @@ fun ElementosGeneralesSection(
                             .border(0.px, LineStyle.None, Colors.Transparent)
                             .cursor(Cursor.Pointer)
                             .onClick {
-                                onElementoAdded(ElementosGenerales(tipo = "ElementosGenerales", numero = 1))
+                                // Verificar si ya existe este elemento en la lista
+                                val elementoExistente = elementosGenerales.find { it.tipo == elemento }
+                                if (elementoExistente != null) {
+                                    // Si existe, actualizar su cantidad
+                                    val index = elementosGenerales.indexOf(elementoExistente)
+                                    onCantidadChanged(index, elementoExistente.numero + 1)
+                                } else {
+                                    // Si no existe, añadir nuevo
+                                    onElementoAdded(ElementosGenerales(tipo = elemento, numero = 1))
+                                }
                             }
                             .toAttrs()
                     ) {
@@ -369,7 +382,7 @@ fun ElementosGeneralesSection(
                             .fontFamily(FONT_FAMILY)
                             .fontSize(16.px)
                             .color(Theme.Secondary.rgb),
-                        text = elementosPredefinidos[index % elementosPredefinidos.size]
+                        text = elemento.tipo // Usar el tipo como nombre específico del elemento
                     )
 
                     Spacer()
@@ -389,6 +402,7 @@ fun ElementosGeneralesSection(
                         modifier = Modifier
                             .margin(left = 15.px)
                             .size(30.px)
+                            .flexShrink(0)
                             .backgroundColor(Colors.Red)
                             .borderRadius(4.px)
                             .cursor(Cursor.Pointer)
@@ -413,7 +427,6 @@ fun CubetasSection(
     onCubetaAdded: (Cubeta) -> Unit,
     onCantidadChanged: (Int, Int) -> Unit,
     onDeleteClick: (Int) -> Unit
-
 ) {
     val breakpoint = rememberBreakpoint()
     var cubetaSeleccionada by remember { mutableStateOf("") }
@@ -495,17 +508,28 @@ fun CubetasSection(
                     .cursor(Cursor.Pointer)
                     .onClick {
                         if (cubetaSeleccionada.isNotEmpty()) {
-                            // Extraer dimensiones aproximadas del texto
-                            val dims = cubetaSeleccionada.split(" ")[1].split("x")
-                            val largo = dims.getOrNull(0)?.toDoubleOrNull() ?: 500.0
-                            val ancho = dims.getOrNull(1)?.toDoubleOrNull() ?: 400.0
-
-                            onCubetaAdded(Cubeta(
-                                tipo = "Cubeta",
-                                numero = 1,
-                                largo = largo,
-                                ancho = ancho
-                            ))
+                            // Verificar si ya existe esta cubeta
+                            val cubetaExistente = cubetas.find { it.tipo == cubetaSeleccionada }
+                            if (cubetaExistente != null) {
+                                // Si existe, incrementar cantidad
+                                val index = cubetas.indexOf(cubetaExistente)
+                                onCantidadChanged(index, cubetaExistente.numero + 1)
+                            } else {
+                                // Extraer dimensiones de manera más robusta
+                                val dimPattern = "(\\d+)[xX×](\\d+)".toRegex()
+                                val match = dimPattern.find(cubetaSeleccionada)
+                                
+                                val largo = match?.groupValues?.getOrNull(1)?.toDoubleOrNull() ?: 500.0
+                                val ancho = match?.groupValues?.getOrNull(2)?.toDoubleOrNull() ?: 400.0
+                                
+                                // Añadir nueva cubeta con el nombre específico
+                                onCubetaAdded(Cubeta(
+                                    tipo = cubetaSeleccionada,
+                                    numero = 1,
+                                    largo = largo,
+                                    ancho = ancho
+                                ))
+                            }
                             cubetaSeleccionada = ""
                         }
                     }
@@ -515,83 +539,146 @@ fun CubetasSection(
             }
         }
 
-        // Cubetas añadidas
-        if (cubetas.isNotEmpty()) {
-            SpanText(
+        // Diseño de dos columnas (imagen + listado)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .styleModifier {
+                    if (isMobile) {
+                        property("flex-direction", "column")
+                    }
+                },
+            verticalAlignment = Alignment.Top
+        ) {
+            // Columna izquierda: Imagen de cubeta (siempre visible)
+            Column(
                 modifier = Modifier
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(18.px)
-                    .fontWeight(FontWeight.Medium)
-                    .color(Theme.Secondary.rgb)
-                    .margin(bottom = 10.px, top = 20.px),
-                text = "Cubetas añadidas"
-            )
-
-            cubetas.forEachIndexed { index, cubeta ->
-                Row(
+                    .fillMaxWidth(if (isMobile) 100.percent else 25.percent)
+                    .margin(bottom = if (isMobile) 20.px else 0.px)
+                    .padding(16.px),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .margin(bottom = 10.px)
-                        .padding(10.px)
-                        .backgroundColor(Theme.LightGray.rgb)
-                        .borderRadius(4.px),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Imagen de la cubeta
-                    Image(
+                        .size(150.px)
+                        .margin(bottom = 16.px),
+                    src = Res.Image.cubeta,
+                    alt = "Cubeta"
+                )
+                
+                // Texto informativo debajo de la imagen
+                SpanText(
+                    modifier = Modifier
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(14.px)
+                        .fontStyle(FontStyle.Italic)
+                        .color(Theme.Secondary.rgb)
+                        .textAlign(TextAlign.Center),
+                    text = "Seleccione cubetas desde el desplegable superior y haga click en el botón de añadir"
+                )
+            }
+
+            // Columna derecha: Listado de cubetas
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(if (isMobile) 100.percent else 75.percent)
+                    .padding(left = if (isMobile) 0.px else 20.px)
+            ) {
+                // Solo mostrar el contenido si hay cubetas
+                if (cubetas.isNotEmpty()) {
+                    SpanText(
                         modifier = Modifier
-                            .size(60.px)
-                            .margin(right = 15.px),
-                        src = Res.Image.cubeta,
-                        alt = "Cubeta"
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(18.px)
+                            .fontWeight(FontWeight.Medium)
+                            .color(Theme.Secondary.rgb)
+                            .margin(bottom = 10.px),
+                        text = "Cubetas seleccionadas"
                     )
 
-                    // Datos de la cubeta
-                    Column {
+                    cubetas.forEachIndexed { index, cubeta ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .margin(bottom = 10.px)
+                                .padding(16.px)
+                                .backgroundColor(Theme.LightGray.rgb)
+                                .borderRadius(8.px),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Datos de la cubeta
+                            Column(
+                                modifier = Modifier.fillMaxWidth(60.percent)
+                            ) {
+                                SpanText(
+                                    modifier = Modifier
+                                        .fontFamily(FONT_FAMILY)
+                                        .fontSize(16.px)
+                                        .fontWeight(FontWeight.Medium)
+                                        .color(Theme.Secondary.rgb),
+                                    text = cubeta.tipo
+                                )
+
+                                // Extraer dimensiones del nombre de la cubeta para mostrar
+                                val dimensiones = cubeta.tipo.replace(Regex(".*?(\\d+[xX×]\\d+([xX×]\\d+)?).*"), "$1")
+                                
+                                SpanText(
+                                    modifier = Modifier
+                                        .fontFamily(FONT_FAMILY)
+                                        .fontSize(14.px)
+                                        .color(Theme.Secondary.rgb),
+                                    text = "Dimensiones: $dimensiones mm"
+                                )
+                            }
+
+                            Spacer()
+
+                            // Selector de cantidad
+                            QuantitySelector(
+                                value = cubeta.numero,
+                                onValueChange = { cantidad ->
+                                    onCantidadChanged(index, cantidad)
+                                },
+                                min = 1,
+                                max = 5
+                            )
+
+                            // Botón de eliminar
+                            Box(
+                                modifier = Modifier
+                                    .margin(left = 15.px)
+                                    .size(30.px)
+                                    .backgroundColor(Colors.Red)
+                                    .flexShrink(0)
+                                    .borderRadius(4.px)
+                                    .cursor(Cursor.Pointer)
+                                    .onClick { onDeleteClick(index) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                FaTrash(
+                                    modifier = Modifier.color(Colors.White),
+                                    size = IconSize.SM
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Mensaje cuando no hay cubetas seleccionadas
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.px)
+                            .backgroundColor(Theme.LightGray.rgb)
+                            .borderRadius(8.px),
+                        contentAlignment = Alignment.Center
+                    ) {
                         SpanText(
                             modifier = Modifier
                                 .fontFamily(FONT_FAMILY)
                                 .fontSize(16.px)
-                                .fontWeight(FontWeight.Medium)
-                                .color(Theme.Secondary.rgb),
-                            text = cubetasPredefinidas[index % cubetasPredefinidas.size]
-                        )
-
-                        SpanText(
-                            modifier = Modifier
-                                .fontFamily(FONT_FAMILY)
-                                .fontSize(14.px)
-                                .color(Theme.Secondary.rgb),
-                            text = "Dimensiones: ${cubeta.largo.toInt()}x${cubeta.ancho.toInt()} mm"
-                        )
-                    }
-
-                    Spacer()
-
-                    // Selector de cantidad
-                    QuantitySelector(
-                        value = cubeta.numero,
-                        onValueChange = { cantidad ->
-                            onCantidadChanged(index, cantidad)
-                        },
-                        min = 1,
-                        max = 5
-                    )
-
-                    // Botón de eliminar
-                    Box(
-                        modifier = Modifier
-                            .margin(left = 15.px)
-                            .size(30.px)
-                            .backgroundColor(Colors.Red)
-                            .borderRadius(4.px)
-                            .cursor(Cursor.Pointer)
-                            .onClick { onDeleteClick(index) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        FaTrash(
-                            modifier = Modifier.color(Colors.White),
-                            size = IconSize.SM
+                                .color(Theme.Secondary.rgb)
+                                .padding(20.px),
+                            text = "No hay cubetas seleccionadas"
                         )
                     }
                 }

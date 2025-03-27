@@ -46,6 +46,7 @@ import com.varabyte.kobweb.compose.ui.modifiers.top
 import com.varabyte.kobweb.silk.components.icons.fa.FaArrowLeft
 import com.varabyte.kobweb.silk.components.icons.fa.FaArrowRight
 import com.varabyte.kobweb.silk.components.icons.fa.FaXmark
+import org.dam.tfg.util.BudgetManager
 
 @Composable
 fun BudgetFooter(
@@ -139,6 +140,7 @@ fun BudgetFooter(
             message = "¿Está seguro que desea cancelar? Se perderán todos los datos introducidos.",
             onConfirm = {
                 showConfirmDialog = false
+                BudgetManager.resetBudgetData() // Resetear los datos
                 context.router.navigateTo(Screen.Home.route)
             },
             onDismiss = { showConfirmDialog = false }

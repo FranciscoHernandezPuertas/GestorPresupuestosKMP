@@ -31,6 +31,7 @@ import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.returnUserType
 import org.dam.tfg.models.Theme
 import org.dam.tfg.navigation.Screen
+import org.dam.tfg.util.BudgetManager
 import org.dam.tfg.util.Constants
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Res
@@ -45,6 +46,9 @@ import org.w3c.dom.get
 @Composable
 fun HomePage() {
     isUserLoggedInCheck {
+        LaunchedEffect(Unit) {
+            BudgetManager.resetBudgetData()
+        }
         HomePageContent()
     }
 }

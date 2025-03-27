@@ -48,6 +48,7 @@ sealed class Extra {
 @Serializable
 data class ElementosGenerales (
     override val tipo: String = "ElementosGenerales",
+    val nombre: String = "",
     override val numero: Int = 0,
     override val largo: Double? = null,
     override val ancho: Double? = null,
