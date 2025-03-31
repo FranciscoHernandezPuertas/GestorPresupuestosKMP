@@ -52,6 +52,7 @@ import com.varabyte.kobweb.compose.ui.modifiers.size
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.style.toModifier
 import org.dam.tfg.components.BudgetFooter
+import org.dam.tfg.models.DimensionLimits
 import org.dam.tfg.models.budget.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.styles.LoginInputStyle
@@ -100,6 +101,16 @@ fun TableSelectorContent() {
     val breakpoint = rememberBreakpoint()
     var errorMessage by remember { mutableStateOf("") }
 
+    // Límites por defecto y específicos para cada tramo
+    val limitesTramos = mapOf(
+        // Tramo 1 puede tener dimensiones diferentes
+        1 to DimensionLimits(minLargo = 800.0, maxLargo = 3000.0, minAncho = 600.0, maxAncho = 1200.0),
+        // Tramos 2-4 comparten los mismos límites en este ejemplo
+        2 to DimensionLimits(minLargo = 700.0, maxLargo = 2800.0, minAncho = 600.0, maxAncho = 1000.0),
+        3 to DimensionLimits(minLargo = 700.0, maxLargo = 2800.0, minAncho = 600.0, maxAncho = 1000.0),
+        4 to DimensionLimits(minLargo = 700.0, maxLargo = 2800.0, minAncho = 600.0, maxAncho = 1000.0)
+    )
+
     // Determinar el número de tramos basado en el tipo de mesa guardado
     var selectedTable by remember {
         val numTramos = when {
@@ -130,21 +141,27 @@ fun TableSelectorContent() {
     fun validateData(): Boolean {
         // Crear tramos actualizados basados en las dimensiones ingresadas
         val nuevosTramos = (0 until selectedTable).map { i ->
-            val largo = dimensiones["largo${i+1}"]?.toDoubleOrNull() ?: 0.0
-            val ancho = dimensiones["ancho${i+1}"]?.toDoubleOrNull() ?: 0.0
-            Tramo(numero = i + 1, largo = largo, ancho = ancho)
+            val tramoNum = i + 1
+            val limits = limitesTramos[tramoNum] ?:
+            DimensionLimits(minLargo = 0.0, maxLargo = 10000.0, minAncho = 0.0, maxAncho = 10000.0)
+
+            val largo = dimensiones["largo$tramoNum"]?.toDoubleOrNull() ?: 0.0
+            val ancho = dimensiones["ancho$tramoNum"]?.toDoubleOrNull() ?: 0.0
+
+            // Validar contra los límites
+            if (largo < limits.minLargo || largo > limits.maxLargo ||
+                ancho < limits.minAncho || ancho > limits.maxAncho) {
+                errorMessage = "Tramo $tramoNum: Largo debe estar entre ${limits.minLargo}mm y ${limits.maxLargo}mm, " +
+                        "Ancho entre ${limits.minAncho}mm y ${limits.maxAncho}mm"
+                return false
+            }
+
+            Tramo(numero = tramoNum, largo = largo, ancho = ancho)
         }
 
-        // Verificar que todos los tramos sean válidos
-        val isValid = nuevosTramos.all { it.isValid() }
-
-        if (!isValid) {
-            errorMessage = "Por favor, rellene correctamente todos los campos de dimensiones para la mesa de $selectedTable tramo${if (selectedTable > 1) "s" else ""}"
-        } else {
-            errorMessage = ""
-        }
-
-        return isValid
+        // Si llegamos aquí, todos los tramos son válidos
+        errorMessage = ""
+        return true
     }
 
     fun saveData() {
@@ -179,7 +196,7 @@ fun TableSelectorContent() {
 
             SpanText(
                 modifier = Modifier
-                    .margin(top = 40.px, bottom = 30.px)
+                    .margin(top = 20.px, bottom = 30.px)
                     .fontFamily(FONT_FAMILY)
                     .fontSize(24.px)
                     .fontWeight(FontWeight.Bold)
@@ -194,7 +211,7 @@ fun TableSelectorContent() {
                     modifier = Modifier
                         .fillMaxWidth(80.percent)
                         .maxWidth(1200.px)
-                        .height(400.px)
+                        .height(460.px)
                         .margin(bottom = 2.px)
                         .padding(20.px)
                         .backgroundColor(Colors.White)
@@ -224,6 +241,7 @@ fun TableSelectorContent() {
                         DimensionFields(
                             selectedTable = selectedTable,
                             dimensiones = dimensiones,
+                            limitesTramos = limitesTramos,
                             onDimensionChange = { key, value ->
                                 errorMessage = ""
                                 dimensiones = dimensiones.toMutableMap().apply {
@@ -254,11 +272,17 @@ fun TableSelectorContent() {
 
                     Spacer()
 
-                    DimensionFields(selectedTable, dimensiones) { key, value ->
-                        dimensiones = dimensiones.toMutableMap().apply {
-                            this[key] = value
+                    DimensionFields(
+                        selectedTable = selectedTable,
+                        dimensiones = dimensiones,
+                        limitesTramos = limitesTramos,
+                        onDimensionChange = { key, value ->
+                            errorMessage = ""
+                            dimensiones = dimensiones.toMutableMap().apply {
+                                this[key] = value
+                            }
                         }
-                    }
+                    )
                 }
             }
 
@@ -408,7 +432,8 @@ fun TableSelectorContent() {
     fun DimensionFields(
         selectedTable: Int,
         dimensiones: Map<String, String>,
-        onDimensionChange: (String, String) -> Unit
+        onDimensionChange: (String, String) -> Unit,
+        limitesTramos: Map<Int, DimensionLimits>
     ) {
         val breakpoint = rememberBreakpoint()
         val isMobile = breakpoint <= Breakpoint.MD
@@ -426,8 +451,8 @@ fun TableSelectorContent() {
                     .margin(bottom = 10.px),
                 text = "Dimensiones de la encimera:"
             )
-
-            // Sección 1 (siempre visible)
+            // Tramo 1 (siempre visible)
+            val limiteTramo1 = limitesTramos[1]
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -437,6 +462,8 @@ fun TableSelectorContent() {
                         id = "largo1",
                         label = "Largo tramo 1 (mm)",
                         value = dimensiones["largo1"] ?: "",
+                        minValue = limiteTramo1?.minLargo ?: 0.0,
+                        maxValue = limiteTramo1?.maxLargo ?: 10000.0,
                         onValueChange = { onDimensionChange("largo1", it) }
                     )
                 }
@@ -447,6 +474,8 @@ fun TableSelectorContent() {
                             id = "ancho1",
                             label = "Ancho tramo 1 (mm)",
                             value = dimensiones["ancho1"] ?: "",
+                            minValue = limiteTramo1?.minAncho ?: 0.0,
+                            maxValue = limiteTramo1?.maxAncho ?: 10000.0,
                             onValueChange = { onDimensionChange("ancho1", it) }
                         )
                     }
@@ -459,25 +488,27 @@ fun TableSelectorContent() {
                         id = "ancho1",
                         label = "Ancho tramo 1 (mm)",
                         value = dimensiones["ancho1"] ?: "",
+                        minValue = limiteTramo1?.minAncho ?: 0.0,
+                        maxValue = limiteTramo1?.maxAncho ?: 10000.0,
                         onValueChange = { onDimensionChange("ancho1", it) }
                     )
                 }
             }
 
             // Sección 2 (visible si selectedTable >= 2)
+            val limiteTramo2 = limitesTramos[2]
             if (selectedTable >= 2) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                        DimensionField("largo2", "Largo tramo 2 (mm)", dimensiones["largo2"] ?: "") {
+                    Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {                        DimensionField("largo2", "Largo tramo 2 (mm)", dimensiones["largo2"] ?: "", minValue = limiteTramo2?.minLargo ?: 0.0, maxValue = limiteTramo2?.maxLargo ?: 10000.0) {
                             onDimensionChange("largo2", it)
                         }
                     }
                     if (!isMobile) {
                         Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                            DimensionField("ancho2", "Ancho tramo 2 (mm)", dimensiones["ancho2"] ?: "") {
+                            DimensionField("ancho2", "Ancho tramo 2 (mm)", dimensiones["ancho2"] ?: "", minValue = limiteTramo2?.minAncho ?: 0.0, maxValue = limiteTramo2?.maxAncho ?: 10000.0) {
                                 onDimensionChange("ancho2", it)
                             }
                         }
@@ -486,7 +517,7 @@ fun TableSelectorContent() {
 
                 if (isMobile) {
                     Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                        DimensionField("ancho2", "Ancho tramo 2 (mm)", dimensiones["ancho2"] ?: "") {
+                        DimensionField("ancho2", "Ancho tramo 2 (mm)", dimensiones["ancho2"] ?: "", minValue = limiteTramo2?.minAncho ?: 0.0, maxValue = limiteTramo2?.maxAncho ?: 10000.0) {
                             onDimensionChange("ancho2", it)
                         }
                     }
@@ -494,19 +525,20 @@ fun TableSelectorContent() {
             }
 
             // Sección 3 (visible si selectedTable >= 3)
+            val limiteTramo3 = limitesTramos[3]
             if (selectedTable >= 3) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                        DimensionField("largo3", "Largo tramo 3 (mm)", dimensiones["largo3"] ?: "") {
+                        DimensionField("largo3", "Largo tramo 3 (mm)", dimensiones["largo3"] ?: "", minValue = limiteTramo3?.minLargo ?: 0.0, maxValue = limiteTramo3?.maxLargo ?: 10000.0) {
                             onDimensionChange("largo3", it)
                         }
                     }
                     if (!isMobile) {
                         Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                            DimensionField("ancho3", "Ancho tramo 3 (mm)", dimensiones["ancho3"] ?: "") {
+                            DimensionField("ancho3", "Ancho tramo 3 (mm)", dimensiones["ancho3"] ?: "", minValue = limiteTramo3?.minAncho ?: 0.0, maxValue = limiteTramo3?.maxAncho ?: 10000.0) {
                                 onDimensionChange("ancho3", it)
                             }
                         }
@@ -515,7 +547,7 @@ fun TableSelectorContent() {
 
                 if (isMobile) {
                     Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                        DimensionField("ancho3", "Ancho tramo 3 (mm)", dimensiones["ancho3"] ?: "") {
+                        DimensionField("ancho3", "Ancho tramo 3 (mm)", dimensiones["ancho3"] ?: "", minValue = limiteTramo3?.minAncho ?: 0.0, maxValue = limiteTramo3?.maxAncho ?: 10000.0) {
                             onDimensionChange("ancho3", it)
                         }
                     }
@@ -523,19 +555,20 @@ fun TableSelectorContent() {
             }
 
             // Sección 4 (visible si selectedTable == 4)
+            val limiteTramo4 = limitesTramos[4]
             if (selectedTable >= 4) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.width(if (isMobile) 100.percent else 50.percent).padding(right = 10.px)) {
-                        DimensionField("largo4", "Largo tramo 4 (mm)", dimensiones["largo4"] ?: "") {
+                        DimensionField("largo4", "Largo tramo 4 (mm)", dimensiones["largo4"] ?: "", minValue = limiteTramo4?.minLargo ?: 0.0, maxValue = limiteTramo4?.maxLargo ?: 10000.0) {
                             onDimensionChange("largo4", it)
                         }
                     }
                     if (!isMobile) {
                         Column(modifier = Modifier.width(50.percent).padding(left = 10.px)) {
-                            DimensionField("ancho4", "Ancho tramo 4 (mm)", dimensiones["ancho4"] ?: "") {
+                            DimensionField("ancho4", "Ancho tramo 4 (mm)", dimensiones["ancho4"] ?: "", minValue = limiteTramo4?.minAncho ?: 0.0, maxValue = limiteTramo4?.maxAncho ?: 10000.0) {
                                 onDimensionChange("ancho4", it)
                             }
                         }
@@ -544,7 +577,7 @@ fun TableSelectorContent() {
 
                 if (isMobile) {
                     Column(modifier = Modifier.width(100.percent).padding(right = 10.px)) {
-                        DimensionField("ancho4", "Ancho tramo 4 (mm)", dimensiones["ancho4"] ?: "") {
+                        DimensionField("ancho4", "Ancho tramo 4 (mm)", dimensiones["ancho4"] ?: "", minValue = limiteTramo4?.minAncho ?: 0.0, maxValue = limiteTramo4?.maxAncho ?: 10000.0) {
                             onDimensionChange("ancho4", it)
                         }
                     }
@@ -558,6 +591,8 @@ fun DimensionField(
     id: String,
     label: String,
     value: String,
+    minValue: Double = 0.0,
+    maxValue: Double = 10000.0,
     onValueChange: (String) -> Unit
 ) {
     Column(
@@ -572,7 +607,30 @@ fun DimensionField(
                 .toAttrs(),
             forId = id
         ) {
-            SpanText(text = label)
+            SpanText(
+                text = label,
+                modifier = Modifier
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(14.px)
+                    .color(Theme.Secondary.rgb)
+            )
+            Spacer()
+            SpanText(
+                text = "Mínimo permitido: ${minValue.toInt()}mm",
+                modifier = Modifier
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(12.px)
+                    .color(Theme.Secondary.rgb)
+                    .margin(top = 2.px)
+            )
+            SpanText(
+                text = "   Máximo permitido: ${maxValue.toInt()}mm",
+                modifier = Modifier
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(12.px)
+                    .color(Theme.Secondary.rgb)
+                    .margin(top = 2.px)
+            )
         }
 
         Input(
@@ -585,10 +643,10 @@ fun DimensionField(
                 .fontSize(14.px)
                 .fontFamily(FONT_FAMILY)
                 .toAttrs {
-                    attr("placeholder", "0")
+                    attr("placeholder", minValue.toInt().toString())
                     attr("step", "1")
-                    attr("min", "0")
-                    attr("max", "10000")
+                    attr("min", minValue.toInt().toString())
+                    attr("max", maxValue.toInt().toString())
                     attr("value", value)
                     onChange { event ->
                         onValueChange(event.target.value)
