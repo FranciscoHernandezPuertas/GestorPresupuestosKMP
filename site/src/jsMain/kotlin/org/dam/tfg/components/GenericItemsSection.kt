@@ -29,6 +29,7 @@ import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.budget.Extra
+import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.jetbrains.compose.web.css.LineStyle
 import org.jetbrains.compose.web.css.percent
@@ -59,15 +60,15 @@ fun <T : Extra> ExtraItemsSection(
     description: String,
     imageSrc: String,
     items: List<T>,
-    itemOptions: List<String>,
+    itemOptions: List<ItemWithLimits>, // Cambiado de List<String> a List<ItemWithLimits>
     onItemAdded: (String, Int) -> Unit,
     onQuantityChanged: (Int, Int) -> Unit,
     onDeleteClick: (Int) -> Unit,
-    itemRenderer: @Composable (T, Int) -> Unit,
+    itemRenderer: @Composable (T, Int, ItemWithLimits?) -> Unit, // Añadido el parámetro ItemWithLimits
     extractDimensions: (String) -> Pair<Double, Double> = { Pair(0.0, 0.0) }
 ) {
     val breakpoint = rememberBreakpoint()
-    var selectedOption by remember { mutableStateOf("") }
+    var selectedOptionId by remember { mutableStateOf("") }
     val isMobile = breakpoint <= Breakpoint.MD
 
     Column(
@@ -107,14 +108,14 @@ fun <T : Extra> ExtraItemsSection(
                     .fontFamily(FONT_FAMILY)
                     .toAttrs {
                         onChange { event ->
-                            selectedOption = event.target.value
+                            selectedOptionId = event.target.value
                         }
                     }
             ) {
                 Option(
                     value = "",
                     attrs = Modifier.toAttrs {
-                        if (selectedOption.isEmpty()) {
+                        if (selectedOptionId.isEmpty()) {
                             selected()
                         }
                     }
@@ -124,14 +125,14 @@ fun <T : Extra> ExtraItemsSection(
 
                 itemOptions.forEach { option ->
                     Option(
-                        value = option,
+                        value = option.id,
                         attrs = Modifier.toAttrs {
-                            if (selectedOption == option) {
+                            if (selectedOptionId == option.id) {
                                 selected()
                             }
                         }
                     ) {
-                        Text(option)
+                        Text(option.name)
                     }
                 }
             }
@@ -145,9 +146,13 @@ fun <T : Extra> ExtraItemsSection(
                     .border(0.px, LineStyle.None, Colors.Transparent)
                     .cursor(Cursor.Pointer)
                     .onClick {
-                        if (selectedOption.isNotEmpty()) {
-                            onItemAdded(selectedOption, 1)
-                            selectedOption = ""
+                        if (selectedOptionId.isNotEmpty()) {
+                            // Buscar el elemento seleccionado
+                            val selectedItem = itemOptions.find { it.id == selectedOptionId }
+                            if (selectedItem != null) {
+                                onItemAdded(selectedItem.name, selectedItem.initialQuantity)
+                                selectedOptionId = ""
+                            }
                         }
                     }
                     .toAttrs()
@@ -213,7 +218,9 @@ fun <T : Extra> ExtraItemsSection(
                     )
 
                     items.forEachIndexed { index, item ->
-                        itemRenderer(item, index)
+                        // Buscar los límites correspondientes a este item
+                        val itemLimit = itemOptions.find { it.name == item.tipo }
+                        itemRenderer(item, index, itemLimit)
                     }
                 } else {
                     // Mensaje cuando no hay elementos seleccionados
@@ -247,7 +254,7 @@ fun <T : Extra> ExtraItemsSection(
 fun StandardItemRenderer(
     item: Extra,
     index: Int,
-    quantitySelector: @Composable (Int, (Int) -> Unit) -> Unit,
+    itemWithLimits: ItemWithLimits?, // Añadido el parámetro ItemWithLimits
     onQuantityChanged: (Int, Int) -> Unit,
     onDeleteClick: (Int) -> Unit,
     getDimensionsText: (Extra) -> String = { "" }
@@ -289,11 +296,11 @@ fun StandardItemRenderer(
 
         Spacer()
 
-        // Selector de cantidad
-        quantitySelector(item.numero) { newQuantity ->
+        // Selector de cantidad con los límites específicos del item
+        val selectorCantidad = crearSelectorCantidad(itemWithLimits)
+        selectorCantidad(item.numero) { newQuantity ->
             onQuantityChanged(index, newQuantity)
         }
-
 
         // Botón de eliminar
         Box(
@@ -328,15 +335,18 @@ fun extractDimensions(text: String): Pair<Double, Double> {
     return Pair(largo, ancho)
 }
 
-// Función que crea un adaptador para QuantitySelector
-fun crearSelectorCantidad(min: Int, max: Int): @Composable (Int, (Int) -> Unit) -> Unit {
+// Función actualizada para crear un selector de cantidad con límites
+fun crearSelectorCantidad(itemWithLimits: ItemWithLimits?): @Composable (Int, (Int) -> Unit) -> Unit {
     return { valor, onCambioValor ->
+        val min = itemWithLimits?.minQuantity ?: 0
+        val max = itemWithLimits?.maxQuantity ?: 10
+
         QuantitySelector(
             value = valor,
             onValueChange = onCambioValor,
             min = min,
             max = max,
-            showText = false // Opcional: no mostrar texto en el contexto de una lista
+            showText = false
         )
     }
 }
