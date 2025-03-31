@@ -174,7 +174,8 @@ data class Cubeta(
     override val ancho: Double = 0.0,
     override val alto: Double? = null,
     override val precio: Double = 0.0,
-    override var error: String = ""
+    override var error: String = "",
+    val maxQuantity: Int
 ) : Extra() {
     override fun calcularPrecio(): Double {
         // Lógica pendiente

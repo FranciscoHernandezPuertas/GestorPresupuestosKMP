@@ -16,17 +16,18 @@ import kotlinx.browser.localStorage
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.dam.tfg.components.AdvertenciaOverlay
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.ConfirmDialog
 import org.dam.tfg.components.ExtraItemsSection
 import org.dam.tfg.components.QuantitySelector
 import org.dam.tfg.components.StandardItemRenderer
-import org.dam.tfg.components.extractDimensions
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.table.*
 import org.dam.tfg.navigation.Screen
+import org.dam.tfg.util.BudgetManager
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Res
 import org.jetbrains.compose.web.css.*
@@ -790,35 +791,135 @@ fun CubetasSection(
     onCubetaAdded: (Cubeta) -> Unit,
     onCantidadChanged: (Int, Int) -> Unit,
     onDeleteClick: (Int) -> Unit,
-    onQuantityZero: (Int) -> Unit // Nuevo parámetro
+    onQuantityZero: (Int) -> Unit
 ) {
-    // Filtramos las opciones disponibles para no mostrar cubetas ya añadidas
-    val cubetasDisponibles = remember(cubetas) {
-        val tiposYaAñadidos = cubetas.map { it.tipo }
-        cubetasConLimites.filter { !tiposYaAñadidos.contains(it.name) }
+    // Cargar la mesa desde BudgetManager
+    val mesa = remember { mutableStateOf(BudgetManager.loadMesa()) }
+
+    // Calcular área total de la mesa
+    val areaTotal = remember(mesa.value) {
+        mesa.value.tramos.sumOf { it.largo * it.ancho }
     }
+
+    // Calcular área ocupada por las cubetas actuales
+    val areaOcupada = remember(cubetas) {
+        cubetas.sumOf { it.largo * it.ancho * it.numero }
+    }
+
+    // Espacio disponible restante
+    val areaDisponible = areaTotal - areaOcupada
+
+    // Dimensiones mínimas para validación
+    val dimensionesDisponibles = remember(mesa.value) {
+        var minLargo = Double.MAX_VALUE
+        var minAncho = Double.MAX_VALUE
+
+        mesa.value.tramos.forEach { tramo ->
+            if (tramo.largo > 0 && tramo.largo < minLargo) minLargo = tramo.largo
+            if (tramo.ancho > 0 && tramo.ancho < minAncho) minAncho = tramo.ancho
+        }
+
+        if (minLargo == Double.MAX_VALUE) minLargo = 0.0
+        if (minAncho == Double.MAX_VALUE) minAncho = 0.0
+
+        Pair(minLargo, minAncho)
+    }
+
+    // Filtrar y calcular límites dinámicos para las cubetas
+    val cubetasDisponiblesDinamicas = remember(cubetas, mesa.value, areaDisponible) {
+        val tiposYaAñadidos = cubetas.map { it.tipo }
+
+        cubetasConLimites.mapNotNull { item ->
+            // Si ya está añadida, no la mostramos en opciones disponibles
+            if (tiposYaAñadidos.contains(item.name)) return@mapNotNull null
+
+            // Extraer dimensiones de la cubeta
+            val dimensionesCubeta = extraerDimensionesCubeta(item.name)
+            val largoCubeta = dimensionesCubeta.first
+            val anchoCubeta = dimensionesCubeta.second
+
+            // Verificar si la cubeta cabe en la mesa (dimensionalmente)
+            if (largoCubeta > dimensionesDisponibles.first ||
+                anchoCubeta > dimensionesDisponibles.second) {
+                return@mapNotNull null
+            }
+
+            // Calcular cuántas cubetas de este tipo cabrían en el área disponible
+            val areaCubeta = largoCubeta * anchoCubeta
+            val maximoCubetasPorArea = if (areaCubeta > 0) (areaDisponible / areaCubeta).toInt() else 0
+
+            // Limitar cantidad por dimensiones físicas y por límite original
+            val nuevoMaximo = minOf(maximoCubetasPorArea, item.maxQuantity)
+
+            // Solo mostrar si al menos cabe una
+            if (nuevoMaximo > 0) {
+                item.copy(maxQuantity = nuevoMaximo)
+            } else {
+                null
+            }
+        }
+    }
+
+    var mostrarAdvertencia by remember { mutableStateOf(false) }
+    var mensajeAdvertencia by remember { mutableStateOf("") }
 
     ExtraItemsSection(
         title = "Cubetas",
-        description = "Seleccione cubetas desde el desplegable superior",
+        description = "Seleccione cubetas que se ajusten a las dimensiones de su mesa (${dimensionesDisponibles.first.toInt()}x${dimensionesDisponibles.second.toInt()}mm)",
         imageSrc = Res.Image.cubeta,
         items = cubetas,
-        itemOptions = cubetasDisponibles, // Usamos la lista filtrada
+        itemOptions = cubetasDisponiblesDinamicas,
         onItemAdded = { tipo, numero ->
-            val (largo, ancho) = extractDimensions(tipo)
-            onCubetaAdded(Cubeta(tipo = tipo, numero = numero, largo = largo, ancho = ancho))
+            val dimensiones = extraerDimensionesCubeta(tipo)
+            val areaCubeta = dimensiones.first * dimensiones.second
+
+            // Verificar si hay suficiente espacio para añadir esta cubeta
+            if (areaCubeta * numero <= areaDisponible) {
+                onCubetaAdded(Cubeta(
+                    tipo = tipo,
+                    largo = dimensiones.first,
+                    ancho = dimensiones.second,
+                    numero = numero,
+                    maxQuantity = (areaDisponible / areaCubeta).toInt()
+                ))
+            } else {
+                mensajeAdvertencia = "No hay suficiente espacio disponible para añadir esta cubeta."
+                mostrarAdvertencia = true
+            }
         },
-        onQuantityChanged = onCantidadChanged,
+        onQuantityChanged = { index, cantidad ->
+            // Validar que la cantidad no exceda el límite disponible
+            val cubeta = cubetas[index]
+            val areaCubeta = cubeta.largo * cubeta.ancho
+            val espacioUsadoActual = cubeta.largo * cubeta.ancho * cubeta.numero
+            val espacioTotalDisponible = areaDisponible + espacioUsadoActual
+            val maxDisponible = if (areaCubeta > 0) (espacioTotalDisponible / areaCubeta).toInt() else 0
+
+            // Sólo permitir el cambio si no excede el límite
+            if (cantidad <= maxDisponible) {
+                onCantidadChanged(index, cantidad)
+            } else {
+                mensajeAdvertencia = "No hay suficiente espacio disponible para añadir más cubetas de este tipo."
+                mostrarAdvertencia = true
+            }
+        },
         onDeleteClick = onDeleteClick,
         itemRenderer = { cubeta, index, limites ->
+            // Calcular el límite máximo dinámico para esta cubeta ya añadida
+            val areaCubeta = cubeta.largo * cubeta.ancho
+            val cubetasActuales = cubeta.numero
+            val espacioRestante = areaDisponible + (areaCubeta * cubetasActuales)
+            val maxDisponible = if (areaCubeta > 0) (espacioRestante / areaCubeta).toInt() else 0
+            val limiteDinamico = minOf(maxDisponible, limites?.maxQuantity ?: 3)
+
             StandardItemRenderer(
                 item = cubeta,
                 index = index,
-                itemWithLimits = limites,
+                itemWithLimits = limites?.copy(maxQuantity = limiteDinamico),
                 onQuantityChanged = { idx, cantidad ->
                     if (cantidad == 0) {
                         onQuantityZero(idx)
-                    } else {
+                    } else if (cantidad <= limiteDinamico) {  // Verificación adicional
                         onCantidadChanged(idx, cantidad)
                     }
                 },
@@ -830,4 +931,40 @@ fun CubetasSection(
             )
         }
     )
+    if (mostrarAdvertencia) {
+        AdvertenciaOverlay(
+            mensaje = mensajeAdvertencia,
+            onDismiss = { mostrarAdvertencia = false },
+            autoHide = true,
+            duracionMs = 5000
+        )
+    }
+
+}
+private fun extraerDimensionesCubeta(nombre: String): Pair<Double, Double> {
+    // Para cubetas circulares (diámetro)
+    val regexDiametro = Regex("Diametro (\\d+)x(\\d+)")
+    regexDiametro.find(nombre)?.let {
+        val diametro = it.groupValues[1].toDoubleOrNull() ?: 0.0
+        return Pair(diametro, diametro)
+    }
+
+    // Para cubetas rectangulares o cuadradas (LxAxA)
+    val regexDimensiones = Regex("(\\d+)x(\\d+)x(\\d+)")
+    regexDimensiones.find(nombre)?.let {
+        val largo = it.groupValues[1].toDoubleOrNull() ?: 0.0
+        val ancho = it.groupValues[2].toDoubleOrNull() ?: 0.0
+        return Pair(largo, ancho)
+    }
+
+    // Formato alternativo con × o X
+    val regexAlternativo = Regex("(\\d+)[×X](\\d+)[×X](\\d+)")
+    regexAlternativo.find(nombre)?.let {
+        val largo = it.groupValues[1].toDoubleOrNull() ?: 0.0
+        val ancho = it.groupValues[2].toDoubleOrNull() ?: 0.0
+        return Pair(largo, ancho)
+    }
+
+    // Si no se puede extraer, devolver dimensiones mínimas
+    return Pair(0.0, 0.0)
 }
