@@ -1,20 +1,14 @@
 // site/src/jsMain/kotlin/org/dam/tfg/pages/Index.kt
-package org.dam.tfg.pages
+package org.dam.tfg.pages.budget
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import com.varabyte.kobweb.compose.css.Cursor
 import com.varabyte.kobweb.compose.css.FontWeight
 import com.varabyte.kobweb.compose.css.TextAlign
 import com.varabyte.kobweb.compose.foundation.layout.Arrangement
 import com.varabyte.kobweb.compose.foundation.layout.Box
 import com.varabyte.kobweb.compose.foundation.layout.Column
-import com.varabyte.kobweb.compose.foundation.layout.Row
-import com.varabyte.kobweb.compose.foundation.layout.Spacer
 import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.graphics.Colors
@@ -22,25 +16,16 @@ import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.graphics.Image
-import com.varabyte.kobweb.silk.components.icons.fa.FaGear
-import com.varabyte.kobweb.silk.components.icons.fa.IconSize
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
-import kotlinx.browser.localStorage
 import org.dam.tfg.components.AppHeader
-import org.dam.tfg.components.returnUserType
 import org.dam.tfg.models.Theme
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.util.BudgetManager
-import org.dam.tfg.util.Constants
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Res
 import org.dam.tfg.util.isUserLoggedInCheck
-import org.dam.tfg.util.logout
-import org.dam.tfg.util.validateToken
-import org.jetbrains.compose.web.css.Position
 import org.jetbrains.compose.web.css.px
-import org.w3c.dom.get
 
 @Page
 @Composable

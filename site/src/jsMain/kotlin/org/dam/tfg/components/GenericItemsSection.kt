@@ -20,15 +20,13 @@ import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.compose.ui.styleModifier
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.components.graphics.Image
-import com.varabyte.kobweb.silk.components.icons.fa.FaMinus
-import com.varabyte.kobweb.silk.components.icons.fa.FaPlus
 import com.varabyte.kobweb.silk.components.icons.fa.FaTrash
 import com.varabyte.kobweb.silk.components.icons.fa.IconSize
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.models.Theme
-import org.dam.tfg.models.budget.Extra
+import org.dam.tfg.models.table.Extra
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.jetbrains.compose.web.css.LineStyle

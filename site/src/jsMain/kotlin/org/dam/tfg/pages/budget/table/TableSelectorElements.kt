@@ -7,14 +7,12 @@ import com.varabyte.kobweb.compose.ui.*
 import com.varabyte.kobweb.compose.ui.graphics.Colors
 import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.core.Page
-import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.components.icons.fa.*
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import kotlinx.browser.localStorage
-import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -24,26 +22,24 @@ import org.dam.tfg.components.ConfirmDialog
 import org.dam.tfg.components.ExtraItemsSection
 import org.dam.tfg.components.QuantitySelector
 import org.dam.tfg.components.StandardItemRenderer
-import org.dam.tfg.components.crearSelectorCantidad
 import org.dam.tfg.components.extractDimensions
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
-import org.dam.tfg.models.budget.*
+import org.dam.tfg.models.table.*
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.Res
-import org.jetbrains.compose.web.attributes.selected
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 
 @Page
 @Composable
-fun TableElementsPage() {
-    TableElementsScreen()
+fun TableSelectorElementsPage() {
+    TableSelectorElementsScreen()
 }
 
 @Composable
-fun TableElementsScreen() {
+fun TableSelectorElementsScreen() {
     var elementosGenerales by remember { mutableStateOf(emptyList<ElementosGenerales>()) }
     var cubetas by remember { mutableStateOf(emptyList<Cubeta>()) }
 

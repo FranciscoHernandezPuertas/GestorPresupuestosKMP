@@ -1,7 +1,6 @@
 package org.dam.tfg.pages.budget.table
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,33 +46,30 @@ import org.jetbrains.compose.web.css.percent
 import org.jetbrains.compose.web.css.px
 import com.varabyte.kobweb.compose.ui.modifiers.border
 import com.varabyte.kobweb.compose.ui.modifiers.id
-import com.varabyte.kobweb.compose.ui.modifiers.outline
 import com.varabyte.kobweb.compose.ui.modifiers.size
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.style.toModifier
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.models.DimensionLimits
-import org.dam.tfg.models.budget.Tramo
+import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.navigation.Screen
-import org.dam.tfg.styles.LoginInputStyle
 import org.dam.tfg.styles.TableSelectorStyle
 import org.dam.tfg.util.BudgetManager
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.css.LineStyle
-import org.jetbrains.compose.web.css.vh
 import org.jetbrains.compose.web.dom.Input
 import org.jetbrains.compose.web.dom.Label
 
 @Page
 @Composable
-fun TableSelectorPage() {
+fun TableSelectorDimensionsPage() {
     isUserLoggedInCheck {
-        TableSelectorPageContent()
+        TableSelectorDimensionsPageContent()
     }
 }
 
 @Composable
-fun TableSelectorPageContent() {
+fun TableSelectorDimensionsPageContent() {
     val context = rememberPageContext()
     val breakpoint = rememberBreakpoint()
 
@@ -89,13 +85,13 @@ fun TableSelectorPageContent() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Contenido específico para usuarios
-            TableSelectorContent()
+            TableSelectorDimensionsContent()
         }
     }
 }
 
 @Composable
-fun TableSelectorContent() {
+fun TableSelectorDimensionsContent() {
     // Inicializamos la mesa desde BudgetManager
     var mesa by remember { mutableStateOf(BudgetManager.loadMesa()) }
     val breakpoint = rememberBreakpoint()

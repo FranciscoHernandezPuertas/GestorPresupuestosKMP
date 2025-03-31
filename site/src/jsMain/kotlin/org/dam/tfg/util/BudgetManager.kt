@@ -1,11 +1,11 @@
 package org.dam.tfg.util
 
 import kotlinx.browser.localStorage
-import org.dam.tfg.models.budget.Cubeta
-import org.dam.tfg.models.budget.Extra
-import org.dam.tfg.models.budget.Material
-import org.dam.tfg.models.budget.Mesa
-import org.dam.tfg.models.budget.Tramo
+import org.dam.tfg.models.table.Cubeta
+import org.dam.tfg.models.table.Extra
+import org.dam.tfg.models.table.Material
+import org.dam.tfg.models.table.Mesa
+import org.dam.tfg.models.table.Tramo
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

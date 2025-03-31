@@ -1,4 +1,4 @@
-package org.dam.tfg.models.budget
+package org.dam.tfg.models.table
 
 import kotlinx.serialization.Serializable
 
