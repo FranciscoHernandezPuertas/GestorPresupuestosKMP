@@ -1,4 +1,3 @@
-// site/src/jsMain/kotlin/org/dam/tfg/pages/Index.kt
 package org.dam.tfg.pages.budget
 
 import androidx.compose.runtime.Composable
@@ -92,7 +91,7 @@ private fun HomeContent() {
             .cursor(Cursor.Pointer)
             .onClick {
                 // Aquí iría la navegación al wizard de mesas
-                context.router.navigateTo(Screen.TableSelector.route)
+                context.router.navigateTo(Screen.TableSelectorDimensions.route)
             },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

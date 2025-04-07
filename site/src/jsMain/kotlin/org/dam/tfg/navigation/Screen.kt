@@ -7,7 +7,7 @@ sealed class Screen(val route: String) {
     object AdminEdit: Screen(route = "/admin/edit")
     object AdminList: Screen(route = "/admin/list")
 
-    object TableSelector: Screen(route = "/budget/table/table-selector-dimensions")
-    object TableElements: Screen(route = "/budget/table/table-selector-elements")
-    object TableCubetasSoporteBandejas: Screen(route = "/budget/table/table-selector-cubetas-soporte-bandejas")
+    object TableSelectorDimensions: Screen(route = "/budget/table/table-selector-dimensions")
+    object TableSelectorElements: Screen(route = "/budget/table/table-selector-elements")
+    object TableSelectorCubetasSoporteBandejas: Screen(route = "/budget/table/table-selector-cubetas-soporte-bandejas")
 }

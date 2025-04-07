@@ -11,7 +11,7 @@ import org.dam.tfg.models.TokenValidationRequest
 import org.dam.tfg.util.JwtManager
 
 @Api(routeOverride = "validatetoken")
-suspend fun validateToken(context: ApiContext) {
+fun validateToken(context: ApiContext) {
     try {
         val request = context.req.body?.decodeToString()?.let {
             Json.decodeFromString<TokenValidationRequest>(it)

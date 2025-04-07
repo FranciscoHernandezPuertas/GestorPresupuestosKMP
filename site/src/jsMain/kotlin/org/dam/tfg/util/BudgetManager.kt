@@ -1,188 +1,146 @@
 package org.dam.tfg.util
 
 import kotlinx.browser.localStorage
-import org.dam.tfg.models.table.Cubeta
-import org.dam.tfg.models.table.Extra
-import org.dam.tfg.models.table.Material
-import org.dam.tfg.models.table.Mesa
-import org.dam.tfg.models.table.Tramo
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.dam.tfg.models.table.Cubeta
+import org.dam.tfg.models.table.Tramo
+import org.dam.tfg.repositories.BudgetRepository
+import org.dam.tfg.repositories.BudgetRepositoryJs
 import org.w3c.dom.get
 import org.w3c.dom.set
 
 object BudgetManager {
-    // Datos de la mesa
-    private var tipoMesa: String = ""
-    private var tramos: MutableList<Tramo> = mutableListOf()
-    private var material: Material? = null
+    private val repository: BudgetRepository = BudgetRepositoryJs()
 
-    // Datos de extras
-    private var cubetas: MutableList<Cubeta> = mutableListOf()
-    private var otrosExtras: MutableList<Extra> = mutableListOf()
-
-    // Gestión de tipo de mesa y tramos
-    fun setTipoMesa(tipo: String) {
-        tipoMesa = tipo
-        saveBudgetData()
+    // Funciones para gestionar la mesa y sus tramos
+    fun saveMesaData(
+        tipoMesa: String,
+        tramos: List<Tramo>,
+        material: String = "",
+        extras: List<String> = emptyList(),
+        precioTotal: Double = 0.0
+    ) {
+        repository.setMesaTipo(tipoMesa)
+        repository.setMesaTramos(tramos)
+        repository.setMesaMaterial(material)
+        repository.setMesaExtras(extras)
+        repository.setMesaPrecioTotal(precioTotal)
     }
 
-    fun getTipoMesa(): String = tipoMesa
+    fun getMesaTipo(): String = repository.getMesaTipo()
+    fun getMesaTramos(): List<Tramo> = repository.getMesaTramos()
+    fun getMesaMaterial(): String = repository.getMesaMaterial()
+    fun getMesaExtras(): List<String> = repository.getMesaExtras()
+    fun getMesaPrecioTotal(): Double = repository.getMesaPrecioTotal()
 
-    fun setTramos(nuevosTramos: List<Tramo>) {
-        tramos.clear()
-        tramos.addAll(nuevosTramos)
-        saveBudgetData()
+    // Funciones para gestionar las cantidades de elementos
+    fun saveElementosCantidades(cantidades: Map<String, Int>) {
+        localStorage["elementos_cantidades"] = Json.encodeToString(cantidades)
     }
 
-    fun getTramos(): List<Tramo> = tramos.toList()
-
-    fun setMaterial(nuevoMaterial: Material) {
-        material = nuevoMaterial
-        saveBudgetData()
-    }
-
-    fun getMaterial(): Material? = material
-
-    // Gestión de cubetas
-    fun addCubeta(cubeta: Cubeta) {
-        val existingIndex = cubetas.indexOfFirst { it.tipo == cubeta.tipo }
-        if (existingIndex >= 0) {
-            // Actualizar cantidad si ya existe
-            val existing = cubetas[existingIndex]
-            cubetas[existingIndex] = existing.copy(numero = existing.numero + 1)
+    fun getElementosCantidades(): Map<String, Int> {
+        val cantidadesJson = localStorage["elementos_cantidades"]
+        return if (!cantidadesJson.isNullOrBlank()) {
+            try {
+                Json.decodeFromString(cantidadesJson)
+            } catch (e: Exception) {
+                emptyMap()
+            }
         } else {
-            // Agregar nueva cubeta
-            cubetas.add(cubeta)
-        }
-        saveBudgetData()
-    }
-
-    fun updateCubetaCantidad(index: Int, cantidad: Int) {
-        if (index >= 0 && index < cubetas.size) {
-            cubetas[index] = cubetas[index].copy(numero = cantidad)
-            saveBudgetData()
+            emptyMap()
         }
     }
 
-    fun removeCubeta(index: Int) {
-        if (index >= 0 && index < cubetas.size) {
-            cubetas.removeAt(index)
-            saveBudgetData()
-        }
+    // Cálculo del área total de la mesa
+    fun calcularAreaTotalMesa(): Double {
+        val tramos = getMesaTramos()
+        return tramos.sumOf { it.largo * it.ancho }
     }
 
-    fun getCubetas(): List<Cubeta> = cubetas.toList()
+    fun agregarCubeta(
+        nombre: String,
+        largo: Double,
+        ancho: Double,
+        cantidad: Int = 1
+    ): Boolean {
+        val areaCubeta = largo * ancho * cantidad
+        val areaMesa = calcularAreaTotalMesa()
 
-    // Gestión de otros extras
-    fun addExtra(extra: Extra) {
-        otrosExtras.add(extra)
-        saveBudgetData()
-    }
+        // Verificar que las dimensiones caben físicamente
+        val tramos = getMesaTramos()
+        if (tramos.isEmpty()) return false
 
-    fun updateExtraCantidad(index: Int, cantidad: Int) {
-        if (index >= 0 && index < otrosExtras.size) {
-            // Actualizar según el tipo de extra
-            val extra = otrosExtras[index]
-            when (extra) {
-                is Cubeta -> otrosExtras[index] = extra.copy(numero = cantidad)
-                // Añade más casos según los tipos de extras que tengas
-                else -> {} // Fallback
+        val maxLargo = tramos.maxOf { it.largo }
+        val maxAncho = tramos.maxOf { it.ancho }
+
+        // Primero verificamos que las dimensiones físicas sean compatibles
+        if (largo > maxLargo || ancho > maxAncho) {
+            // Si no cabe en una orientación, intentar rotando
+            if (ancho > maxLargo || largo > maxAncho) {
+                return false
             }
-            saveBudgetData()
         }
-    }
 
-    fun removeExtra(index: Int) {
-        if (index >= 0 && index < otrosExtras.size) {
-            otrosExtras.removeAt(index)
-            saveBudgetData()
+        // Calcular área total actual ocupada por cubetas
+        val cubetasActuales = getCubetas()
+        val areaOcupada = cubetasActuales.sumOf { it.largo * it.ancho * it.numero }
+
+        // Verificar si hay espacio disponible (ahora con un límite más generoso del 90%)
+        if (areaOcupada + areaCubeta > areaMesa * 0.90) {
+            return false
         }
+
+        // Agregar cubeta
+        val nuevasCubetas = cubetasActuales.toMutableList()
+        nuevasCubetas.add(Cubeta(nombre, cantidad, largo, ancho, maxQuantity = cantidad))
+        saveCubetas(nuevasCubetas)
+        return true
     }
 
-    fun getExtras(): List<Extra> = otrosExtras.toList()
-
-    // Crear objeto Mesa completo para el presupuesto final
-    fun buildMesa(): Mesa {
-        return Mesa(
-            tipo = tipoMesa,
-            tramos = tramos,
-            extras = cubetas + otrosExtras,
-            material = material
-        )
-    }
-
-    // Persistencia de datos
-    private fun saveBudgetData() {
-        try {
-            localStorage["tipoMesa"] = tipoMesa
-            localStorage["tramos"] = Json.encodeToString(tramos)
-            localStorage["cubetas"] = Json.encodeToString(cubetas)
-            localStorage["extras"] = Json.encodeToString(otrosExtras)
-            material?.let {
-                localStorage["material"] = Json.encodeToString(it)
-            }
+    fun getCubetas(): List<Cubeta> {
+        val cubetasJson = localStorage["cubetas_data"] ?: return emptyList()
+        return try {
+            Json.decodeFromString(cubetasJson)
         } catch (e: Exception) {
-            console.error("Error guardando datos: ${e.message}")
+            emptyList()
         }
     }
 
-    fun loadBudgetData() {
-        try {
-            tipoMesa = localStorage["tipoMesa"] ?: ""
+    private fun saveCubetas(cubetas: List<Cubeta>) {
+        localStorage["cubetas_data"] = Json.encodeToString(cubetas)
+    }
 
-            localStorage["tramos"]?.let {
-                tramos = Json.decodeFromString(it)
-            }
+    // Extras/elementos generales
+    fun agregarElementoGeneral(nombre: String, cantidad: Int = 1) {
+        val elementosActuales = getElementosGenerales().toMutableMap()
+        elementosActuales[nombre] = cantidad
+        saveElementosGenerales(elementosActuales)
+    }
 
-            localStorage["cubetas"]?.let {
-                cubetas = Json.decodeFromString(it)
-            }
-
-            localStorage["extras"]?.let {
-                otrosExtras = Json.decodeFromString(it)
-            }
-
-            localStorage["material"]?.let {
-                material = Json.decodeFromString(it)
-            }
+    fun getElementosGenerales(): Map<String, Int> {
+        val elementosJson = localStorage["elementos_generales"] ?: return emptyMap()
+        return try {
+            Json.decodeFromString(elementosJson)
         } catch (e: Exception) {
-            console.error("Error cargando datos: ${e.message}")
+            emptyMap()
         }
     }
 
+    private fun saveElementosGenerales(elementos: Map<String, Int>) {
+        localStorage["elementos_generales"] = Json.encodeToString(elementos)
+    }
+
+    // Resetear todos los datos
     fun resetBudgetData() {
-        tipoMesa = ""
-        tramos.clear()
-        cubetas.clear()
-        otrosExtras.clear()
-        material = null
-
-        // Limpiar localStorage
-        localStorage.removeItem("tipoMesa")
-        localStorage.removeItem("tramos")
-        localStorage.removeItem("cubetas")
-        localStorage.removeItem("extras")
-        localStorage.removeItem("material")
-        localStorage.removeItem("table_elements")
-    }
-    fun loadMesa(): Mesa {
-        loadBudgetData() // Asegurarnos de cargar datos del localStorage
-        return buildMesa()
-    }
-
-    fun updateMesa(mesa: Mesa) {
-        tipoMesa = mesa.tipo
-
-        // Actualizar tramos
-        tramos.clear()
-        tramos.addAll(mesa.tramos)
-
-        // Actualizar material si existe
-        material = mesa.material
-
-        // Guardar cambios
-        saveBudgetData()
+        localStorage.removeItem("mesa_tipo")
+        localStorage.removeItem("mesa_tramos")
+        localStorage.removeItem("mesa_material")
+        localStorage.removeItem("mesa_extras")
+        localStorage.removeItem("mesa_precio_total")
+        localStorage.removeItem("cubetas_data")
+        localStorage.removeItem("elementos_generales")
+        localStorage.removeItem("elementos_cantidades")
     }
 }

@@ -10,19 +10,25 @@ object DimensionExtractors {
         }
 
         // Para cubetas rectangulares o cuadradas (LxAxA)
-        val regexDimensiones = Regex("(\\d+)x(\\d+)x(\\d+)")
+        val regexDimensiones = Regex("(\\d+)[xX×](\\d+)[xX×](\\d+)")
         regexDimensiones.find(nombre)?.let {
             val largo = it.groupValues[1].toDoubleOrNull() ?: 0.0
             val ancho = it.groupValues[2].toDoubleOrNull() ?: 0.0
             return Pair(largo, ancho)
         }
 
-        // Formato alternativo con × o X
-        val regexAlternativo = Regex("(\\d+)[×X](\\d+)[×X](\\d+)")
-        regexAlternativo.find(nombre)?.let {
+        // Formato alternativo con × o X (para dimensiones de 2 valores)
+        val regexAlternativo2D = Regex("(\\d+)[×Xx](\\d+)")
+        regexAlternativo2D.find(nombre)?.let {
             val largo = it.groupValues[1].toDoubleOrNull() ?: 0.0
             val ancho = it.groupValues[2].toDoubleOrNull() ?: 0.0
             return Pair(largo, ancho)
+        }
+
+        // Extracción manual de números si todos los regex fallan
+        val numeros = Regex("\\d+").findAll(nombre).map { it.value.toDoubleOrNull() ?: 0.0 }.toList()
+        if (numeros.size >= 2) {
+            return Pair(numeros[0], numeros[1])
         }
 
         // Si no se puede extraer, devolver dimensiones mínimas

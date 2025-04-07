@@ -1,28 +1,10 @@
-package org.dam.tfg.util
+package org.dam.tfg.services
 
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import kotlinx.browser.localStorage
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.table.Extra
 import org.dam.tfg.models.table.Mesa
 
-object DimensionManager {
-    // Cargar mesa desde el almacenamiento local
-    fun loadMesa(): Mesa {
-        val mesaJson = localStorage.getItem("mesa_data")
-        return if (!mesaJson.isNullOrBlank()) {
-            try {
-                Json.decodeFromString(mesaJson)
-            } catch (e: Exception) {
-                console.log("Error al cargar la mesa: ${e.message}")
-                Mesa()
-            }
-        } else {
-            Mesa()
-        }
-    }
-
+class DimensionService {
     // Calcular el área total de la mesa
     fun calcularAreaTotal(mesa: Mesa): Double {
         return mesa.tramos.sumOf { it.largo * it.ancho }
@@ -45,7 +27,7 @@ object DimensionManager {
     // Calcular dimensiones mínimas disponibles
     fun calcularDimensionesMinimasDisponibles(mesa: Mesa): Pair<Double, Double> {
         if (mesa.tramos.isEmpty()) {
-            console.log("Advertencia: La mesa no tiene tramos definidos")
+            println("Advertencia: La mesa no tiene tramos definidos")
             return Pair(0.0, 0.0)
         }
 
@@ -58,7 +40,7 @@ object DimensionManager {
             if (tramo.ancho > maxAncho) maxAncho = tramo.ancho
         }
 
-        console.log("Dimensiones disponibles calculadas: $maxLargo x $maxAncho")
+        println("Dimensiones disponibles calculadas: $maxLargo x $maxAncho")
         return Pair(maxLargo, maxAncho)
     }
 
@@ -68,17 +50,12 @@ object DimensionManager {
         dimensionesDisponibles: Pair<Double, Double>,
         extractorDimensiones: (String) -> Pair<Double, Double>
     ): List<ItemWithLimits> {
-        // ELIMINAR esta línea para evitar sobreescribir la mesa ya cargada
-        // val mesa = loadMesa()
-
-        // En su lugar, calcula el área total basado en las dimensiones disponibles
         val areaTotal = dimensionesDisponibles.first * dimensionesDisponibles.second
         val areaOcupada = calcularAreaOcupada(itemsActuales)
-        val areaDisponible = areaTotal - areaOcupada
+        val areaDisponible = (areaTotal * 0.90) - areaOcupada  // Límite 90% en lugar de 80%
 
-        console.log("Área total: $areaTotal, Área ocupada: $areaOcupada, Área disponible: $areaDisponible")
+        println("Área total: $areaTotal, Área ocupada: $areaOcupada, Área disponible: $areaDisponible")
 
-        // Resto del código igual...
         val tiposYaAñadidos = itemsActuales.map { it.tipo }
 
         return opciones.mapNotNull { item ->
@@ -88,20 +65,28 @@ object DimensionManager {
             val largo = dimensiones.first
             val ancho = dimensiones.second
 
-            console.log("Evaluando ${item.name}: $largo x $ancho")
+            println("Evaluando ${item.name}: $largo x $ancho")
 
-            if (!elementoCabeDimensionalmente(largo, ancho, dimensionesDisponibles)) {
-                console.log("${item.name} no cabe dimensionalmente")
+            // Comprobar si cabe en la orientación normal o rotada
+            val encaja = (largo <= dimensionesDisponibles.first && ancho <= dimensionesDisponibles.second) ||
+                    (ancho <= dimensionesDisponibles.first && largo <= dimensionesDisponibles.second)
+
+            if (!encaja) {
+                println("${item.name} no cabe dimensionalmente")
                 return@mapNotNull null
             }
 
             val area = largo * ancho
+            if (area <= 0) {
+                println("${item.name} tiene área inválida: $area")
+                return@mapNotNull null
+            }
+
             val maximoPorArea = if (area > 0) (areaDisponible / area).toInt() else 0
-            val nuevoMaximo = minOf(maximoPorArea, item.maxQuantity)
+            val nuevoMaximo = minOf(maximoPorArea, item.maxQuantity).coerceAtLeast(1) // Al menos 1
 
-            console.log("${item.name} - máximo posible: $nuevoMaximo")
-
-            if (nuevoMaximo > 0) item.copy(maxQuantity = nuevoMaximo) else null
+            println("${item.name} - máximo posible: $nuevoMaximo")
+            item.copy(maxQuantity = nuevoMaximo)
         }
     }
 

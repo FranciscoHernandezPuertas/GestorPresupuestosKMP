@@ -32,8 +32,8 @@
   <text x="65" y="133" font-family="Arial" font-size="6" text-anchor="middle" fill="#000">Frío</text>
   <text x="135" y="133" font-family="Arial" font-size="6" text-anchor="middle" fill="#000">Caliente</text>
 
-  <!-- Texto descriptor -->
+  <!-- Texto descriptor
   <text x="100" y="150" font-family="Arial" font-size="10" text-anchor="middle" fill="#000">
     Kit Lavamanos Pedal Doble
-  </text>
+  </text> -->
 </svg>

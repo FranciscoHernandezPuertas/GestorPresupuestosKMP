@@ -26,8 +26,8 @@
   <line x1="28" y1="122" x2="32" y2="122" stroke="#666666" stroke-width="1" />
   <text x="20" y="80" font-family="Arial" font-size="8" text-anchor="middle" fill="#666666">h</text>
 
-  <!-- Texto descriptor -->
+  <!-- Texto descriptor
   <text x="100" y="150" font-family="Arial" font-size="10" text-anchor="middle" fill="#000">
     Peto Lateral
-  </text>
+  </text>  -->
 </svg>

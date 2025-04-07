@@ -43,8 +43,8 @@
   <!-- Etiqueta del pulsador -->
   <text x="140" y="45" font-family="Arial" font-size="6" text-anchor="middle" fill="#000">Pulsador</text>
 
-  <!-- Texto descriptor -->
+  <!-- Texto descriptor
   <text x="100" y="150" font-family="Arial" font-size="10" text-anchor="middle" fill="#000">
     Kit Lavamanos Pulsador
-  </text>
+  </text> -->
 </svg>

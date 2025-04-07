@@ -1,885 +1,685 @@
 package org.dam.tfg.pages.budget.table
 
-import androidx.compose.runtime.*
-import com.varabyte.kobweb.compose.css.*
-import com.varabyte.kobweb.compose.foundation.layout.*
-import com.varabyte.kobweb.compose.ui.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.varabyte.kobweb.compose.css.Cursor
+import com.varabyte.kobweb.compose.css.FontWeight
+import com.varabyte.kobweb.compose.css.TextAlign
+import com.varabyte.kobweb.compose.foundation.layout.Arrangement
+import com.varabyte.kobweb.compose.foundation.layout.Box
+import com.varabyte.kobweb.compose.foundation.layout.Column
+import com.varabyte.kobweb.compose.foundation.layout.Row
+import com.varabyte.kobweb.compose.foundation.layout.Spacer
+import com.varabyte.kobweb.compose.ui.Alignment
+import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.graphics.Colors
-import com.varabyte.kobweb.compose.ui.modifiers.*
+import com.varabyte.kobweb.compose.ui.modifiers.backgroundColor
+import com.varabyte.kobweb.compose.ui.modifiers.borderRadius
+import com.varabyte.kobweb.compose.ui.modifiers.boxShadow
+import com.varabyte.kobweb.compose.ui.modifiers.color
+import com.varabyte.kobweb.compose.ui.modifiers.cursor
+import com.varabyte.kobweb.compose.ui.modifiers.fillMaxSize
+import com.varabyte.kobweb.compose.ui.modifiers.fillMaxWidth
+import com.varabyte.kobweb.compose.ui.modifiers.fontFamily
+import com.varabyte.kobweb.compose.ui.modifiers.fontSize
+import com.varabyte.kobweb.compose.ui.modifiers.fontWeight
+import com.varabyte.kobweb.compose.ui.modifiers.height
+import com.varabyte.kobweb.compose.ui.modifiers.margin
+import com.varabyte.kobweb.compose.ui.modifiers.maxWidth
+import com.varabyte.kobweb.compose.ui.modifiers.onClick
+import com.varabyte.kobweb.compose.ui.modifiers.padding
+import com.varabyte.kobweb.compose.ui.modifiers.textAlign
+import com.varabyte.kobweb.compose.ui.modifiers.width
 import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.silk.components.graphics.Image
-import com.varabyte.kobweb.silk.components.icons.fa.*
+import com.varabyte.kobweb.silk.components.icons.fa.FaCheck
+import com.varabyte.kobweb.silk.components.icons.fa.FaCircleInfo
+import com.varabyte.kobweb.silk.components.icons.fa.FaPlus
+import com.varabyte.kobweb.silk.components.icons.fa.FaTrash
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
-import kotlinx.browser.localStorage
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.dam.tfg.components.AdvertenciaOverlay
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
-import org.dam.tfg.components.ConfirmDialog
-import org.dam.tfg.components.DimensionAwareItemsSection
-import org.dam.tfg.components.ExtraItemsSection
+import org.dam.tfg.components.ConfirmationDialog
 import org.dam.tfg.components.QuantitySelector
-import org.dam.tfg.components.StandardItemRenderer
+import org.dam.tfg.constants.ElementosConstantes
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
-import org.dam.tfg.models.table.*
 import org.dam.tfg.navigation.Screen
+import org.dam.tfg.resources.WebResourceProvider
 import org.dam.tfg.util.BudgetManager
 import org.dam.tfg.util.Constants.FONT_FAMILY
-import org.dam.tfg.util.DimensionExtractors
-import org.dam.tfg.util.Res
-import org.jetbrains.compose.web.css.*
-import org.jetbrains.compose.web.dom.*
+import org.dam.tfg.util.isUserLoggedInCheck
+import org.jetbrains.compose.web.css.percent
+import org.jetbrains.compose.web.css.px
+import org.jetbrains.compose.web.css.rgba
 
 @Page
 @Composable
 fun TableSelectorElementsPage() {
-    TableSelectorElementsScreen()
-}
+    isUserLoggedInCheck {
+        Column(modifier = Modifier.fillMaxSize()) {
+            AppHeader()
 
-@Composable
-fun TableSelectorElementsScreen() {
-    var elementosGenerales by remember { mutableStateOf(emptyList<ElementosGenerales>()) }
-    var cubetas by remember { mutableStateOf(emptyList<Cubeta>()) }
-
-    // Estados para diálogo de confirmación
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var elementoAEliminar by remember { mutableStateOf<Pair<String, Int>?>(null) }
-
-    var elementoParaConfirmarCantidadCero by remember { mutableStateOf<Triple<String, Int, Int>?>(null) }
-
-    // Listas predefinidas (sin cambios)...
-    val elementosGeneralesPredefinidos = remember {
-        listOf(
-            "Peto lateral",
-            "Kit lavamanos pulsador",
-            "Esquina en chaflán",
-            "Kit lavam. pedal simple",
-            "Esquina redondeada",
-            "Kit lavam. pedal doble",
-            "Cajeado columna",
-            "Baquetón en seno",
-            "Aro de desbarace",
-            "Baqueton perimetrico"
-        )
-    }
-
-    // Definir límites para cada tipo de cubeta
-    val cubetasConLimites = remember {
-        listOf(
-            ItemWithLimits(
-                id = "cubeta_d300",
-                name = "Diametro 300x180",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_d360",
-                name = "Diametro 360x180",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_d380",
-                name = "Diametro 380x180",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_d420",
-                name = "Diametro 420x180",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_d460",
-                name = "Diametro 460x180",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            // Cubetas cuadradas
-            ItemWithLimits(
-                id = "cubeta_c400_250",
-                name = "Cuadrada 400x400x250",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_c400_300",
-                name = "Cuadrada 400x400×300",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_c450_250",
-                name = "Cuadrada 450x450x250",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_c450_300",
-                name = "Cuadrada 450x450x300",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_c500_250",
-                name = "Cuadrada 500×500×250",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_c500_300",
-                name = "Cuadrada 500x500×300",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            // Cubetas rectangulares
-            ItemWithLimits(
-                id = "cubeta_r325",
-                name = "Rectangular 325x300x150",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r500_300",
-                name = "Rectangular 500x300x300",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r500_400",
-                name = "Rectangular 500x400x250",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r600_450",
-                name = "Rectangular 600x450x300",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r600_500_250",
-                name = "Rectangular 600x500×250",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r600_500_300",
-                name = "Rectangular 600x500x300",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r600_500_320",
-                name = "Rectangular 600x500x320",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r630",
-                name = "Rectangular 630x510x380",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r700",
-                name = "Rectangular 700x450x350",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r800",
-                name = "Rectangular 800x500x380",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r955",
-                name = "Rectangular 955x510x380",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "cubeta_r1280",
-                name = "Rectangular 1280x510x380",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            )
-        )
-    }
-
-    // Límites para elementos generales
-    val elementosGeneralesConLimites = remember {
-        listOf(
-            ItemWithLimits(
-                id = "elemento_1",
-                name = "Peto lateral",
-                minQuantity = 0,
-                maxQuantity = 10,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_2",
-                name = "Kit lavamanos pulsador",
-                minQuantity = 0,
-                maxQuantity = 5,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_3",
-                name = "Esquina en chaflán",
-                minQuantity = 0,
-                maxQuantity = 8,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_4",
-                name = "Kit lavam. pedal simple",
-                minQuantity = 0,
-                maxQuantity = 3,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_5",
-                name = "Esquina redondeada",
-                minQuantity = 0,
-                maxQuantity = 8,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_6",
-                name = "Kit lavam. pedal doble",
-                minQuantity = 0,
-                maxQuantity = 2,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_7",
-                name = "Cajeado columna",
-                minQuantity = 0,
-                maxQuantity = 4,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_8",
-                name = "Baquetón en seno",
-                minQuantity = 0,
-                maxQuantity = 15,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_9",
-                name = "Aro de desbarace",
-                minQuantity = 0,
-                maxQuantity = 6,
-                initialQuantity = 1
-            ),
-            ItemWithLimits(
-                id = "elemento_10",
-                name = "Baqueton perimetrico",
-                minQuantity = 0,
-                maxQuantity = 4,
-                initialQuantity = 1
-            )
-        )
-    }
-
-
-    fun saveData() {
-        val extras = mutableListOf<Extra>().apply {
-            addAll(elementosGenerales)
-            addAll(cubetas)
+            // Contenido principal separado del header
+            TableSelectorElementsContent()
         }
-        try {
-            val extrasJson = Json.encodeToString(extras)
-            localStorage.setItem("table_elements", extrasJson)
-        } catch (e: Exception) {
-            console.log("Error al guardar los elementos: ${e.message}")
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        // Filtramos cubetas vacías para evitar la 'cubeta fantasma'
-        try {
-            val savedElementsJson = localStorage.getItem("table_elements")
-            if (!savedElementsJson.isNullOrBlank()) {
-                val savedElements = Json.decodeFromString<List<Extra>>(savedElementsJson)
-
-                elementosGenerales = savedElements
-                    .filterIsInstance<ElementosGenerales>()
-                    .filter { it.tipo.isNotBlank() }
-
-                cubetas = savedElements
-                    .filterIsInstance<Cubeta>()
-                    .filter { it.tipo.isNotBlank() }  // Evita cubetas de tipo vacío
-            }
-        } catch (e: Exception) {
-            console.log("Error al cargar los elementos: ${e.message}")
-        }
-    }
-
-    fun validateData(): Boolean {
-        return true
-    }
-
-    // Aquí, cada vez que agreguemos o modifiquemos algo, llamamos a saveData()
-    fun eliminarElemento(tipo: String, indice: Int) {
-        when (tipo) {
-            "ElementosGenerales" -> {
-                elementosGenerales = elementosGenerales.filterIndexed { i, _ -> i != indice }
-            }
-
-            "Cubeta" -> {
-                cubetas = cubetas.filterIndexed { i, _ -> i != indice }
-            }
-        }
-        saveData()
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        AppHeader(title = "Elementos de la mesa")
-
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(90.percent)
-                    .padding(top = 30.px, bottom = 100.px),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Título de la página
-                SpanText(
-                    modifier = Modifier
-                        .fontFamily(FONT_FAMILY)
-                        .fontSize(24.px)
-                        .fontWeight(FontWeight.Bold)
-                        .color(Theme.Secondary.rgb)
-                        .margin(bottom = 30.px),
-                    text = "Seleccione los elementos adicionales"
-                )
-
-                // Sección de Elementos Generales
-                ElementosGeneralesSection(
-                    elementosGenerales = elementosGenerales,
-                    elementosPredefinidos = elementosGeneralesPredefinidos, // Mantén la lista original
-                    elementosConLimites = elementosGeneralesConLimites, // Añade la nueva lista con límites
-                    onElementoAdded = { elemento ->
-                        elementosGenerales = elementosGenerales + elemento
-                        saveData() // Guardar enseguida
-                    },
-                    onCantidadChanged = { index, cantidad ->
-                        elementosGenerales = elementosGenerales.mapIndexed { i, elem ->
-                            if (i == index) elem.copy(numero = cantidad) else elem
-                        }
-                        saveData() // Guardar enseguida
-                    },
-                    onDeleteClick = { index ->
-                        elementoAEliminar = Pair("ElementosGenerales", index)
-                        showDeleteDialog = true
-                    },
-                    onQuantityZero = { index ->
-                        elementoParaConfirmarCantidadCero = Triple("ElementosGenerales", index, 0)
-                    }
-                )
-
-                // Sección de Cubetas
-                CubetasSection(
-                    cubetas = cubetas,
-                    cubetasConLimites = cubetasConLimites,
-                    onCubetaAdded = { cubeta ->
-                        cubetas = cubetas + cubeta
-                        saveData()
-                    },
-                    onCantidadChanged = { index, cantidad ->
-                        cubetas = cubetas.mapIndexed { i, elem ->
-                            if (i == index) elem.copy(numero = cantidad) else elem
-                        }
-                        saveData()
-                    },
-                    onDeleteClick = { index ->
-                        elementoAEliminar = Pair("Cubeta", index)
-                        showDeleteDialog = true
-                    },
-                    onQuantityZero = { index ->
-                        elementoParaConfirmarCantidadCero = Triple("Cubeta", index, 0)
-                    }
-                )
-
-            }
-        }
-
-        BudgetFooter(
-            previousScreen = Screen.TableSelector,
-            nextScreen = Screen.Home,
-            validateData = { validateData() },
-            saveData = { saveData() }
-        )
-    }
-
-    if (elementoParaConfirmarCantidadCero != null) {
-        ConfirmDialog(
-            message = "La cantidad ha llegado a 0. ¿Desea eliminar este elemento?",
-            onConfirm = {
-                val (tipo, indice, _) = elementoParaConfirmarCantidadCero!!
-                eliminarElemento(tipo, indice)
-                elementoParaConfirmarCantidadCero = null
-            },
-            onDismiss = {
-                val (tipo, indice, cantidadAnterior) = elementoParaConfirmarCantidadCero!!
-                // Restaurar la cantidad a 1 si se cancela
-                when (tipo) {
-                    "ElementosGenerales" -> {
-                        elementosGenerales = elementosGenerales.mapIndexed { i, elem ->
-                            if (i == indice) elem.copy(numero = 1) else elem
-                        }
-                    }
-                    "Cubeta" -> {
-                        cubetas = cubetas.mapIndexed { i, elem ->
-                            if (i == indice) elem.copy(numero = 1) else elem
-                        }
-                    }
-                }
-                saveData()
-                elementoParaConfirmarCantidadCero = null
-            }
-        )
-    }
-
-    if (showDeleteDialog && elementoAEliminar != null) {
-        ConfirmDialog(
-            message = "¿Está seguro que desea eliminar este elemento?",
-            onConfirm = {
-                elementoAEliminar?.let { (tipo, indice) ->
-                    eliminarElemento(tipo, indice)
-                }
-                showDeleteDialog = false
-                elementoAEliminar = null
-            },
-            onDismiss = {
-                showDeleteDialog = false
-                elementoAEliminar = null
-            }
-        )
     }
 }
 
+// Modelo de datos para elementos seleccionados
+data class ElementoSeleccionado(
+    val nombre: String,
+    val cantidad: Int,
+    val limite: ItemWithLimits
+)
+
 @Composable
-fun ElementosGeneralesSection(
-    elementosGenerales: List<ElementosGenerales>,
-    elementosPredefinidos: List<String>,
-    elementosConLimites: List<ItemWithLimits>,
-    onElementoAdded: (ElementosGenerales) -> Unit,
-    onCantidadChanged: (Int, Int) -> Unit,
-    onDeleteClick: (Int) -> Unit,
-    onQuantityZero: (Int) -> Unit
-) {
+fun TableSelectorElementsContent() {
     val breakpoint = rememberBreakpoint()
-    val elementosPorFila =
-        if (breakpoint > Breakpoint.MD) 3 else if (breakpoint > Breakpoint.SM) 2 else 1
+    val resourceProvider = remember { WebResourceProvider() }
+    val elementosConstantes = ElementosConstantes.LIMITES_ELEMENTOS_GENERALES
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .margin(bottom = 40.px)
-            .padding(20.px)
-            .backgroundColor(Colors.White)
-            .borderRadius(8.px)
-            .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray),
-    ) {
-        // Título de la sección
-        SpanText(
-            modifier = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(20.px)
-                .fontWeight(FontWeight.Medium)
-                .color(Theme.Secondary.rgb)
-                .margin(bottom = 20.px),
-            text = "Elementos Generales"
+    // Estado de los elementos seleccionados
+    var elementosSeleccionados by remember { mutableStateOf<List<ElementoSeleccionado>>(listOf()) }
+
+    // Estados para confirmaciones y advertencias
+    var mostrarAdvertencia by remember { mutableStateOf(false) }
+    var mensajeAdvertencia by remember { mutableStateOf("") }
+    var mostrarConfirmacion by remember { mutableStateOf(false) }
+    var elementoAEliminar by remember { mutableStateOf<ElementoSeleccionado?>(null) }
+    var mostrarConfirmacionLimpiar by remember { mutableStateOf(false) }
+
+    // Configuración según tamaño de pantalla
+    val numColumnas = if (breakpoint >= Breakpoint.MD) 4 else 2
+    val contentWidth = if (breakpoint >= Breakpoint.MD) 80.percent else 95.percent
+    val titleFontSize = if (breakpoint >= Breakpoint.MD) 24.px else 20.px
+
+    // Función para guardar en localStorage
+    fun guardarEnLocalStorage() {
+        val nombresElementos = elementosSeleccionados.map { it.nombre }
+        val cantidadesElementos = elementosSeleccionados.associate { it.nombre to it.cantidad }
+
+        BudgetManager.saveMesaData(
+            tipoMesa = BudgetManager.getMesaTipo(),
+            tramos = BudgetManager.getMesaTramos(),
+            material = BudgetManager.getMesaMaterial(),
+            extras = nombresElementos,
+            precioTotal = BudgetManager.getMesaPrecioTotal()
         )
+        BudgetManager.saveElementosCantidades(cantidadesElementos)
+    }
 
-        // Grid de elementos predefinidos con imágenes - Ahora visible en todas las pantallas
-        val gridTemplateColumns = when (elementosPorFila) {
-            1 -> "1fr"
-            2 -> "1fr 1fr"
-            else -> "1fr 1fr 1fr"
-        }
+    // Cargar elementos guardados previamente
+    LaunchedEffect(Unit) {
+        val elementosGuardados = BudgetManager.getMesaExtras()
+        val cantidadesGuardadas = BudgetManager.getElementosCantidades()
 
-        Div(
-            attrs = Modifier
-                .fillMaxWidth()
-                .margin(bottom = 20.px)
-                .styleModifier {
-                    property("display", "grid")
-                    property("grid-template-columns", gridTemplateColumns)
-                    property("grid-gap", "20px")
-                }
-                .toAttrs()
-        ) {
-            elementosPredefinidos.forEach { tipo ->
-                // Comprobar si ya existe en la lista
-                val yaExiste = elementosGenerales.any { it.tipo == tipo }
-                // Obtener los límites para este elemento
-                val itemWithLimits = elementosConLimites.find { it.name == tipo }
-
-                val imageSrc = when (tipo) {
-                    "Peto lateral" -> Res.Image.petoLateral
-                    "Kit lavamanos pulsador" -> Res.Image.kitLavamanosPulsador
-                    "Esquina en chaflán" -> Res.Image.esquinaEnChaflan
-                    "Kit lavam. pedal simple" -> Res.Image.kitLavamanosPedalSimple
-                    "Esquina redondeada" -> Res.Image.esquinaRedondeada
-                    "Kit lavam. pedal doble" -> Res.Image.kitLavamanosPedalDoble
-                    "Cajeado columna" -> Res.Image.cajeadoColumna
-                    "Baquetón en seno" -> Res.Image.baquetonEnSeno
-                    "Aro de desbarace" -> Res.Image.aroDeDesbrace
-                    "Baqueton perimetrico" -> Res.Image.baquetonPerimetrico
-                    else -> Res.Image.noSeleccionado
-                }
-
-                // Tarjeta mejorada con más definición visual
-                Div(
-                    attrs = Modifier
-                        .padding(if (breakpoint <= Breakpoint.SM) 8.px else 15.px)
-                        .backgroundColor(if (yaExiste) Theme.LightGray.rgb else Colors.White)
-                        .borderRadius(12.px)
-                        .border(
-                            width = 2.px,
-                            style = LineStyle.Solid,
-                            color = if (yaExiste) Theme.Primary.rgb else Theme.LightGray.rgb
-                        )
-                        .boxShadow(
-                            offsetX = 0.px,
-                            offsetY = 3.px,
-                            blurRadius = 8.px,
-                            color = rgba(0, 0, 0, 0.1)
-                        )
-                        .toAttrs()
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        // Imagen
-                        Box(
-                            modifier = Modifier
-                                .size(if (breakpoint <= Breakpoint.SM) 70.px else 100.px)
-                                .margin(bottom = 10.px),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                src = imageSrc,
-                                alt = tipo,
-                                modifier = Modifier.size(if (breakpoint <= Breakpoint.SM) 60.px else 80.px)
-                            )
-                        }
-
-                        // Nombre del elemento
-                        SpanText(
-                            text = tipo,
-                            modifier = Modifier
-                                .fontFamily(FONT_FAMILY)
-                                .fontSize(if (breakpoint <= Breakpoint.SM) 14.px else 16.px)
-                                .fontWeight(FontWeight.Medium)
-                                .color(Theme.Secondary.rgb)
-                                .textAlign(TextAlign.Center)
-                                .margin(bottom = 10.px)
-                        )
-
-                        // Botón de añadir o mensaje de ya añadido
-                        if (!yaExiste) {
-                            Button(
-                                attrs = Modifier
-                                    .width(if (breakpoint <= Breakpoint.SM) 100.px else 120.px)
-                                    .height(36.px)
-                                    .backgroundColor(Theme.Primary.rgb)
-                                    .color(Colors.White)
-                                    .borderRadius(4.px)
-                                    .border(0.px)
-                                    .cursor(Cursor.Pointer)
-                                    .margin(top = 8.px, bottom = 8.px)
-                                    .onClick {
-                                        val initialQuantity = itemWithLimits?.initialQuantity ?: 1
-                                        onElementoAdded(
-                                            ElementosGenerales(
-                                                tipo = tipo,
-                                                numero = initialQuantity
-                                            )
-                                        )
-                                    }
-                                    .toAttrs()
-                            ) {
-                                Text("Añadir")
-                            }
-                        } else {
-                            SpanText(
-                                text = "Ya añadido",
-                                modifier = Modifier
-                                    .fontFamily(FONT_FAMILY)
-                                    .fontSize(14.px)
-                                    .fontStyle(FontStyle.Italic)
-                                    .color(Theme.Primary.rgb)
-                                    .margin(top = 8.px, bottom = 8.px)
-                            )
-                        }
-                    }
-                }
+        if (elementosGuardados.isNotEmpty()) {
+            val elementos = elementosGuardados.mapNotNull { nombreElemento ->
+                val limite = elementosConstantes[nombreElemento]
+                if (limite != null) {
+                    ElementoSeleccionado(
+                        nombre = nombreElemento,
+                        cantidad = cantidadesGuardadas[nombreElemento] ?: 1,
+                        limite = limite
+                    )
+                } else null
             }
+            elementosSeleccionados = elementos
         }
+    }
 
-
-        // Elementos añadidos
-        if (elementosGenerales.isNotEmpty()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 2.px),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .maxWidth(contentWidth)
+                .padding(bottom = 100.px),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Título y descripción (se mantienen igual)
             SpanText(
                 modifier = Modifier
+                    .margin(top = 10.px, bottom = 20.px)
+                    .fontSize(titleFontSize)
+                    .fontWeight(FontWeight.Bold)
                     .fontFamily(FONT_FAMILY)
-                    .fontSize(18.px)
-                    .fontWeight(FontWeight.Medium)
-                    .color(Theme.Secondary.rgb)
-                    .margin(top = 20.px, bottom = 15.px),
-                text = "Elementos añadidos"
+                    .color(Theme.Secondary.rgb),
+                text = "Configuración de Mesa: Elementos"
             )
 
-            elementosGenerales.forEachIndexed { index, elemento ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.px)
+                    .margin(bottom = 20.px)
+                    .backgroundColor(rgba(0, 0, 0, 0.05))
+                    .borderRadius(8.px)
+                    .padding(16.px)
+            ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .margin(bottom = 10.px)
-                        .padding(16.px)
-                        .backgroundColor(Theme.LightGray.rgb)
-                        .borderRadius(8.px)
-                        .boxShadow(
-                            offsetX = 0.px,
-                            offsetY = 2.px,
-                            blurRadius = 4.px,
-                            color = rgba(0, 0, 0, 0.1)
-                        ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Imagen del elemento
-                    val imageSrc = when (elemento.tipo) {
-                        "Peto lateral" -> Res.Image.petoLateral
-                        "Kit lavamanos pulsador" -> Res.Image.kitLavamanosPulsador
-                        "Esquina en chaflán" -> Res.Image.esquinaEnChaflan
-                        "Kit lavam. pedal simple" -> Res.Image.kitLavamanosPedalSimple
-                        "Esquina redondeada" -> Res.Image.esquinaRedondeada
-                        "Kit lavam. pedal doble" -> Res.Image.kitLavamanosPedalDoble
-                        "Cajeado columna" -> Res.Image.cajeadoColumna
-                        "Baquetón en seno" -> Res.Image.baquetonEnSeno
-                        "Aro de desbarace" -> Res.Image.aroDeDesbrace
-                        "Baqueton perimetrico" -> Res.Image.baquetonPerimetrico
-                        else -> Res.Image.noSeleccionado
-                    }
-
-                    Box(
+                    FaCircleInfo(
                         modifier = Modifier
-                            .size(50.px)
-                            .margin(right = 16.px)
-                            .backgroundColor(Colors.White)
-                            .borderRadius(8.px)
-                            .padding(5.px),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            modifier = Modifier.size(40.px),
-                            src = imageSrc,
-                            alt = elemento.tipo
-                        )
-                    }
-
-                    // Nombre del elemento
+                            .margin(right = 10.px)
+                            .color(Theme.Primary.rgb)
+                    )
                     SpanText(
                         modifier = Modifier
                             .fontFamily(FONT_FAMILY)
-                            .fontSize(16.px)
-                            .fontWeight(FontWeight.Medium)
+                            .fontSize(14.px)
                             .color(Theme.Secondary.rgb),
-                        text = elemento.tipo
+                        text = "Seleccione los elementos adicionales para su mesa. Cada elemento tiene una cantidad máxima permitida."
+                    )
+                }
+            }
+
+            // Grid de elementos disponibles (se mantiene igual)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .backgroundColor(Colors.White)
+                    .borderRadius(8.px)
+                    .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 8.px, color = Colors.LightGray)
+                    .padding(16.px)
+                    .margin(bottom = 20.px)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SpanText(
+                        modifier = Modifier
+                            .fontSize(18.px)
+                            .fontWeight(FontWeight.Medium)
+                            .fontFamily(FONT_FAMILY)
+                            .color(Theme.Secondary.rgb)
+                            .margin(bottom = 16.px),
+                        text = "Elementos disponibles"
                     )
 
-                    Spacer()
-
-                    // Aquí aplicamos los límites personalizados para el selector de cantidad
-                    val itemLimit = elementosConLimites.find { it.name == elemento.tipo }
-                    val min = itemLimit?.minQuantity ?: 0
-                    val max = itemLimit?.maxQuantity ?: 10
-
-                    QuantitySelector(
-                        value = elemento.numero,
-                        onValueChange = { cantidad ->
-                            if (cantidad == 0) {
-                                onQuantityZero(index)
+                    ElementosGrid(
+                        elementos = elementosConstantes.values.toList(),
+                        elementosSeleccionados = elementosSeleccionados.map { it.nombre },
+                        numColumnas = numColumnas,
+                        onElementoClick = { elemento ->
+                            // Verificar si ya está seleccionado
+                            if (elementosSeleccionados.any { it.nombre == elemento.name }) {
+                                mostrarAdvertencia = true
+                                mensajeAdvertencia = "Este elemento ya ha sido añadido"
                             } else {
-                                onCantidadChanged(index, cantidad)
+                                // Añadir el elemento
+                                elementosSeleccionados = elementosSeleccionados + ElementoSeleccionado(
+                                    nombre = elemento.name,
+                                    cantidad = 1,
+                                    limite = elemento
+                                )
+                                // Guardar en localStorage después de añadir
+                                guardarEnLocalStorage()
                             }
                         },
-                        min = min,
-                        max = max,
-                        showText = false
+                        resourceProvider = resourceProvider
+                    )
+                }
+            }
+
+            // Lista de elementos seleccionados con el botón "Eliminar"
+            if (elementosSeleccionados.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .backgroundColor(Colors.White)
+                        .borderRadius(8.px)
+                        .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 8.px, color = Colors.LightGray)
+                        .padding(16.px)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Cabecera con título y botón eliminar
+                        Row(
+                            modifier = Modifier.fillMaxWidth().margin(bottom = 16.px),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SpanText(
+                                modifier = Modifier
+                                    .fontSize(18.px)
+                                    .fontWeight(FontWeight.Medium)
+                                    .fontFamily(FONT_FAMILY)
+                                    .color(Theme.Secondary.rgb),
+                                text = "Elementos seleccionados"
+                            )
+
+                            // Botón de eliminar
+                            Box(
+                                modifier = Modifier
+                                    .backgroundColor(Colors.Red)
+                                    .borderRadius(4.px)
+                                    .padding(8.px)
+                                    .cursor(Cursor.Pointer)
+                                    .onClick { mostrarConfirmacionLimpiar = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    FaTrash(
+                                        modifier = Modifier.color(Colors.White)
+                                    )
+                                    SpanText(
+                                        modifier = Modifier
+                                            .margin(left = 8.px)
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(14.px)
+                                            .color(Colors.White),
+                                        text = "Eliminar todo"
+                                    )
+                                }
+                            }
+                        }
+
+                        // Lista de elementos seleccionados
+                        elementosSeleccionados.forEach { elemento ->
+                            ElementoSeleccionadoItem(
+                                elemento = elemento,
+                                onCantidadChange = { nuevaCantidad ->
+                                    elementosSeleccionados = elementosSeleccionados.map {
+                                        if (it.nombre == elemento.nombre) it.copy(cantidad = nuevaCantidad)
+                                        else it
+                                    }
+                                    // Guardar en localStorage después de cambiar cantidad
+                                    guardarEnLocalStorage()
+                                },
+                                onEliminar = {
+                                    elementoAEliminar = elemento
+                                    mostrarConfirmacion = true
+                                },
+                                breakpoint = breakpoint,
+                                resourceProvider = resourceProvider
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Popups y diálogos
+        if (mostrarAdvertencia) {
+            /* AdvertenciaOverlay(
+                mensaje = mensajeAdvertencia,
+                onDismiss = { mostrarAdvertencia = false }
+            ) */
+        }
+
+        // Diálogo de confirmación para eliminar un elemento
+        if (mostrarConfirmacion && elementoAEliminar != null) {
+            ConfirmationDialog(
+                mensaje = "¿Está seguro de que desea eliminar el elemento '${elementoAEliminar?.nombre}'?",
+                onConfirm = {
+                    elementosSeleccionados = elementosSeleccionados.filter { it.nombre != elementoAEliminar?.nombre }
+                    elementoAEliminar = null
+                    mostrarConfirmacion = false
+                    // Guardar en localStorage después de eliminar
+                    guardarEnLocalStorage()
+                },
+                onCancel = {
+                    elementoAEliminar = null
+                    mostrarConfirmacion = false
+                }
+            )
+        }
+
+        // Diálogo de confirmación para eliminar todos los elementos
+        if (mostrarConfirmacionLimpiar) {
+            ConfirmationDialog(
+                mensaje = "¿Está seguro de que desea eliminar todos los elementos?",
+                onConfirm = {
+                    elementosSeleccionados = emptyList()
+                    mostrarConfirmacionLimpiar = false
+                    // Guardar en localStorage después de eliminar todos
+                    guardarEnLocalStorage()
+                },
+                onCancel = {
+                    mostrarConfirmacionLimpiar = false
+                }
+            )
+        }
+
+        // Footer (mantenemos la función saveData pero ya guardamos en cada cambio)
+        BudgetFooter(
+            previousScreen = Screen.TableSelectorDimensions,
+            nextScreen = Screen.TableSelectorCubetasSoporteBandejas,
+            validateData = {
+                true // No hay validación específica aquí
+            },
+            saveData = {
+                // En realidad ya guardamos en cada cambio, pero mantenemos esto por consistencia
+                guardarEnLocalStorage()
+            }
+        )
+    }
+}
+
+@Composable
+fun ElementosGrid(
+    elementos: List<ItemWithLimits>,
+    elementosSeleccionados: List<String>,
+    numColumnas: Int,
+    onElementoClick: (ItemWithLimits) -> Unit,
+    resourceProvider: WebResourceProvider
+) {
+    // Eliminar posibles duplicados y ordenar
+    val elementosUnicos = elementos.distinctBy { it.name }.sortedBy { it.name }
+    val filas = (elementosUnicos.size + numColumnas - 1) / numColumnas
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        for (i in 0 until filas) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.px),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                for (j in 0 until numColumnas) {
+                    val index = i * numColumnas + j
+                    if (index < elementosUnicos.size) {
+                        Box(
+                            modifier = Modifier
+                                .width(170.px)
+                                .padding(leftRight = 5.px),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val elemento = elementosUnicos[index]
+                            ElementoCard(
+                                elemento = elemento,
+                                estaSeleccionado = elemento.name in elementosSeleccionados,
+                                onClick = { onElementoClick(elemento) },
+                                resourceProvider = resourceProvider
+                            )
+                        }
+                    } else {
+                        // Espacio vacío para mantener la distribución uniforme
+                        Box(
+                            modifier = Modifier.width(170.px).padding(leftRight = 5.px)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ElementoCard(
+    elemento: ItemWithLimits,
+    estaSeleccionado: Boolean,
+    onClick: () -> Unit,
+    resourceProvider: WebResourceProvider
+) {
+    val imageKey = getImageKeyFromElementName(elemento.name)
+
+    Box(
+        modifier = Modifier
+            .width(160.px)
+            .height(220.px)
+            .backgroundColor(if (estaSeleccionado) rgba(0, 150, 0, 0.1) else Colors.White)
+            .borderRadius(8.px)
+            .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray)
+            .padding(10.px)
+            .cursor(if (!estaSeleccionado) Cursor.Pointer else Cursor.Default)
+            .onClick { if (!estaSeleccionado) onClick() }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Imagen
+            Box(
+                modifier = Modifier
+                    .height(100.px)
+                    .fillMaxWidth()
+                    .margin(bottom = 8.px),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    src = resourceProvider.getImagePath(imageKey),
+                    alt = elemento.name
+                )
+            }
+
+            // Nombre del elemento
+            SpanText(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(14.px)
+                    .color(Theme.Secondary.rgb)
+                    .textAlign(TextAlign.Center)
+                    .padding(top = 8.px)
+                    .margin(bottom = 2.px),
+                text = elemento.name
+            )
+
+            // Límite máximo
+            SpanText(
+                modifier = Modifier
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(12.px)
+                    .color(Theme.Black.rgb)
+                    .margin(bottom = 2.px),
+                text = "Máx: ${elemento.maxQuantity}"
+            )
+
+            // Botón de añadir o indicador de seleccionado
+            if (estaSeleccionado) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .backgroundColor(Theme.Primary.rgb)
+                        .borderRadius(4.px)
+                        .padding(topBottom = 8.px),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FaCheck(
+                        modifier = Modifier.color(Colors.White)
+                    )
+                    SpanText(
+                        modifier = Modifier
+                            .margin(left = 8.px)
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(14.px)
+                            .color(Colors.White),
+                        text = "Añadido"
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .backgroundColor(Theme.Primary.rgb)
+                        .borderRadius(4.px)
+                        .padding(topBottom = 8.px)
+                        .cursor(Cursor.Pointer)
+                        .onClick { onClick() },
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FaPlus(
+                        modifier = Modifier.color(Colors.White)
+                    )
+                    SpanText(
+                        modifier = Modifier
+                            .margin(left = 8.px)
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(14.px)
+                            .color(Colors.White),
+                        text = "Añadir"
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ElementoSeleccionadoItem(
+    elemento: ElementoSeleccionado,
+    onCantidadChange: (Int) -> Unit,
+    onEliminar: () -> Unit,
+    breakpoint: Breakpoint,
+    resourceProvider: WebResourceProvider
+) {
+    val isMobile = breakpoint < Breakpoint.MD
+    val imageKey = getImageKeyFromElementName(elemento.nombre)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .margin(bottom = 10.px)
+            .backgroundColor(rgba(0, 0, 0, 0.02))
+            .borderRadius(4.px)
+            .padding(10.px)
+    ) {
+        if (isMobile) {
+            // Layout para móvil: imagen, texto y controles en una fila
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Imagen a la izquierda
+                Image(
+                    modifier = Modifier.width(40.px).height(40.px),
+                    src = resourceProvider.getImagePath(imageKey),
+                    alt = elemento.nombre
+                )
+
+                // Texto del elemento al lado de la imagen
+                SpanText(
+                    modifier = Modifier
+                        .margin(left = 10.px)
+                        .weight(1f) // Para que tome el espacio disponible
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(16.px)
+                        .color(Theme.Secondary.rgb),
+                    text = elemento.nombre
+                )
+
+                // Selector de cantidad y botón eliminar a la derecha
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Selector de cantidad
+                    QuantitySelector(
+                        value = elemento.cantidad,
+                        onValueChange = onCantidadChange,
+                        min = 1,
+                        max = elemento.limite.maxQuantity
                     )
 
                     // Botón de eliminar
                     Box(
                         modifier = Modifier
                             .margin(left = 10.px)
-                            .size(30.px)
                             .backgroundColor(Colors.Red)
-                            .flexShrink(0)
                             .borderRadius(4.px)
+                            .padding(8.px)
                             .cursor(Cursor.Pointer)
-                            .onClick { onDeleteClick(index) },
+                            .onClick { onEliminar() },
                         contentAlignment = Alignment.Center
                     ) {
                         FaTrash(
-                            modifier = Modifier.color(Colors.White),
-                            size = IconSize.SM
+                            modifier = Modifier.color(Colors.White)
                         )
                     }
                 }
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.px),
-                contentAlignment = Alignment.Center
+            // El layout para desktop se mantiene igual
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SpanText(
-                    text = "No ha añadido ningún elemento adicional",
-                    modifier = Modifier
-                        .fontFamily(FONT_FAMILY)
-                        .fontSize(16.px)
-                        .fontStyle(FontStyle.Italic)
-                        .color(Theme.Secondary.rgb)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.width(250.px)
+                ) {
+                    Image(
+                        modifier = Modifier.width(40.px).height(40.px),
+                        src = resourceProvider.getImagePath(imageKey),
+                        alt = elemento.nombre
+                    )
+
+                    SpanText(
+                        modifier = Modifier
+                            .margin(left = 10.px)
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .color(Theme.Secondary.rgb),
+                        text = elemento.nombre
+                    )
+                }
+
+                Spacer()
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    QuantitySelector(
+                        value = elemento.cantidad,
+                        onValueChange = onCantidadChange,
+                        min = 1,
+                        max = elemento.limite.maxQuantity
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .margin(left = 10.px)
+                            .backgroundColor(Colors.Red)
+                            .borderRadius(4.px)
+                            .padding(8.px)
+                            .cursor(Cursor.Pointer)
+                            .onClick { onEliminar() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FaTrash(
+                            modifier = Modifier.color(Colors.White)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-@Composable
-fun CubetasSection(
-    cubetas: List<Cubeta>,
-    cubetasConLimites: List<ItemWithLimits>,
-    onCubetaAdded: (Cubeta) -> Unit,
-    onCantidadChanged: (Int, Int) -> Unit,
-    onDeleteClick: (Int) -> Unit,
-    onQuantityZero: (Int) -> Unit
-) {
-    var mostrarAdvertencia by remember { mutableStateOf(false) }
-    var mensajeAdvertencia by remember { mutableStateOf("") }
-
-    // Cargar la mesa desde BudgetManager
-    val mesa = remember { mutableStateOf(BudgetManager.loadMesa()) }
-
-    DimensionAwareItemsSection(
-        title = "Cubetas",
-        description = "Seleccione cubetas que se ajusten a las dimensiones de su mesa",
-        imageSrc = Res.Image.cubeta,
-        items = cubetas,
-        allOptions = cubetasConLimites,
-        onItemAdded = { tipo, numero ->
-            val dimensiones = DimensionExtractors.extractCubetaDimensions(tipo)
-            onCubetaAdded(Cubeta(
-                tipo = tipo,
-                largo = dimensiones.first,
-                ancho = dimensiones.second,
-                numero = numero,
-                maxQuantity = numero  // Se actualizará dinámicamente
-            ))
-        },
-        onQuantityChanged = onCantidadChanged,
-        onDeleteClick = onDeleteClick,
-        onQuantityZero = onQuantityZero,
-        itemRenderer = { cubeta, index, limites ->
-            StandardItemRenderer(
-                item = cubeta,
-                index = index,
-                itemWithLimits = limites,
-                onQuantityChanged = { idx, cantidad ->
-                    if (cantidad == 0) {
-                        onQuantityZero(idx)
-                    } else {
-                        onCantidadChanged(idx, cantidad)
-                    }
-                },
-                onDeleteClick = onDeleteClick,
-                getDimensionsText = { extra ->
-                    val dimensiones = extra.tipo.replace(Regex(".*?(\\d+[xX×]\\d+([xX×]\\d+)?).*"), "$1")
-                    "Dimensiones: $dimensiones mm"
-                }
-            )
-        },
-        extractDimensions = DimensionExtractors::extractCubetaDimensions,
-        mesa = mesa.value,
-        showWarningMessage = { mensaje ->
-            mensajeAdvertencia = mensaje
-            mostrarAdvertencia = true
-        }
-    )
-
-    if (mostrarAdvertencia) {
-        AdvertenciaOverlay(
-            mensaje = mensajeAdvertencia,
-            onDismiss = { mostrarAdvertencia = false },
-            autoHide = true,
-            duracionMs = 5000
-        )
+// Función auxiliar para convertir el nombre del elemento a una clave de imagen
+private fun getImageKeyFromElementName(name: String): String {
+    return when (name) {
+        "Peto lateral" -> "PETO_LATERAL"
+        "Kit lavamanos pulsador" -> "KIT_LAVAMANOS_PULSADOR"
+        "Esquina en chaflán" -> "ESQUINA_EN_CHAFLAN"
+        "Kit lavam. pedal simple" -> "KIT_LAVAMANOS_PEDAL_SIMPLE"
+        "Esquina redondeada" -> "ESQUINA_REDONDEADA"
+        "Kit lavam. pedal doble" -> "KIT_LAVAMANOS_PEDAL_DOBLE"
+        "Cajeado columna" -> "CAJEADO_COLUMNA"
+        "Baquetón en seno" -> "BAQUETON_EN_SENO"
+        "Aro de desbarace" -> "ARO_DE_DESBRACE"
+        "Baqueton perimetrico" -> "BAQUETON_PERIMETRICO"
+        else -> ""
     }
-}
-private fun extraerDimensionesCubeta(nombre: String): Pair<Double, Double> {
-    // Para cubetas circulares (diámetro)
-    val regexDiametro = Regex("Diametro (\\d+)x(\\d+)")
-    regexDiametro.find(nombre)?.let {
-        val diametro = it.groupValues[1].toDoubleOrNull() ?: 0.0
-        return Pair(diametro, diametro)
-    }
-
-    // Para cubetas rectangulares o cuadradas (LxAxA)
-    val regexDimensiones = Regex("(\\d+)x(\\d+)x(\\d+)")
-    regexDimensiones.find(nombre)?.let {
-        val largo = it.groupValues[1].toDoubleOrNull() ?: 0.0
-        val ancho = it.groupValues[2].toDoubleOrNull() ?: 0.0
-        return Pair(largo, ancho)
-    }
-
-    // Formato alternativo con × o X
-    val regexAlternativo = Regex("(\\d+)[×X](\\d+)[×X](\\d+)")
-    regexAlternativo.find(nombre)?.let {
-        val largo = it.groupValues[1].toDoubleOrNull() ?: 0.0
-        val ancho = it.groupValues[2].toDoubleOrNull() ?: 0.0
-        return Pair(largo, ancho)
-    }
-
-    // Si no se puede extraer, devolver dimensiones mínimas
-    return Pair(0.0, 0.0)
 }
