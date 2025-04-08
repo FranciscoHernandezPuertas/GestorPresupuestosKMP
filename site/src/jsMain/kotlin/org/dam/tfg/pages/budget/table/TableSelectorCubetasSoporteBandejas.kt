@@ -52,6 +52,7 @@ import com.varabyte.kobweb.silk.components.icons.fa.FaPlus
 import com.varabyte.kobweb.silk.components.icons.fa.FaTrash
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
+import com.varabyte.kobweb.silk.style.toModifier
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
@@ -65,6 +66,7 @@ import org.dam.tfg.models.table.Cubeta
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
 import org.dam.tfg.services.DimensionService
+import org.dam.tfg.styles.DropdownItemStyle
 import org.dam.tfg.util.BudgetManager
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.DimensionExtractors
@@ -653,7 +655,7 @@ fun DropdownSelector(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .position(Position.Relative) // Importante para posicionamiento correcto
+            .position(Position.Relative)
     ) {
         // Selector visible
         Row(
@@ -684,6 +686,16 @@ fun DropdownSelector(
 
         // Menú desplegable
         if (mostrarOpciones) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .position(Position.Fixed)
+                    .top(0.px)
+                    .left(0.px)
+                    .zIndex(99)
+                    .onClick { mostrarOpciones = false }
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -698,10 +710,12 @@ fun DropdownSelector(
                     .borderRadius(4.px)
                     .maxHeight(200.px)
                     .overflow(Overflow.Auto)
+                    .onClick { it.stopPropagation() },
+                verticalArrangement = Arrangement.Top
             ) {
                 opciones.forEach { opcion ->
                     Box(
-                        modifier = Modifier
+                        modifier = DropdownItemStyle.toModifier()
                             .fillMaxWidth()
                             .padding(10.px)
                             .cursor(Cursor.Pointer)

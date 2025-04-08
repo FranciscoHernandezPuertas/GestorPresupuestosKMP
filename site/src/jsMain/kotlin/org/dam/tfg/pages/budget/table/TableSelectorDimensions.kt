@@ -334,10 +334,17 @@ fun TableSelectorDimensionsContent() {
                             errors["tramo_${index + 1}"] =
                                 "El ancho debe estar entre ${limiteTramo.minAncho.toInt()} y ${limiteTramo.maxAncho.toInt()} mm"
                         }
-                        if (tramo.largo <= 0) {
-                            errors["tramo_${index + 1}"] = "Debe ingresar un valor para el largo"
+                        if(tramo.largo < limiteTramo.minLargo && tramo.ancho < limiteTramo.minAncho) {
+                            errors["tramo_${index + 1}"] = "El largo y el ancho deben ser mayores que los mínimos"
                         }
-                        if (tramo.ancho <= 0) {
+                        if(tramo.largo > limiteTramo.maxLargo && tramo.ancho > limiteTramo.maxAncho) {
+                            errors["tramo_${index + 1}"] = "El largo y el ancho deben ser menores que los máximos"
+                        }
+                        if(tramo.largo <= 0 && tramo.ancho <= 0) {
+                            errors["tramo_${index + 1}"] = "Debe ingresar un valor para el largo y el ancho"
+                        } else if (tramo.largo <= 0) {
+                            errors["tramo_${index + 1}"] = "Debe ingresar un valor para el largo"
+                        } else if (tramo.ancho <= 0) {
                             errors["tramo_${index + 1}"] = "Debe ingresar un valor para el ancho"
                         }
                     }
@@ -601,7 +608,7 @@ fun RadioOption(
                     .border(
                         width = 2.px,
                         style = LineStyle.Solid,
-                        color = if (selected) Theme.Primary.rgb else Theme.LightGray.rgb
+                        color = if (selected) Theme.Primary.rgb else Theme.HalfBlack.rgb
                     )
                     .borderRadius(50.percent)
                     .backgroundColor(Colors.White),

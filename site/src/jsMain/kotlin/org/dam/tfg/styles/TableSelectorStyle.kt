@@ -21,7 +21,7 @@ val TableSelectorStyle = CssStyle {
         Modifier.border(
             width = 2.px,
             style = LineStyle.Solid,
-            color = Theme.LightGray.rgb
+            color = Theme.HalfBlack.rgb
         ).then(
             Modifier
                 .borderRadius(4.px)
@@ -56,7 +56,7 @@ val RadioButtonStyle = CssStyle {
             .border(
                 width = 2.px,
                 style = LineStyle.Solid,
-                color = Theme.LightGray.rgb
+                color = Theme.HalfBlack.rgb
             )
             .borderRadius(50.percent)
             .backgroundColor(Colors.White)
