@@ -1,6 +1,7 @@
 package org.dam.tfg.pages
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,8 @@ import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Input
 import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.events.Event
+import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.set
 
 
@@ -66,6 +69,57 @@ fun LoginScreen() {
     val scope = rememberCoroutineScope()
     val context = rememberPageContext()
     var errorText by remember { mutableStateOf("") }
+
+    fun attemptLogin() {
+        scope.launch {
+            val username = (document.getElementById(Id.usernameInput) as HTMLInputElement).value
+            val password = (document.getElementById(Id.passwordInput) as HTMLInputElement).value
+            if(username.isNotEmpty() && password.isNotEmpty()) {
+                val user = checkUserExistence(
+                    user = User(
+                        username = username,
+                        password = password
+                    )
+                )
+                if(user != null) {
+                    rememberLoggedIn(remember = true, user = user)
+                    if(user.type == "admin") {
+                        context.router.navigateTo(Screen.AdminHome.route)
+                    } else {
+                        context.router.navigateTo(Screen.Home.route)
+                    }
+                }
+                else {
+                    errorText = "Usuario o contraseña incorrectos"
+                    delay(3000)
+                    errorText = " "
+                }
+            }
+            else {
+                errorText = "Los campos de usuario y contraseña están vacíos"
+                delay(3000)
+                errorText = " "
+            }
+        }
+    }
+
+    // Manejador global de evento de teclado
+    DisposableEffect(Unit) {
+        val keyListener: (Event) -> Unit = { event ->
+            if (event is KeyboardEvent && event.key == "Enter") {
+                attemptLogin()
+            }
+        }
+
+        // Agregar el listener al documento
+        document.addEventListener("keydown", keyListener)
+
+        // Eliminar el listener cuando el componente se desmonte
+        onDispose {
+            document.removeEventListener("keydown", keyListener)
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -146,38 +200,7 @@ fun LoginScreen() {
                         color = Colors.Transparent
                     )
                     .cursor(Cursor.Pointer)
-                    .onClick {
-                        scope.launch {
-                            val username = (document.getElementById(Id.usernameInput) as HTMLInputElement).value
-                            val password = (document.getElementById(Id.passwordInput) as HTMLInputElement).value
-                            if(username.isNotEmpty() && password.isNotEmpty()) {
-                                val user = checkUserExistence(
-                                    user = User(
-                                        username = username,
-                                        password = password
-                                    )
-                                )
-                                if(user != null) {
-                                    rememberLoggedIn(remember = true, user = user)
-                                    if(user.type == "admin") {
-                                        context.router.navigateTo(Screen.AdminHome.route)
-                                    } else {
-                                        context.router.navigateTo(Screen.Home.route)
-                                    }
-                                }
-                                else {
-                                    errorText = "Usuario no encontrado"
-                                    delay(3000)
-                                    errorText = " "
-                                }
-                            }
-                            else {
-                                errorText = "Los campos de usuario y contraseña están vacíos"
-                                delay(3000)
-                                errorText = " "
-                            }
-                        }
-                    }
+                    .onClick { attemptLogin() }
                     .toAttrs(),
             ) {
                 SpanText("Iniciar Sesión")
