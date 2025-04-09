@@ -97,6 +97,7 @@ fun TableSelectorCubetasContent() {
     var cubetasSeleccionadas by remember { mutableStateOf<List<Cubeta>>(emptyList()) }
     // Estados para confirmaciones y mensajes
     var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
+    var mostrarConfirmacionEliminarTodo by remember { mutableStateOf(false) }
     var elementoAEliminar by remember { mutableStateOf<Pair<Cubeta, Boolean>?>(null) } // Cubeta, esCubeta
     var mensajeError by remember { mutableStateOf("") }
     var mostrarMensajeError by remember { mutableStateOf(false) }
@@ -218,11 +219,14 @@ fun TableSelectorCubetasContent() {
                     imagen = resourceProvider.getImagePath("CUBETA"),
                     opciones = opcionesCubetasDisponibles,
                     elementosSeleccionados = cubetasSeleccionadas,
-                    onAñadir = { anadirCubeta(it) },
+                    onAnadir = { anadirCubeta(it) },
                     onActualizarCantidad = { cubeta, cantidad -> actualizarCantidadCubeta(cubeta, cantidad) },
                     onEliminar = {
                         elementoAEliminar = Pair(it, true)
                         mostrarConfirmacionEliminar = true
+                    },
+                    onEliminarTodo = {
+                        mostrarConfirmacionEliminarTodo = true
                     },
                     breakpoint = breakpoint,
                     resourceProvider = resourceProvider
@@ -241,11 +245,14 @@ fun TableSelectorCubetasContent() {
                             imagen = resourceProvider.getImagePath("CUBETA"),
                             opciones = opcionesCubetasDisponibles,
                             elementosSeleccionados = cubetasSeleccionadas,
-                            onAñadir = { anadirCubeta(it) },
+                            onAnadir = { anadirCubeta(it) },
                             onActualizarCantidad = { cubeta, cantidad -> actualizarCantidadCubeta(cubeta, cantidad) },
                             onEliminar = {
                                 elementoAEliminar = Pair(it, true)
                                 mostrarConfirmacionEliminar = true
+                            },
+                            onEliminarTodo = {
+                                mostrarConfirmacionEliminarTodo = true
                             },
                             breakpoint = breakpoint,
                             resourceProvider = resourceProvider
@@ -274,6 +281,22 @@ fun TableSelectorCubetasContent() {
             )
         }
 
+        // Diálogo de confirmación para eliminar todas las cubetas
+        if (mostrarConfirmacionEliminarTodo) {
+            ConfirmationDialog(
+                mensaje = "¿Está seguro que desea eliminar todas las cubetas?",
+                onConfirm = {
+                    cubetasSeleccionadas = emptyList()
+                    opcionesCubetasDisponibles = getOpcionesDisponibles(emptyList())
+                    BudgetManager.saveCubetas(emptyList())
+                    mostrarConfirmacionEliminarTodo = false
+                },
+                onCancel = {
+                    mostrarConfirmacionEliminarTodo = false
+                }
+            )
+        }
+
         // Mensaje de error
         if (mostrarMensajeError) {
             MensajeError(
@@ -286,7 +309,7 @@ fun TableSelectorCubetasContent() {
     // Footer con navegación
     BudgetFooter(
         previousScreen = Screen.TableSelectorElements,
-        nextScreen = Screen.TableSelectorDimensions,
+        nextScreen = Screen.TableSelectorModules,
         validateData = { guardarSelecciones() },
         saveData = { /* Opcional: lógica adicional al guardar */ }
     )
@@ -298,9 +321,10 @@ fun SelectorElementos(
     imagen: String,
     opciones: List<ItemWithLimits>,
     elementosSeleccionados: List<Cubeta>,
-    onAñadir: (String) -> Unit,
+    onAnadir: (String) -> Unit,
     onActualizarCantidad: (Cubeta, Int) -> Unit,
     onEliminar: (Cubeta) -> Unit,
+    onEliminarTodo: () -> Unit,
     breakpoint: Breakpoint,
     resourceProvider: WebResourceProvider
 ) {
@@ -316,18 +340,21 @@ fun SelectorElementos(
             .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 5.px, color = rgba(0, 0, 0, 0.1f))
             .padding(15.px)
     ) {
-        // Título del selector
-        SpanText(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fontFamily(FONT_FAMILY)
-                .fontSize(18.px)
-                .fontWeight(FontWeight.Bold)
-                .color(Theme.Primary.rgb)
-                .textAlign(TextAlign.Center)
-                .margin(bottom = 15.px),
-            text = titulo
-        )
+        // Título y botón eliminar all
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SpanText(
+                modifier = Modifier
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(18.px)
+                    .fontWeight(FontWeight.Bold)
+                    .color(Theme.Primary.rgb),
+                text = titulo
+            )
+        }
 
         // Sección de selección y añadir
         Row(
@@ -369,7 +396,7 @@ fun SelectorElementos(
                     .cursor(if (seleccionActual.isEmpty()) Cursor.Default else Cursor.Pointer)
                     .onClick {
                         if (seleccionActual.isNotEmpty())
-                        onAñadir(seleccionActual)
+                        onAnadir(seleccionActual)
                         seleccionActual = ""
                     },
                 contentAlignment = Alignment.Center
@@ -387,14 +414,50 @@ fun SelectorElementos(
                     .fillMaxWidth()
                     .margin(top = 20.px)
             ) {
-                SpanText(
-                    modifier = Modifier
-                        .fontFamily(FONT_FAMILY)
-                        .fontSize(16.px)
-                        .fontWeight(FontWeight.Bold)
-                        .margin(bottom = 10.px),
-                    text = "Elementos seleccionados:"
-                )
+                // Título y botón de eliminar en la misma fila
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SpanText(
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .fontWeight(FontWeight.Bold),
+                        text = "Elementos seleccionados:"
+                    )
+
+                    // Botón eliminar a la derecha
+                    Box(
+                        modifier = Modifier
+                            .backgroundColor(Colors.Red)
+                            .borderRadius(4.px)
+                            .padding(8.px)
+                            .margin(bottom = 4.px)
+                            .cursor(Cursor.Pointer)
+                            .onClick { onEliminarTodo() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            FaTrash(
+                                modifier = Modifier.color(Colors.White)
+                            )
+                            SpanText(
+                                modifier = Modifier
+                                    .margin(left = 8.px)
+                                    .fontFamily(FONT_FAMILY)
+                                    .fontSize(14.px)
+                                    .color(Colors.White),
+                                text = "Eliminar todo"
+                            )
+                        }
+                    }
+                }
+
+                Spacer()
 
                 elementosSeleccionados.forEach { elemento ->
                     ElementoSeleccionadoItem(
@@ -527,7 +590,17 @@ fun ElementoSeleccionadoItem(
     onEliminar: () -> Unit,
     isMobile: Boolean
 ) {
-    val dimensiones = "${elemento.largo.toInt()} x ${elemento.fondo.toInt()} mm"
+    val dimensiones = if (elemento.tipo.startsWith("Diametro")) {
+        // Extraemos directamente los valores del tipo
+        val match = Regex("Diametro (\\d+)x(\\d+)").find(elemento.tipo)
+        val diametro = match?.groupValues?.get(1) ?: "0"
+        val alto = match?.groupValues?.get(2) ?: "0"
+        "Diámetro: $diametro mm, Alto: $alto mm"
+    } else {
+        // Para cubetas rectangulares y cuadradas
+        "Largo: ${elemento.largo.toInt()} mm, Fondo: ${elemento.fondo.toInt()} mm" +
+                (elemento.alto?.let { ", Alto: ${it.toInt()} mm" } ?: "")
+    }
     val maxCantidad = elemento.maxQuantity ?: Int.MAX_VALUE
     val minCantidad = ElementosConstantes.LIMITES_CUBETAS[elemento.tipo]?.minQuantity ?: 0
 
@@ -558,6 +631,7 @@ fun ElementoSeleccionadoItem(
                         text = elemento.tipo
                     )
 
+                    // Botón eliminar
                     Box(
                         modifier = Modifier
                             .backgroundColor(Colors.Red)
@@ -567,9 +641,7 @@ fun ElementoSeleccionadoItem(
                             .onClick { onEliminar() },
                         contentAlignment = Alignment.Center
                     ) {
-                        FaTrash(
-                            modifier = Modifier.color(Colors.White)
-                        )
+                        FaTrash(modifier = Modifier.color(Colors.White))
                     }
                 }
 
@@ -583,23 +655,29 @@ fun ElementoSeleccionadoItem(
                     text = "Dimensiones: $dimensiones"
                 )
 
-                // Selector de cantidad
-                QuantitySelector(
-                    value = elemento.numero,
-                    min = minCantidad,
-                    max = maxCantidad,
-                    onValueChange = { onCantidadChange(it) }
-                )
+                // Selector de cantidad (alineado a la derecha)
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    QuantitySelector(
+                        value = elemento.numero,
+                        min = minCantidad,
+                        max = maxCantidad,
+                        onValueChange = { onCantidadChange(it) }
+                    )
+                }
             }
         } else {
             // Versión escritorio (en línea)
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start, // Cambiado de SpaceBetween a Start
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Info del elemento
                 Column(
-                    modifier = Modifier.width(60.percent)
+                    modifier = Modifier.width(350.px)
                 ) {
                     SpanText(
                         modifier = Modifier
@@ -618,33 +696,36 @@ fun ElementoSeleccionadoItem(
                     )
                 }
 
-                // Selector de cantidad
-                Box(
-                    modifier = Modifier.width(30.percent),
-                    contentAlignment = Alignment.Center
+                // Espaciador flexible para empujar los controles a la derecha
+                Spacer()
+
+                // Controles a la derecha
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Selector de cantidad
                     QuantitySelector(
                         value = elemento.numero,
-                        min = 1,
+                        min = minCantidad,
                         max = maxCantidad,
                         onValueChange = { onCantidadChange(it) }
                     )
-                }
 
-                // Botón eliminar
-                Box(
-                    modifier = Modifier
-                        .width(10.percent)
-                        .backgroundColor(Colors.Red)
-                        .borderRadius(4.px)
-                        .padding(8.px)
-                        .cursor(Cursor.Pointer)
-                        .onClick { onEliminar() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    FaTrash(
-                        modifier = Modifier.color(Colors.White)
-                    )
+                    // Botón eliminar
+                    Box(
+                        modifier = Modifier
+                            .margin(left = 10.px)
+                            .backgroundColor(Colors.Red)
+                            .borderRadius(4.px)
+                            .padding(8.px)
+                            .cursor(Cursor.Pointer)
+                            .onClick { onEliminar() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FaTrash(
+                            modifier = Modifier.color(Colors.White)
+                        )
+                    }
                 }
             }
         }

@@ -80,7 +80,7 @@ El sistema implementa varias capas de seguridad:
 
 Progreso: 
 
-![Progreso](https://progress-bar.xyz/40)
+![Progreso](https://progress-bar.xyz/42)
 
 ### Implementado (✅)
 - Sistema completo de autenticación con JWT
