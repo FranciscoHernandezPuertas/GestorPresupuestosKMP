@@ -13,22 +13,22 @@ object ElementosConstantes {
 
     val MESAS_LIMITES = mapOf(
         "1 tramo" to mapOf(
-            1 to LimiteTramo(numTramo = 1, minLargo = 400.0, maxLargo = 1000.0, minAncho = 400.0, maxAncho = 800.0)
+            1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         ),
         "2 tramos" to mapOf(
-            1 to LimiteTramo(numTramo = 1, minLargo = 400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0),
-            2 to LimiteTramo(numTramo = 2, minLargo =  400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0)
+            1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
+            2 to LimiteTramo(numTramo = 2, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         ),
         "3 tramos" to mapOf(
-            1 to LimiteTramo(numTramo = 1, minLargo = 400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0),
-            2 to LimiteTramo(numTramo = 2, minLargo =  400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0),
-            3 to LimiteTramo(numTramo = 3, minLargo =  400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0)
+            1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
+            2 to LimiteTramo(numTramo = 2, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
+            3 to LimiteTramo(numTramo = 3, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         ),
         "4 tramos" to mapOf(
-            1 to LimiteTramo(numTramo = 1, minLargo = 400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0),
-            2 to LimiteTramo(numTramo = 2, minLargo =  400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0),
-            3 to LimiteTramo(numTramo = 3, minLargo =  400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0),
-            4 to LimiteTramo(numTramo = 4, minLargo =  400.0, maxLargo = 2000.0, minAncho = 400.0, maxAncho = 800.0)
+            1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
+            2 to LimiteTramo(numTramo = 2, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
+            3 to LimiteTramo(numTramo = 3, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
+            4 to LimiteTramo(numTramo = 4, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         )
     )
 

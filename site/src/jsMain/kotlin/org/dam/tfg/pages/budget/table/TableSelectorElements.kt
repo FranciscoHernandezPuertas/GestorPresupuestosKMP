@@ -109,7 +109,6 @@ fun TableSelectorElementsContent() {
         BudgetManager.saveMesaData(
             tipoMesa = BudgetManager.getMesaTipo(),
             tramos = BudgetManager.getMesaTramos(),
-            material = BudgetManager.getMesaMaterial(),
             extras = nombresElementos,
             precioTotal = BudgetManager.getMesaPrecioTotal()
         )

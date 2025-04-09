@@ -3,7 +3,7 @@ package org.dam.tfg.services
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.table.Extra
 import org.dam.tfg.models.table.Mesa
-
+/*
 class DimensionService {
     // Calcular el área total de la mesa
     fun calcularAreaTotal(mesa: Mesa): Double {
@@ -92,4 +92,4 @@ class DimensionService {
 
     // Extensión para manejar nullable Double
     private fun Double?.orZero() = this ?: 0.0
-}
+} */

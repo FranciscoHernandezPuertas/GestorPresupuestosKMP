@@ -8,7 +8,6 @@ data class Mesa(
     val tipo: String = "",
     val tramos: List<Tramo> = listOf(),
     val extras: List<Extra> = listOf(),
-    var material: Material? = null,
     var precioTotal: Double = 0.0,
     var error: String = ""
 ) {

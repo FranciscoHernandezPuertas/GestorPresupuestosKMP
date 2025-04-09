@@ -49,6 +49,7 @@ import org.dam.tfg.components.ValidationError
 import org.dam.tfg.constants.ElementosConstantes
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.table.LimiteTramo
+import org.dam.tfg.models.table.TipoTramo
 import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
@@ -93,6 +94,35 @@ fun TableSelectorDimensionsContent() {
     val containerPadding = if (breakpoint >= Breakpoint.MD) 16.px else 10.px
     val titleFontSize = if (breakpoint >= Breakpoint.MD) 24.px else 20.px
 
+    val mesaImagePath = remember { mutableStateOf("") }
+
+    fun generateMesaImageKey(): String {
+        val count = tramos.size
+
+        if (count == 1) {
+            return "MESA_1TRAMO_" + if (tramos[0].tipo == TipoTramo.CENTRAL) "CENTRAL" else "MURAL"
+        }
+
+        val tipoKey = tramos.take(count)
+            .map { if (it.tipo == TipoTramo.CENTRAL) "C" else "M" }
+            .joinToString("")
+
+        return "MESA_${count}TRAMOS_$tipoKey"
+    }
+
+    fun updateMesaImagePath() {
+        mesaImagePath.value = resourceProvider.getImagePath(generateMesaImageKey())
+    }
+
+    val onTipoTramoChange = { index: Int, tipoTramo: TipoTramo ->
+        tramos = tramos.toMutableList().also { list ->
+            if (index < list.size) {
+                list[index] = list[index].copy(tipo = tipoTramo)
+            }
+        }
+        updateMesaImagePath()
+    }
+
     // Cargar datos guardados (se mantiene igual)
     LaunchedEffect(Unit) {
         val savedTramos = BudgetManager.getMesaTramos()
@@ -115,7 +145,8 @@ fun TableSelectorDimensionsContent() {
                 Tramo(
                     numero = index + 1,
                     largo = 0.0,
-                    ancho = 0.0
+                    ancho = 0.0,
+                    tipo = TipoTramo.CENTRAL
                 )
             }
         }
@@ -129,7 +160,8 @@ fun TableSelectorDimensionsContent() {
                     Tramo(
                         numero = tramos.size + index + 1,
                         largo = 0.0,
-                        ancho = 0.0
+                        ancho = 0.0,
+                        tipo = TipoTramo.CENTRAL
                     )
                 }
             } else {
@@ -148,6 +180,15 @@ fun TableSelectorDimensionsContent() {
             }
             tramosInputValues = inputValues
         }
+    }
+
+    LaunchedEffect(selectedTramoCount, tramos) {
+        updateMesaImagePath()
+    }
+
+    // Actualizar imagen al iniciar el componente
+    LaunchedEffect(Unit) {
+        updateMesaImagePath()
     }
 
     Box(
@@ -218,6 +259,7 @@ fun TableSelectorDimensionsContent() {
                                 selectedTramoCount = selectedTramoCount,
                                 limites = limites,
                                 validationErrors = validationErrors,
+                                isMobile = breakpoint < Breakpoint.MD,
                                 onValueChange = { tramoIndex, fieldType, newValue ->
                                     tramosInputValues = tramosInputValues.toMutableMap().apply {
                                         put("${fieldType}_${tramoIndex + 1}", newValue)
@@ -233,7 +275,8 @@ fun TableSelectorDimensionsContent() {
                                     tramos = tramos.toMutableList().apply {
                                         this[tramoIndex] = tramoActualizado
                                     }
-                                }
+                                },
+                                onTipoTramoChange = onTipoTramoChange  // Aquí pasamos el nuevo parámetro
                             )
                         }
                     }
@@ -268,7 +311,7 @@ fun TableSelectorDimensionsContent() {
                                 selectedTramoCount = selectedTramoCount,
                                 limites = limites,
                                 validationErrors = validationErrors,
-                                isMobile = true,
+                                isMobile = breakpoint < Breakpoint.MD,
                                 onValueChange = { tramoIndex, fieldType, newValue ->
                                     tramosInputValues = tramosInputValues.toMutableMap().apply {
                                         put("${fieldType}_${tramoIndex + 1}", newValue)
@@ -284,7 +327,8 @@ fun TableSelectorDimensionsContent() {
                                     tramos = tramos.toMutableList().apply {
                                         this[tramoIndex] = tramoActualizado
                                     }
-                                }
+                                },
+                                onTipoTramoChange = onTipoTramoChange
                             )
                         }
                     }
@@ -309,7 +353,7 @@ fun TableSelectorDimensionsContent() {
                         .width(if (breakpoint >= Breakpoint.MD) 350.px else 250.px)
                         .height(if (breakpoint >= Breakpoint.MD) 200.px else 140.px)
                         .padding(10.px),
-                    src = resourceProvider.getImagePath("MESA_TRAMOS_$selectedTramoCount"),
+                    src = mesaImagePath.value,
                     alt = "Mesa con $selectedTramoCount tramos"
                 )
             }
@@ -392,13 +436,14 @@ fun DimensionFields(
     limites: Map<String, Map<Int, LimiteTramo>>,
     validationErrors: Map<String, String>,
     isMobile: Boolean = false,
-    onValueChange: (Int, String, String) -> Unit
+    onValueChange: (Int, String, String) -> Unit,
+    onTipoTramoChange: (Int, TipoTramo) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(if (isMobile) 24.px else 10.px) // Mayor espacio en móvil
+        verticalArrangement = Arrangement.spacedBy(if (isMobile) 24.px else 10.px),
     ) {
-        tramos.forEachIndexed { index, _ ->
+        tramos.forEachIndexed { index, tramo ->
             val clave = if (selectedTramoCount == 1) "1 tramo" else "$selectedTramoCount tramos"
             val limiteTramo = limites[clave]?.get(index + 1)
 
@@ -407,22 +452,48 @@ fun DimensionFields(
                     .fillMaxWidth()
                     .padding(2.px)
             ) {
-                SpanText(
-                    modifier = Modifier
-                        .margin(bottom = 8.px)
-                        .fontSize(16.px)
-                        .fontWeight(FontWeight.Medium)
-                        .fontFamily(FONT_FAMILY)
-                        .color(Theme.Secondary.rgb),
-                    text = "Tramo ${index + 1}"
-                )
+                // Cabecera con título y radio buttons de tipo de tramo
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start // Cambiado de SpaceBetween a Start
+                ) {
+                    SpanText(
+                        modifier = Modifier
+                            .margin(right = 16.px) // Añadido margen a la derecha en lugar de margen inferior
+                            .fontSize(16.px)
+                            .fontWeight(FontWeight.Medium)
+                            .fontFamily(FONT_FAMILY)
+                            .color(Theme.Secondary.rgb),
+                        text = "Tramo ${index + 1}"
+                    )
+
+                    // Radio buttons para tipo de tramo (ahora junto al texto)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.px)
+                    ) {
+                        TipoTramoRadioOption(
+                            id = "tramo_${index + 1}_central",
+                            text = "Central",
+                            selected = tramo.tipo == TipoTramo.CENTRAL,
+                            onSelected = { onTipoTramoChange(index, TipoTramo.CENTRAL) }
+                        )
+
+                        TipoTramoRadioOption(
+                            id = "tramo_${index + 1}_mural",
+                            text = "Mural",
+                            selected = tramo.tipo == TipoTramo.MURAL,
+                            onSelected = { onTipoTramoChange(index, TipoTramo.MURAL) }
+                        )
+                    }
+                }
 
                 if (isMobile) {
-                    // Layout para móvil: campos uno debajo del otro con más espacio
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.spacedBy(12.px) // Espacio entre campos
+                        verticalArrangement = Arrangement.spacedBy(12.px)
                     ) {
                         // Campo largo
                         DimensionField(
@@ -451,7 +522,6 @@ fun DimensionFields(
                         )
                     }
                 } else {
-                    // Layout para desktop: campos lado a lado
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -630,6 +700,76 @@ fun RadioOption(
             attrs = Modifier
                 .fontFamily(FONT_FAMILY)
                 .fontSize(16.px)
+                .margin(left = 8.px)
+                .color(Theme.Secondary.rgb)
+                .toAttrs {
+                    attr("for", id)
+                }
+        ) {
+            Text(text)
+        }
+    }
+}
+
+@Composable
+fun TipoTramoRadioOption(
+    id: String,
+    text: String,
+    selected: Boolean,
+    onSelected: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.width(20.px).height(20.px)
+        ) {
+            // Input radio real pero escondido
+            Input(
+                type = InputType.Radio,
+                attrs = Modifier
+                    .id(id)
+                    .toAttrs {
+                        name(id)
+                        checked(selected)
+                        onChange { onSelected() }
+                        style {
+                            property("opacity", "0")
+                            property("position", "absolute")
+                        }
+                    }
+            )
+
+            // Círculo personalizado visible
+            Box(
+                modifier = TableSelectorStyle.toModifier()
+                    .width(20.px)
+                    .height(20.px)
+                    .border(
+                        width = 2.px,
+                        style = LineStyle.Solid,
+                        color = if (selected) Theme.Primary.rgb else Theme.HalfBlack.rgb
+                    )
+                    .borderRadius(50.percent)
+                    .backgroundColor(Colors.White),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
+                    Box(
+                        modifier = Modifier
+                            .width(12.px)
+                            .height(12.px)
+                            .backgroundColor(Theme.Primary.rgb)
+                            .borderRadius(50.percent)
+                    )
+                }
+            }
+        }
+
+        Label(
+            attrs = Modifier
+                .fontFamily(FONT_FAMILY)
+                .fontSize(14.px)
                 .margin(left = 8.px)
                 .color(Theme.Secondary.rgb)
                 .toAttrs {

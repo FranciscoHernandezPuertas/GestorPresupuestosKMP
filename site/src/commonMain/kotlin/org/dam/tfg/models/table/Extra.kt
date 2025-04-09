@@ -7,7 +7,7 @@ sealed class Extra {
     abstract val tipo: String
     abstract val numero: Int
     abstract val largo: Double?
-    abstract val ancho: Double?
+    abstract val fondo: Double?
     abstract val alto: Double? // opcional, en milímetros
     abstract val precio: Double
     abstract fun calcularPrecio(): Double
@@ -21,7 +21,7 @@ data class ElementosGenerales (
     val nombre: String = "",
     override val numero: Int = 0,
     override val largo: Double? = null,
-    override val ancho: Double? = null,
+    override val fondo: Double? = null,
     override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = ""

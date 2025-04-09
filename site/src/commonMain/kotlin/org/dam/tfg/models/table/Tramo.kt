@@ -7,6 +7,7 @@ data class Tramo(
     val numero: Int = 0,
     val largo: Double = 0.0,
     val ancho: Double = 0.0,
+    val tipo: TipoTramo = TipoTramo.CENTRAL,
     var error: String = ""
 ) {
     fun isValid(): Boolean {

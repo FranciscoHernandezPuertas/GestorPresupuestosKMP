@@ -40,8 +40,6 @@ interface BudgetRepository {
     fun getMesaTramos(): List<Tramo>
     fun setMesaExtras(extras: List<String>)
     fun getMesaExtras(): List<String>
-    fun setMesaMaterial(material: String)
-    fun getMesaMaterial(): String
     fun setMesaPrecioTotal(precioTotal: Double)
     fun getMesaPrecioTotal(): Double
 }

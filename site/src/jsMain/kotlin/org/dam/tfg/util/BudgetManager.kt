@@ -18,20 +18,17 @@ object BudgetManager {
     fun saveMesaData(
         tipoMesa: String,
         tramos: List<Tramo>,
-        material: String = "",
         extras: List<String> = emptyList(),
         precioTotal: Double = 0.0
     ) {
         repository.setMesaTipo(tipoMesa)
         repository.setMesaTramos(tramos)
-        repository.setMesaMaterial(material)
         repository.setMesaExtras(extras)
         repository.setMesaPrecioTotal(precioTotal)
     }
 
     fun getMesaTipo(): String = repository.getMesaTipo()
     fun getMesaTramos(): List<Tramo> = repository.getMesaTramos()
-    fun getMesaMaterial(): String = repository.getMesaMaterial()
     fun getMesaExtras(): List<String> = repository.getMesaExtras()
     fun getMesaPrecioTotal(): Double = repository.getMesaPrecioTotal()
 
@@ -63,38 +60,13 @@ object BudgetManager {
         nombre: String,
         largo: Double,
         ancho: Double,
+        alto: Double = 0.0,
         cantidad: Int = 1
     ): Boolean {
-        val areaCubeta = largo * ancho * cantidad
-        val areaMesa = calcularAreaTotalMesa()
-
-        // Verificar que las dimensiones caben físicamente
-        val tramos = getMesaTramos()
-        if (tramos.isEmpty()) return false
-
-        val maxLargo = tramos.maxOf { it.largo }
-        val maxAncho = tramos.maxOf { it.ancho }
-
-        // Primero verificamos que las dimensiones físicas sean compatibles
-        if (largo > maxLargo || ancho > maxAncho) {
-            // Si no cabe en una orientación, intentar rotando
-            if (ancho > maxLargo || largo > maxAncho) {
-                return false
-            }
-        }
-
-        // Calcular área total actual ocupada por cubetas
         val cubetasActuales = getCubetas()
-        val areaOcupada = cubetasActuales.sumOf { it.largo * it.ancho * it.numero }
 
-        // Verificar si hay espacio disponible (ahora con un límite más generoso del 90%)
-        if (areaOcupada + areaCubeta > areaMesa * 0.90) {
-            return false
-        }
-
-        // Agregar cubeta
         val nuevasCubetas = cubetasActuales.toMutableList()
-        nuevasCubetas.add(Cubeta(nombre, cantidad, largo, ancho, maxQuantity = cantidad))
+        nuevasCubetas.add(Cubeta(nombre, cantidad, largo, ancho, alto, maxQuantity = cantidad))
         saveCubetas(nuevasCubetas)
         return true
     }

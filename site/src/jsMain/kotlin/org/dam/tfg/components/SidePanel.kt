@@ -148,6 +148,14 @@ private fun NavigationItems() {
     )
     NavigationItem(
         modifier = Modifier.margin(bottom = 24.px),
+        title = "Historial",
+        icon = Res.PathIcon.history,
+        onClick = {
+            context.router.navigateTo(Screen.AdminHistory.route)
+        }
+    )
+    NavigationItem(
+        modifier = Modifier.margin(bottom = 24.px),
         title = "Pantalla Principal",
         selected = context.route.path == Screen.Home.route,
         icon = Res.PathIcon.index,

@@ -7,7 +7,7 @@ data class Cubeta(
     override val tipo: String = "Cubeta",
     override val numero: Int = 0,
     override val largo: Double = 0.0,
-    override val ancho: Double = 0.0,
+    override val fondo: Double = 0.0,
     override val alto: Double? = null,
     override val precio: Double = 0.0,
     override var error: String = "",
@@ -24,7 +24,7 @@ data class Cubeta(
             error = "El largo debe ser mayor a 0"
             return false
         }
-        if (ancho <= 0) {
+        if (fondo <= 0) {
             error = "El ancho debe ser mayor a 0"
             return false
         }

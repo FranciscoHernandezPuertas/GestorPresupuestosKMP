@@ -168,12 +168,7 @@ class BudgetRepositoryJs : BudgetRepository {
             emptyList()
         }
     }
-    override fun setMesaMaterial(material: String) {
-        localStorage["mesa_material"] = material
-    }
-    override fun getMesaMaterial(): String {
-        return localStorage["mesa_material"] ?: ""
-    }
+
     override fun setMesaPrecioTotal(precioTotal: Double) {
         localStorage["mesa_precio_total"] = precioTotal.toString()
     }
