@@ -1,0 +1,114 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definiciones de gradientes para efecto metálico -->
+  <defs>
+    <!-- Gradiente principal para la superficie metálica -->
+    <linearGradient id="metalSurface" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   style="stop-color:#E8E8E8" />
+      <stop offset="25%"  style="stop-color:#D0D0D0" />
+      <stop offset="50%"  style="stop-color:#C0C0C0" />
+      <stop offset="75%"  style="stop-color:#D8D8D8" />
+      <stop offset="100%" style="stop-color:#E0E0E0" />
+    </linearGradient>
+    
+    <!-- Gradiente para el chaflán -->
+    <linearGradient id="metalBevel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   style="stop-color:#B8B8B8" />
+      <stop offset="50%"  style="stop-color:#D0D0D0" />
+      <stop offset="100%" style="stop-color:#A0A0A0" />
+    </linearGradient>
+    
+    <!-- Efecto de brillo metálico -->
+    <linearGradient id="metalShine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   style="stop-color:rgba(255,255,255,0.7)" />
+      <stop offset="50%"  style="stop-color:rgba(255,255,255,0)" />
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.2)" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Superficie principal de la mesa con chaflán (vista aérea) -->
+  <path d="M 30,20
+           L 150,20
+           L 180,50
+           L 180,130
+           Q 180,140 170,140
+           L 30,140
+           Q 20,140 20,130
+           L 20,30
+           Q 20,20 30,20
+           Z"
+        fill="url(#metalSurface)"
+        stroke="#888888"
+        stroke-width="1.5" />
+
+  <!-- Sombreado del chaflán para dar profundidad -->
+  <path d="M 150,20
+           L 180,50
+           L 150,50
+           Z"
+        fill="url(#metalBevel)"
+        stroke="#999999"
+        stroke-width="0.5" />
+
+  <!-- Efecto de brillo metálico en la superficie principal -->
+  <path d="M 30,25
+           L 148,25
+           L 175,52
+           L 175,130
+           Q 175,135 170,135
+           L 30,135
+           Q 25,135 25,130
+           L 25,30
+           Q 25,25 30,25
+           Z"
+        fill="none"
+        stroke="url(#metalShine)"
+        stroke-width="5"
+        opacity="0.3" />
+
+  <!-- Sombra interna para dar profundidad a toda la mesa -->
+  <path d="M 30,25
+           L 148,25
+           L 175,52
+           L 175,130
+           Q 175,135 170,135
+           L 30,135
+           Q 25,135 25,130
+           L 25,30
+           Q 25,25 30,25
+           Z"
+        fill="none"
+        stroke="#A8A8A8"
+        stroke-width="0.7" />
+
+  <!-- Líneas de detalle horizontales sutiles en la superficie metálica -->
+  <line x1="40" y1="40" x2="160" y2="40" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+  <line x1="40" y1="60" x2="170" y2="60" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+  <line x1="40" y1="80" x2="170" y2="80" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+  <line x1="40" y1="100" x2="170" y2="100" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+  <line x1="40" y1="120" x2="170" y2="120" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+
+  <!-- Líneas de detalle verticales sutiles en la superficie metálica -->
+  <line x1="60" y1="30" x2="60" y2="130" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+  <line x1="100" y1="30" x2="100" y2="130" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+  <line x1="140" y1="30" x2="140" y2="130" stroke="#BBBBBB" stroke-width="0.5" opacity="0.6" />
+
+  <!-- Efecto de brillo adicional para acentuar el aspecto metálico -->
+  <ellipse cx="70" cy="60" rx="60" ry="25" fill="white" opacity="0.07" />
+  <ellipse cx="140" cy="100" rx="50" ry="20" fill="white" opacity="0.05" />
+
+  <!-- Borde externo reforzado -->
+  <path d="M 30,20
+           L 150,20
+           L 180,50
+           L 180,130
+           Q 180,140 170,140
+           L 30,140
+           Q 20,140 20,130
+           L 20,30
+           Q 20,20 30,20
+           Z"
+        fill="none"
+        stroke="#777777"
+        stroke-width="1"
+        opacity="0.8" />
+</svg>

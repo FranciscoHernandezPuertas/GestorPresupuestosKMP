@@ -80,7 +80,7 @@ object BudgetManager {
         }
     }
 
-    private fun saveCubetas(cubetas: List<Cubeta>) {
+    fun saveCubetas(cubetas: List<Cubeta>) {
         localStorage["cubetas_data"] = Json.encodeToString(cubetas)
     }
 

@@ -24,7 +24,7 @@ fun QuantitySelector(
     min: Int = 1,
     max: Int = 5,
     showText: Boolean = true,
-    onBelowMinimum: () -> Unit = {}, // Nuevo callback
+    onBelowMinimum: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -44,9 +44,9 @@ fun QuantitySelector(
         Box(
             modifier = Modifier
                 .size(30.px)
-                .backgroundColor(Theme.Primary.rgb)
+                .backgroundColor(if (value > min) Theme.Primary.rgb else Theme.LightGray.rgb)
                 .borderRadius(4.px)
-                .cursor(Cursor.Pointer)
+                .cursor(if (value > min) Cursor.Pointer else Cursor.NotAllowed)
                 .onClick {
                     if (value > min) {
                         onValueChange(value - 1)

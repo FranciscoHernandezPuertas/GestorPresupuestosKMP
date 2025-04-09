@@ -1,0 +1,89 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definición de gradientes metálicos -->
+  <defs>
+    <linearGradient id="metalSurface" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8E8E8" />
+      <stop offset="25%" stop-color="#D0D0D0" />
+      <stop offset="50%" stop-color="#C0C0C0" />
+      <stop offset="75%" stop-color="#D8D8D8" />
+      <stop offset="100%" stop-color="#E8E8E8" />
+    </linearGradient>
+    <linearGradient id="metalEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#A0A0A0" />
+      <stop offset="100%" stop-color="#C8C8C8" />
+    </linearGradient>
+    <linearGradient id="columnMetal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#BBBBBB" />
+      <stop offset="50%" stop-color="#888888" />
+      <stop offset="100%" stop-color="#999999" />
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+      <feOffset dx="1" dy="1" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Superficie principal de la mesa (vista aérea) con acabado metálico -->
+  <rect x="20" y="20" width="160" height="120" rx="6" fill="url(#metalSurface)" stroke="#888888" stroke-width="2" filter="url(#softShadow)" />
+
+  <!-- Bordes brillantes de la mesa -->
+  <rect x="22" y="22" width="156" height="116" rx="4" fill="none" stroke="url(#metalEdge)" stroke-width="1" opacity="0.7" />
+
+  <!-- Cajeado para columna (recorte en forma de U) con reborde metálico -->
+  <path d="M 120,20
+           L 120,60
+           A 20,20 0 0 0 80,60
+           L 80,20"
+        fill="#D5D5D5"
+        stroke="#777777"
+        stroke-width="2" />
+        
+  <!-- Brillo interior del cajeado -->
+  <path d="M 119,21
+           L 119,59
+           A 19,19 0 0 0 81,59
+           L 81,21"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-opacity="0.4"
+        stroke-width="1" />
+
+  <!-- Columna (representación metálica) -->
+  <circle cx="100" cy="40" r="25" fill="url(#columnMetal)" stroke="#777777" stroke-width="1" />
+  <circle cx="100" cy="40" r="20" fill="#999999" stroke="#888888" stroke-width="1" />
+  <!-- Reflejo en la columna -->
+  <ellipse cx="94" cy="34" rx="10" ry="8" fill="#FFFFFF" opacity="0.2" />
+
+  <!-- Detalles de profundidad en el cajeado con brillo metálico -->
+  <path d="M 118,22
+           L 118,58
+           A 18,18 0 0 0 82,58
+           L 82,22"
+        fill="none"
+        stroke="#888888"
+        stroke-width="1" />
+
+  <!-- Líneas de detalle en la superficie metálica de la mesa -->
+  <line x1="40" y1="60" x2="160" y2="60" stroke="#A0A0A0" stroke-width="1" opacity="0.5" />
+  <line x1="40" y1="80" x2="160" y2="80" stroke="#A0A0A0" stroke-width="1" opacity="0.5" />
+  <line x1="40" y1="100" x2="160" y2="100" stroke="#A0A0A0" stroke-width="1" opacity="0.5" />
+  <line x1="40" y1="120" x2="160" y2="120" stroke="#A0A0A0" stroke-width="1" opacity="0.5" />
+  
+  <!-- Detalles metálicos: tornillos -->
+  <circle cx="30" cy="30" r="3" fill="url(#metalEdge)" stroke="#777777" stroke-width="0.5" />
+  <circle cx="170" cy="30" r="3" fill="url(#metalEdge)" stroke="#777777" stroke-width="0.5" />
+  <circle cx="30" cy="130" r="3" fill="url(#metalEdge)" stroke="#777777" stroke-width="0.5" />
+  <circle cx="170" cy="130" r="3" fill="url(#metalEdge)" stroke="#777777" stroke-width="0.5" />
+  
+  <!-- Reflejos superficiales para efecto de brillo metálico -->
+  <path d="M 40,40 L 70,35 L 150,45 L 130,80" fill="#FFFFFF" opacity="0.1" />
+  <path d="M 60,90 L 90,85 L 140,95 L 120,120" fill="#FFFFFF" opacity="0.08" />
+</svg>

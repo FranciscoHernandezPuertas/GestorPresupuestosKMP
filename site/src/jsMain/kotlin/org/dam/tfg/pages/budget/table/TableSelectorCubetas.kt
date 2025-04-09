@@ -62,6 +62,7 @@ import org.dam.tfg.models.table.Cubeta
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
 import org.dam.tfg.styles.DropdownItemStyle
+import org.dam.tfg.styles.DropdownSelectorStyle
 import org.dam.tfg.util.BudgetManager
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.DimensionExtractors
@@ -100,10 +101,12 @@ fun TableSelectorCubetasContent() {
     var mensajeError by remember { mutableStateOf("") }
     var mostrarMensajeError by remember { mutableStateOf(false) }
 
-    // Opciones disponibles
-    var opcionesCubetasDisponibles by remember {
-        mutableStateOf(
-            ElementosConstantes.LIMITES_CUBETAS.map { (nombre, item) ->
+    var seleccionActual: String
+    fun getOpcionesDisponibles(seleccionadas: List<Cubeta>): List<ItemWithLimits> {
+        val tiposSeleccionados = seleccionadas.map { it.tipo }.toSet()
+        return ElementosConstantes.LIMITES_CUBETAS
+            .filter { (nombre, _) -> nombre !in tiposSeleccionados }
+            .map { (nombre, item) ->
                 ItemWithLimits(
                     id = item.id,
                     name = nombre,
@@ -112,15 +115,19 @@ fun TableSelectorCubetasContent() {
                     initialQuantity = item.initialQuantity
                 )
             }
-        )
+    }
+
+    // Opciones disponibles
+    var opcionesCubetasDisponibles by remember {
+        mutableStateOf(getOpcionesDisponibles(emptyList()))
     }
 
     // Cargar datos guardados y actualizar opciones
     LaunchedEffect(Unit) {
-        // Intentar cargar cubetas guardadas
         val cubetasGuardadas = BudgetManager.getCubetas()
         if (cubetasGuardadas.isNotEmpty()) {
             cubetasSeleccionadas = cubetasGuardadas
+            opcionesCubetasDisponibles = getOpcionesDisponibles(cubetasGuardadas)
         }
     }
 
@@ -130,38 +137,49 @@ fun TableSelectorCubetasContent() {
         val largo = dimensiones.first
         val ancho = dimensiones.second
         val alto = dimensiones.third
+        val maxQuantity = ElementosConstantes.LIMITES_CUBETAS[nombre]?.maxQuantity ?: 1
 
-        // Crear y añadir la cubeta directamente sin comprobar dimensiones
         val nuevaCubeta = Cubeta(
             tipo = nombre,
             numero = 1,
             largo = largo,
             fondo = ancho,
             alto = alto,
-            maxQuantity = ElementosConstantes.LIMITES_CUBETAS[nombre]?.maxQuantity ?: 1
+            maxQuantity = maxQuantity
         )
 
-        // Añadir directamente sin validaciones
-        cubetasSeleccionadas = cubetasSeleccionadas + nuevaCubeta
-        BudgetManager.agregarCubeta(nombre, largo, ancho, alto)
+        val nuevaListaCubetas = cubetasSeleccionadas + nuevaCubeta
+        cubetasSeleccionadas = nuevaListaCubetas
+        // Actualizar opciones disponibles
+        opcionesCubetasDisponibles = getOpcionesDisponibles(nuevaListaCubetas)
+        // Guardar en BudgetManager
+        BudgetManager.saveCubetas(nuevaListaCubetas)
+        // Limpiar selección actual
+        seleccionActual = ""
     }
 
     fun actualizarCantidadCubeta(cubeta: Cubeta, nuevaCantidad: Int) {
+        // Actualiza el estado local
         cubetasSeleccionadas = cubetasSeleccionadas.map {
             if (it == cubeta) it.copy(numero = nuevaCantidad) else it
         }
+        // Guarda los cambios persistentemente
+        BudgetManager.saveCubetas(cubetasSeleccionadas)
     }
 
-
     fun eliminarCubeta(cubeta: Cubeta) {
-        cubetasSeleccionadas = cubetasSeleccionadas.filter { it != cubeta }
+        val nuevaListaCubetas = cubetasSeleccionadas.filter { it != cubeta }
+        cubetasSeleccionadas = nuevaListaCubetas
+        // Actualizar opciones disponibles
+        opcionesCubetasDisponibles = getOpcionesDisponibles(nuevaListaCubetas)
+        // Guardar cambios
+        BudgetManager.saveCubetas(nuevaListaCubetas)
     }
 
     // Función para guardar datos
     fun guardarSelecciones(): Boolean {
-        // Guardar cubetas
-        val todasLasCubetas = cubetasSeleccionadas
-        // Puedes implementar lógica personalizada para guardar aquí si es necesario
+        // Guardar cubetas explícitamente
+        BudgetManager.saveCubetas(cubetasSeleccionadas)
         return true
     }
 
@@ -189,7 +207,7 @@ fun TableSelectorCubetasContent() {
                     .color(Theme.Secondary.rgb)
                     .textAlign(TextAlign.Center)
                     .margin(bottom = 20.px),
-                text = "Selección de Cubetas y Soportes"
+                text = "Selección de Cubetas"
             )
 
             // Layout de selección - adaptable a móvil/escritorio
@@ -217,7 +235,7 @@ fun TableSelectorCubetasContent() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(modifier = Modifier.width(48.percent)) {
+                    Box(modifier = Modifier.width(100.percent)) {
                         SelectorElementos(
                             titulo = "Cubetas",
                             imagen = resourceProvider.getImagePath("CUBETA"),
@@ -349,7 +367,11 @@ fun SelectorElementos(
                     .borderRadius(4.px)
                     .padding(10.px)
                     .cursor(if (seleccionActual.isEmpty()) Cursor.Default else Cursor.Pointer)
-                    .onClick { if (seleccionActual.isNotEmpty()) onAñadir(seleccionActual) },
+                    .onClick {
+                        if (seleccionActual.isNotEmpty())
+                        onAñadir(seleccionActual)
+                        seleccionActual = ""
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 FaPlus(
@@ -417,12 +439,10 @@ fun DropdownSelector(
             .fillMaxWidth()
             .position(Position.Relative)
     ) {
-        // Selector visible
+        // Selector visible sin borde adicional
         Row(
-            modifier = Modifier
+            modifier = DropdownSelectorStyle.toModifier()
                 .fillMaxWidth()
-                .border(1.px, style = LineStyle.Solid, color = rgba(0, 0, 0, 0.2f))
-                .borderRadius(4.px)
                 .padding(10.px)
                 .cursor(Cursor.Pointer)
                 .onClick { mostrarOpciones = !mostrarOpciones },
@@ -509,6 +529,7 @@ fun ElementoSeleccionadoItem(
 ) {
     val dimensiones = "${elemento.largo.toInt()} x ${elemento.fondo.toInt()} mm"
     val maxCantidad = elemento.maxQuantity ?: Int.MAX_VALUE
+    val minCantidad = ElementosConstantes.LIMITES_CUBETAS[elemento.tipo]?.minQuantity ?: 0
 
     Box(
         modifier = Modifier
@@ -520,7 +541,9 @@ fun ElementoSeleccionadoItem(
     ) {
         if (isMobile) {
             // Versión móvil (apilada)
-            Column {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 // Nombre y botón eliminar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -563,7 +586,7 @@ fun ElementoSeleccionadoItem(
                 // Selector de cantidad
                 QuantitySelector(
                     value = elemento.numero,
-                    min = 1,
+                    min = minCantidad,
                     max = maxCantidad,
                     onValueChange = { onCantidadChange(it) }
                 )

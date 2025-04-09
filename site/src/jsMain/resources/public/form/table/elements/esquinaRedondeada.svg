@@ -1,0 +1,98 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definición de gradientes para efecto metálico -->
+  <defs>
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8E8E8" />
+      <stop offset="25%" stop-color="#C0C0C0" />
+      <stop offset="50%" stop-color="#D8D8D8" />
+      <stop offset="75%" stop-color="#B0B0B0" />
+      <stop offset="100%" stop-color="#D0D0D0" />
+    </linearGradient>
+    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.1" />
+    </linearGradient>
+    <radialGradient id="cornerShine" cx="150" cy="50" r="40" fx="150" fy="35">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#D0D0D0" stop-opacity="0.3" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Superficie principal de la mesa con esquinas redondeadas (vista aérea) -->
+  <path d="M 20,20
+           L 150,20
+           A 30,30 0 0 1 180,50
+           L 180,140
+           L 20,140
+           L 20,20
+           Z"
+      fill="url(#metalGradient)"
+      stroke="#888888"
+      stroke-width="2" />
+      
+  <!-- Borde brillante superior para efecto metálico -->
+  <path d="M 22,22
+           L 150,22
+           A 28,28 0 0 1 178,50
+           L 178,138"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-width="1.5"
+      stroke-opacity="0.6" />
+      
+  <!-- Borde de sombra inferior para efecto metálico -->
+  <path d="M 150,22
+           A 28,28 0 0 1 178,50
+           L 178,138
+           L 22,138"
+      fill="none"
+      stroke="#909090"
+      stroke-width="1.5"
+      stroke-opacity="0.5" />
+  
+  <!-- Sombra interna para dar profundidad -->
+  <path d="M 25,25
+           L 150,25
+           A 25,25 0 0 1 175,50
+           L 175,135
+           L 25,135
+           L 25,25
+           Z"
+      fill="none"
+      stroke="#A0A0A0"
+      stroke-width="1" />
+      
+  <!-- Detalle para resaltar la esquina redondeada principal con brillo metálico -->
+  <path d="M 150,20
+           A 30,30 0 0 1 180,50
+           L 160,50
+           A 15,15 0 0 0 150,35
+           Z"
+        fill="url(#cornerShine)"
+        stroke="#AAAAAA"
+        stroke-width="1" />
+        
+  <!-- Brillo horizontal superior -->
+  <path d="M 30,30
+           L 150,30
+           A 20,20 0 0 1 170,50"
+      fill="none"
+      stroke="url(#highlightGradient)"
+      stroke-width="4"
+      stroke-opacity="0.6" />
+
+  <!-- Líneas de detalle horizontales en la superficie de la mesa (textura del metal) -->
+  <line x1="40" y1="40" x2="160" y2="40" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  <line x1="40" y1="60" x2="160" y2="60" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  <line x1="40" y1="80" x2="160" y2="80" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  <line x1="40" y1="100" x2="160" y2="100" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  <line x1="40" y1="120" x2="160" y2="120" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+
+  <!-- Líneas de detalle verticales en la superficie de la mesa (textura del metal) -->
+  <line x1="60" y1="30" x2="60" y2="130" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  <line x1="100" y1="30" x2="100" y2="130" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  <line x1="140" y1="30" x2="140" y2="130" stroke="#B0B0B0" stroke-width="1" stroke-opacity="0.4" />
+  
+  <!-- Brillo adicional en la esquina -->
+  <ellipse cx="150" cy="50" rx="15" ry="15" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.3" />
+</svg>

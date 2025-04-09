@@ -284,7 +284,7 @@ object ElementosConstantes {
             id = "cubeta_r700",
             name = "Rectangular 700x450x350",
             minQuantity = 0,
-            maxQuantity = 3,
+            maxQuantity = 10,
             initialQuantity = 1
         ),
         "Rectangular 800x500x380" to ItemWithLimits(

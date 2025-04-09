@@ -1,0 +1,51 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definiciones de gradientes metálicos -->
+  <defs>
+    <linearGradient id="metalSurface" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DEDEDE" />
+      <stop offset="45%" style="stop-color:#A8A8A8" />
+      <stop offset="70%" style="stop-color:#ECECEC" />
+      <stop offset="100%" style="stop-color:#BBBBBB" />
+    </linearGradient>
+    <linearGradient id="metalBorder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#888888" />
+      <stop offset="50%" style="stop-color:#666666" />
+      <stop offset="100%" style="stop-color:#444444" />
+    </linearGradient>
+    <radialGradient id="metalHole" cx="50%" cy="50%" r="50%" fx="40%" fy="40%">
+      <stop offset="0%" style="stop-color:#7F7F7F" />
+      <stop offset="50%" style="stop-color:#555555" />
+      <stop offset="100%" style="stop-color:#2E2E2E" />
+    </radialGradient>
+    <filter id="bevelEffect" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="5" specularConstant="1" specularExponent="20" result="specOut" lighting-color="#FFFFFF">
+        <fePointLight x="100" y="50" z="100"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut2"/>
+      <feComposite in="SourceGraphic" in2="specOut2" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+  </defs>
+
+  <!-- Base de la superficie (seno) -->
+  <rect x="20" y="20" width="160" height="120" rx="10" fill="url(#metalSurface)" stroke="url(#metalBorder)" stroke-width="2" filter="url(#bevelEffect)" />
+
+  <!-- Superficie curva (seno) - representación sombreada -->
+  <ellipse cx="100" cy="80" rx="70" ry="50" fill="#B0B0B0" stroke="#888888" stroke-width="1" />
+
+  <!-- Boquetón (apertura) en el seno -->
+  <ellipse cx="100" cy="80" rx="30" ry="20" fill="url(#metalHole)" stroke="#444444" stroke-width="2" />
+
+  <!-- Detalles de reflejo metálico -->
+  <ellipse cx="92" cy="72" rx="15" ry="8" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.4" />
+  
+  <!-- Detalles de volumen y profundidad -->
+  <path d="M 80 75 Q 100 65, 120 75" stroke="#DDDDDD" stroke-width="1" fill="none" opacity="0.5" />
+  <path d="M 80 85 Q 100 95, 120 85" stroke="#444444" stroke-width="1" fill="none" opacity="0.5" />
+
+  <!-- Borde metálico de la superficie -->
+  <rect x="20" y="20" width="160" height="120" rx="10" fill="none" stroke="url(#metalBorder)" stroke-width="3" />
+  
+  <!-- Efecto de brillo en el borde superior -->
+  <path d="M 30 20 L 170 20" stroke="#FFFFFF" stroke-width="1" opacity="0.5" />
+</svg>

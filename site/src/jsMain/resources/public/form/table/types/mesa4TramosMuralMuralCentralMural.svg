@@ -24,7 +24,7 @@
   <!-- Superficie de la mesa con forma de U modificada con esquina adicional (MMCM - mural, mural, central, mural) -->
   <rect x="30" y="30" width="60" height="130" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> <!-- Lado izquierdo (mural) -->
   <rect x="30" y="120" width="230" height="40" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> <!-- Base (mural) -->
-  <rect x="200" y="30" width="60" height="130" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> <!--  y="30" width="60" height="130" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> <!-- Lado derecho (central) -->
+  <rect x="200" y="30" width="60" height="130" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> <!--  y="30" width="60" height="130" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> Lado derecho (central) -->
   <rect x="135" y="30" width="65" height="40" fill="url(#metalGradient)" stroke="#555555" stroke-width="2" /> <!-- Esquina adicional (mural) -->
   
   <!-- Textura del metal (líneas sutiles) para la sección vertical izquierda -->

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
+  <!-- Definiciones para gradientes y efectos -->
+  <defs>
+    <linearGradient id="tableMetalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c0c0c0" />
+      <stop offset="25%" stop-color="#a0a0a0" />
+      <stop offset="50%" stop-color="#d0d0d0" />
+      <stop offset="75%" stop-color="#b0b0b0" />
+      <stop offset="100%" stop-color="#c8c8c8" />
+    </linearGradient>
+    
+    <linearGradient id="steelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d1d1d1" />
+      <stop offset="25%" stop-color="#a8a8a8" />
+      <stop offset="50%" stop-color="#e0e0e0" />
+      <stop offset="75%" stop-color="#b8b8b8" />
+      <stop offset="100%" stop-color="#d5d5d5" />
+    </linearGradient>
+    
+    <linearGradient id="innerSteelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9a9a9a" />
+      <stop offset="40%" stop-color="#7a7a7a" />
+      <stop offset="60%" stop-color="#8a8a8a" />
+      <stop offset="100%" stop-color="#707070" />
+    </linearGradient>
+    
+    <radialGradient id="drainGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#666666" />
+      <stop offset="90%" stop-color="#444444" />
+      <stop offset="100%" stop-color="#333333" />
+    </radialGradient>
+  </defs>
+
+  <!-- Mesa rectangular metálica -->
+  <rect x="20" y="20" width="260" height="160" fill="url(#tableMetalGradient)" stroke="#888888" stroke-width="2" rx="3" ry="3"/>
+  
+  <!-- Reflejos metálicos en la mesa -->
+  <rect x="30" y="30" width="240" height="3" fill="#ffffff" opacity="0.4" rx="1.5" ry="1.5"/>
+  <rect x="30" y="50" width="180" height="2" fill="#ffffff" opacity="0.3" rx="1" ry="1"/>
+  <rect x="60" y="100" width="160" height="2.5" fill="#ffffff" opacity="0.25" rx="1.25" ry="1.25"/>
+  <path d="M20 20 L40 30 L38 32 L18 22 Z" fill="#ffffff" opacity="0.2"/>
+  <path d="M260 160 L280 180 L278 178 L258 158 Z" fill="#ffffff" opacity="0.15"/>
+
+  <!-- Sombra bajo la cubeta -->
+  <rect x="108" y="142" width="84" height="4" fill="#8b5a2b" opacity="0.4" rx="2" ry="2"/>
+
+  <!-- Marco exterior de la cubeta (acero inoxidable) -->
+  <rect x="110" y="60" width="80" height="80" fill="url(#steelGradient)" stroke="#888888" stroke-width="1" rx="3" ry="3"/>
+
+  <!-- Parte interior de la cubeta -->
+  <rect x="115" y="65" width="70" height="70" fill="url(#innerSteelGradient)" stroke="#606060" stroke-width="0.5" rx="2" ry="2"/>
+  
+  <!-- Fondo de la cubeta -->
+  <rect x="120" y="70" width="60" height="60" fill="#656565" stroke="#505050" stroke-width="0.5" rx="1" ry="1"/>
+
+  <!-- Desagüe de la cubeta -->
+  <circle cx="150" cy="100" r="5" fill="url(#drainGradient)" stroke="#444444" stroke-width="0.5"/>
+  <circle cx="150" cy="100" r="3" fill="#333333" stroke="#2a2a2a" stroke-width="0.5"/>
+  
+  <!-- Reflejos metálicos horizontales -->
+  <rect x="125" y="75" width="50" height="2" fill="#ffffff" opacity="0.6" rx="1" ry="1"/>
+  <rect x="125" y="90" width="20" height="1.5" fill="#ffffff" opacity="0.4" rx="0.75" ry="0.75"/>
+  <rect x="155" y="85" width="20" height="1.5" fill="#ffffff" opacity="0.3" rx="0.75" ry="0.75"/>
+  
+  <!-- Reflejos metálicos diagonales -->
+  <path d="M115 65 L125 70 L123 72 L113 67 Z" fill="#ffffff" opacity="0.5"/>
+  <path d="M180 115 L185 125 L183 127 L178 117 Z" fill="#ffffff" opacity="0.4"/>
+</svg>

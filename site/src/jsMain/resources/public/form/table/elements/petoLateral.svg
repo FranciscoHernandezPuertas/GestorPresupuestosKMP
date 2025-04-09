@@ -1,0 +1,83 @@
+<svg width="200" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+  <!-- Definiciones de gradientes -->
+  <defs>
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#B8B8B8" />
+      <stop offset="20%" style="stop-color:#E8E8E8" />
+      <stop offset="50%" style="stop-color:#D4D4D4" />
+      <stop offset="80%" style="stop-color:#F2F2F2" />
+      <stop offset="100%" style="stop-color:#CCCCCC" />
+    </linearGradient>
+    <linearGradient id="metalEdgeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#A0A0A0" />
+      <stop offset="50%" style="stop-color:#D0D0D0" />
+      <stop offset="100%" style="stop-color:#909090" />
+    </linearGradient>
+    <pattern id="steelTexture" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="#E8E8E8" />
+      <path d="M 0 0 L 10 10" stroke="#D6D6D6" stroke-width="0.5" />
+      <path d="M 10 0 L 0 10" stroke="#D6D6D6" stroke-width="0.5" />
+    </pattern>
+    <!-- Nuevo gradiente para la superficie de la mesa -->
+    <linearGradient id="tableTopGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D0D0D0" />
+      <stop offset="25%" style="stop-color:#F0F0F0" />
+      <stop offset="50%" style="stop-color:#E0E0E0" />
+      <stop offset="75%" style="stop-color:#F5F5F5" />
+      <stop offset="100%" style="stop-color:#D8D8D8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Mesa rectangular metálica (vista aérea) -->
+  <rect x="40" y="40" width="120" height="80" rx="2" fill="url(#tableTopGradient)" stroke="#888888" stroke-width="2" />
+  
+  <!-- Efecto de textura metálica en la mesa -->
+  <rect x="42" y="42" width="116" height="76" fill="url(#steelTexture)" fill-opacity="0.3" />
+  
+  <!-- Peto lateral (barrera metálica) -->
+  <rect x="38" y="38" width="4" height="84" rx="1" fill="url(#metalGradient)" stroke="#888888" stroke-width="1" />
+  
+  <!-- Líneas de textura metálica en el peto -->
+  <g stroke="#C0C0C0" stroke-width="0.3">
+    <line x1="40" y1="42" x2="40" y2="118" />
+    <line x1="39" y1="42" x2="39" y2="118" />
+    <line x1="41" y1="42" x2="41" y2="118" />
+  </g>
+  
+  <!-- Reflejo metálico superior -->
+  <rect x="38" y="38" width="4" height="10" rx="1" fill="url(#metalEdgeGradient)" stroke="none" opacity="0.7" />
+  
+  <!-- Reflejo metálico inferior -->
+  <rect x="38" y="112" width="4" height="10" rx="1" fill="url(#metalEdgeGradient)" stroke="none" opacity="0.7" />
+
+  <!-- Soportes de fijación metálicos -->
+  <rect x="40" y="45" width="8" height="6" rx="1" fill="url(#metalGradient)" stroke="#888888" stroke-width="1" />
+  <rect x="40" y="75" width="8" height="6" rx="1" fill="url(#metalGradient)" stroke="#888888" stroke-width="1" />
+  <rect x="40" y="105" width="8" height="6" rx="1" fill="url(#metalGradient)" stroke="#888888" stroke-width="1" />
+
+  <!-- Tornillos en los soportes -->
+  <circle cx="44" cy="48" r="1" fill="#606060" />
+  <circle cx="44" cy="78" r="1" fill="#606060" />
+  <circle cx="44" cy="108" r="1" fill="#606060" />
+
+  <!-- Sombreado para dar profundidad al peto -->
+  <rect x="40" y="38" width="2" height="84" rx="0" fill="#D0D0D0" stroke="none" opacity="0.4" />
+
+  <!-- Detalles de la textura metálica de la mesa (reflejos) -->
+  <path d="M 40 50 L 160 50" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.3" />
+  <path d="M 40 70 L 160 70" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.3" />
+  <path d="M 40 90 L 160 90" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.3" />
+  <path d="M 40 110 L 160 110" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.3" />
+  
+  <!-- Bordes resaltados para efecto metálico -->
+  <path d="M 40 40 L 160 40" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.4" />
+  <path d="M 40 40 L 40 120" stroke="#FFFFFF" stroke-width="1" stroke-opacity="0.4" />
+  <path d="M 160 40 L 160 120" stroke="#666666" stroke-width="1" stroke-opacity="0.4" />
+  <path d="M 40 120 L 160 120" stroke="#666666" stroke-width="1" stroke-opacity="0.4" />
+
+  <!-- Indicación de altura del peto (línea punteada) -->
+  <line x1="30" y1="38" x2="30" y2="122" stroke="#666666" stroke-width="1" stroke-dasharray="2,2" />
+  <line x1="28" y1="38" x2="32" y2="38" stroke="#666666" stroke-width="1" />
+  <line x1="28" y1="122" x2="32" y2="122" stroke="#666666" stroke-width="1" />
+  <text x="20" y="80" font-family="Arial" font-size="8" text-anchor="middle" fill="#666666">h</text>
+</svg>
