@@ -4,6 +4,7 @@ import kotlinx.browser.localStorage
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.table.Cubeta
 import org.dam.tfg.models.table.ModuloSeleccionado
 import org.dam.tfg.models.table.Tramo
@@ -14,42 +15,57 @@ import org.w3c.dom.set
 
 object BudgetManager {
 
-    private const val MESA_TIPO_KEY = "mesa_tipo"
-    private const val MESA_TRAMOS_KEY = "mesa_tramos"
-    private const val ELEMENTOS_DATA_KEY = "elementos_data" // Renombrado desde elementos_cantidades
-    private const val MODULOS_KEY = "modulos_data"
-    private const val CUBETAS_KEY = "cubetas_data"
-    private const val PRECIO_TOTAL_KEY = "precio_total"
     private val repository: BudgetRepository = BudgetRepositoryJs()
 
-    // Funciones para gestionar la mesa y sus tramos
-    fun saveMesaData(
-        tipoMesa: String,
-        tramos: List<Tramo>,
-        extras: List<String> = emptyList(),
-        precioTotal: Double = 0.0
-    ) {
-        repository.setMesaTipo(tipoMesa)
+    // Mesa tipo (1 tramo, 2 tramos, etc.)
+    fun saveMesaTipo(tipo: String) {
+        repository.setMesaTipo(tipo)
+    }
+
+    fun getMesaTipo(): String {
+        return repository.getMesaTipo()
+    }
+
+    // Tramos
+    fun saveMesaTramos(tramos: List<Tramo>) {
         repository.setMesaTramos(tramos)
-        repository.setMesaExtras(extras)
+    }
+
+    fun getMesaTramos(): List<Tramo> {
+        return repository.getMesaTramos()
+    }
+
+    // Precio total
+    fun saveMesaPrecioTotal(precioTotal: Double) {
         repository.setMesaPrecioTotal(precioTotal)
     }
 
-    fun getMesaTipo(): String = repository.getMesaTipo()
-    fun getMesaTramos(): List<Tramo> = repository.getMesaTramos()
-    fun getMesaExtras(): List<String> = repository.getMesaExtras()
-    fun getMesaPrecioTotal(): Double = repository.getMesaPrecioTotal()
-
-    // Funciones para gestionar las cantidades de elementos
-    fun saveElementosCantidades(cantidades: Map<String, Int>) {
-        localStorage["elementos_cantidades"] = Json.encodeToString(cantidades)
+    fun getMesaPrecioTotal(): Double {
+        return repository.getMesaPrecioTotal()
     }
 
-    fun getElementosCantidades(): Map<String, Int> {
-        val cantidadesJson = localStorage["elementos_cantidades"]
-        return if (!cantidadesJson.isNullOrBlank()) {
+    // Métodos para guardar todos los datos de la mesa
+    fun saveMesaData(
+        tipoMesa: String,
+        tramos: List<Tramo>,
+        extras: List<String>,
+        precioTotal: Double
+    ) {
+        saveMesaTipo(tipoMesa)
+        saveMesaTramos(tramos)
+        saveMesaPrecioTotal(precioTotal)
+    }
+
+    // Elementos
+    fun saveElementosData(elementos: Map<String, Int>) {
+        localStorage["elementos_data"] = Json.encodeToString(elementos)
+    }
+
+    fun getElementosData(): Map<String, Int> {
+        val elementosJson = localStorage["elementos_data"]
+        return if (!elementosJson.isNullOrBlank()) {
             try {
-                Json.decodeFromString(cantidadesJson)
+                Json.decodeFromString(elementosJson)
             } catch (e: Exception) {
                 emptyMap()
             }
@@ -58,92 +74,107 @@ object BudgetManager {
         }
     }
 
-    // Cálculo del área total de la mesa
-    fun calcularAreaTotalMesa(): Double {
-        val tramos = getMesaTramos()
-        return tramos.sumOf { it.largo * it.ancho }
+    fun getElementosNombres(): List<String> {
+        return getElementosData().keys.toList()
     }
 
-    fun agregarCubeta(
-        nombre: String,
-        largo: Double,
-        ancho: Double,
-        alto: Double = 0.0,
-        cantidad: Int = 1
-    ): Boolean {
-        val cubetasActuales = getCubetas()
-
-        val nuevasCubetas = cubetasActuales.toMutableList()
-        nuevasCubetas.add(Cubeta(nombre, cantidad, largo, ancho, alto, maxQuantity = cantidad))
-        saveCubetas(nuevasCubetas)
-        return true
+    // Métodos para cubetas
+    fun saveCubetasData(cubetas: List<Cubeta>) {
+        localStorage["cubetas_data"] = Json.encodeToString(cubetas)
     }
 
-    fun getCubetas(): List<Cubeta> {
-        val cubetasJson = localStorage["cubetas_data"] ?: return emptyList()
-        return try {
-            Json.decodeFromString(cubetasJson)
-        } catch (e: Exception) {
+    fun getCubetasData(): List<Cubeta> {
+        val cubetasJson = localStorage["cubetas_data"]
+        return if (!cubetasJson.isNullOrBlank()) {
+            try {
+                Json.decodeFromString(cubetasJson)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } else {
             emptyList()
         }
     }
 
-    fun saveCubetas(cubetas: List<Cubeta>) {
-        localStorage["cubetas_data"] = Json.encodeToString(cubetas)
+    // Métodos para módulos
+    fun saveModulosData(modulos: List<ModuloSeleccionado>) {
+        localStorage["modulos_data"] = Json.encodeToString(modulos)
     }
 
-    // Extras/elementos generales
-    fun agregarElementoGeneral(nombre: String, cantidad: Int = 1) {
-        val elementosActuales = getElementosGenerales().toMutableMap()
-        elementosActuales[nombre] = cantidad
-        saveElementosGenerales(elementosActuales)
+    fun getModulosData(): List<ModuloSeleccionado> {
+        val modulosJson = localStorage["modulos_data"]
+        return if (!modulosJson.isNullOrBlank()) {
+            try {
+                Json.decodeFromString(modulosJson)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
     }
 
-    fun getElementosGenerales(): Map<String, Int> {
-        val elementosJson = localStorage["elementos_generales"] ?: return emptyMap()
-        return try {
-            Json.decodeFromString(elementosJson)
-        } catch (e: Exception) {
+    // Estado del formulario
+    fun saveFormState(state: Map<String, Boolean>) {
+        localStorage["form_state"] = Json.encodeToString(state)
+    }
+
+    fun getFormState(): Map<String, Boolean> {
+        val stateJson = localStorage["form_state"]
+        return if (!stateJson.isNullOrBlank()) {
+            try {
+                Json.decodeFromString(stateJson)
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        } else {
             emptyMap()
         }
     }
 
-    private fun saveElementosGenerales(elementos: Map<String, Int>) {
-        localStorage["elementos_generales"] = Json.encodeToString(elementos)
+    // Métodos adicionales para errores o validaciones
+    fun setCubetaError(error: String) {
+        repository.setCubetaError(error)
+    }
+
+    fun getCubetaError(): String {
+        return repository.getCubetaError()
+    }
+
+    fun setMesaError(error: String) {
+        repository.setMesaError(error)
+    }
+
+    fun getMesaError(): String {
+        return repository.getMesaError()
+    }
+
+    fun saveCubetas(cubetas: List<Cubeta>) {
+        repository.saveCubetas(cubetas)
+    }
+
+    fun getCubetas(): List<Cubeta> {
+        return repository.getCubetas()
     }
 
     fun saveModulos(modulos: List<ModuloSeleccionado>) {
-        try {
-            val json = Json.encodeToString(modulos)
-            localStorage["modulos_data"] = json
-            console.log("Módulos guardados correctamente: $json")
-        } catch (e: Exception) {
-            console.error("Error al guardar módulos: ${e.message}")
-        }
+        repository.saveModulos(modulos)
     }
 
     fun getModulos(): List<ModuloSeleccionado> {
-        val modulosJson = localStorage["modulos_data"] ?: return emptyList()
-        return try {
-            val resultado = Json.decodeFromString<List<ModuloSeleccionado>>(modulosJson)
-            console.log("Módulos recuperados correctamente: ${resultado.size}")
-            resultado
-        } catch (e: Exception) {
-            console.error("Error al recuperar módulos: ${e.message}")
-            emptyList()
-        }
+        return repository.getModulos()
     }
 
-    // Resetear todos los datos
-    fun resetBudgetData() {
+    // Función para limpiar todos los datos
+    fun clearAllData() {
         localStorage.removeItem("mesa_tipo")
         localStorage.removeItem("mesa_tramos")
-        localStorage.removeItem("mesa_material")
-        localStorage.removeItem("mesa_extras")
-        localStorage.removeItem("mesa_precio_total")
+        localStorage.removeItem("elementos_data")
         localStorage.removeItem("cubetas_data")
-        localStorage.removeItem("elementos_generales")
-        localStorage.removeItem("elementos_cantidades")
+        localStorage.removeItem("modulos_data")
+        localStorage.removeItem("mesa_precio_total")
+        localStorage.removeItem("form_state")
+        localStorage.removeItem("mesa_error")
+        localStorage.removeItem("cubeta_error")
     }
-
 }

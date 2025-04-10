@@ -141,7 +141,7 @@ fun BudgetFooter(
             message = "¿Está seguro que desea cancelar? Se perderán todos los datos introducidos.",
             onConfirm = {
                 showConfirmDialog = false
-                BudgetManager.resetBudgetData() // Resetear los datos
+                BudgetManager.clearAllData() // Resetear los datos
                 context.router.navigateTo(Screen.Home.route)
             },
             onDismiss = { showConfirmDialog = false }

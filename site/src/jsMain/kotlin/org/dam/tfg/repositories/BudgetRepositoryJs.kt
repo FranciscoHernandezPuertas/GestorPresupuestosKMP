@@ -4,7 +4,9 @@ import kotlinx.browser.localStorage
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.dam.tfg.models.table.Cubeta
 import org.dam.tfg.models.table.Mesa
+import org.dam.tfg.models.table.ModuloSeleccionado
 import org.dam.tfg.models.table.Tramo
 import org.w3c.dom.get
 import org.w3c.dom.set
@@ -153,14 +155,24 @@ class BudgetRepositoryJs : BudgetRepository {
             emptyList()
         }
     }
-    override fun setMesaExtras(extras: List<String>) {
-        localStorage["mesa_extras"] = Json.encodeToString(extras)
+
+    override fun setMesaPrecioTotal(precioTotal: Double) {
+        localStorage["mesa_precio_total"] = precioTotal.toString()
     }
-    override fun getMesaExtras(): List<String> {
-        val extrasJson = localStorage["mesa_extras"]
-        return if (!extrasJson.isNullOrBlank()) {
+    override fun getMesaPrecioTotal(): Double {
+        return localStorage["mesa_precio_total"]?.toDoubleOrNull() ?: 0.0
+    }
+
+    // En BudgetRepositoryJs.kt
+    override fun saveCubetas(cubetas: List<Cubeta>) {
+        localStorage["cubetas_data"] = Json.encodeToString(cubetas)
+    }
+
+    override fun getCubetas(): List<Cubeta> {
+        val cubetasJson = localStorage["cubetas_data"]
+        return if (!cubetasJson.isNullOrBlank()) {
             try {
-                Json.decodeFromString(extrasJson)
+                Json.decodeFromString(cubetasJson)
             } catch (e: Exception) {
                 emptyList()
             }
@@ -169,10 +181,20 @@ class BudgetRepositoryJs : BudgetRepository {
         }
     }
 
-    override fun setMesaPrecioTotal(precioTotal: Double) {
-        localStorage["mesa_precio_total"] = precioTotal.toString()
+    override fun saveModulos(modulos: List<ModuloSeleccionado>) {
+        localStorage["modulos_data"] = Json.encodeToString(modulos)
     }
-    override fun getMesaPrecioTotal(): Double {
-        return localStorage["mesa_precio_total"]?.toDoubleOrNull() ?: 0.0
+
+    override fun getModulos(): List<ModuloSeleccionado> {
+        val modulosJson = localStorage["modulos_data"]
+        return if (!modulosJson.isNullOrBlank()) {
+            try {
+                Json.decodeFromString(modulosJson)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
     }
 }

@@ -102,22 +102,21 @@ fun TableSelectorElementsContent() {
 
     // Función para guardar en localStorage
     fun guardarEnLocalStorage() {
-        val nombresElementos = elementosSeleccionados.map { it.nombre }
         val cantidadesElementos = elementosSeleccionados.associate { it.nombre to it.cantidad }
 
         BudgetManager.saveMesaData(
             tipoMesa = BudgetManager.getMesaTipo(),
             tramos = BudgetManager.getMesaTramos(),
-            extras = nombresElementos,
+            extras = cantidadesElementos.keys.toList(),
             precioTotal = BudgetManager.getMesaPrecioTotal()
         )
-        BudgetManager.saveElementosCantidades(cantidadesElementos)
+        BudgetManager.saveElementosData(cantidadesElementos)
     }
 
     // Cargar elementos guardados previamente
     LaunchedEffect(Unit) {
-        val elementosGuardados = BudgetManager.getMesaExtras()
-        val cantidadesGuardadas = BudgetManager.getElementosCantidades()
+        val elementosGuardados = BudgetManager.getElementosNombres()
+        val cantidadesGuardadas = BudgetManager.getElementosData()
 
         if (elementosGuardados.isNotEmpty()) {
             val elementos = elementosGuardados.mapNotNull { nombreElemento ->
@@ -261,7 +260,7 @@ fun TableSelectorElementsContent() {
                                 text = "Elementos seleccionados"
                             )
 
-                            // Botón de eliminar
+                            // Botón de eliminar all
                             Box(
                                 modifier = Modifier
                                     .backgroundColor(Colors.Red)

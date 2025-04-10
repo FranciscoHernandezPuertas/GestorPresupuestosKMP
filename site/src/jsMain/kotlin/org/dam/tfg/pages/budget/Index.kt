@@ -31,7 +31,7 @@ import org.jetbrains.compose.web.css.px
 fun HomePage() {
     isUserLoggedInCheck {
         LaunchedEffect(Unit) {
-            BudgetManager.resetBudgetData()
+            BudgetManager.clearAllData()
         }
         HomePageContent()
     }

@@ -400,7 +400,8 @@ fun TableSelectorDimensionsContent() {
                 BudgetManager.saveMesaData(
                     tipoMesa = selectedTramoCount.toString(),
                     tramos = tramos,
-                    extras = BudgetManager.getMesaExtras(),  // Preservar extras existentes
+                    extras = BudgetManager.getElementosNombres(),
+                    precioTotal = 0.0
                 )
             }
         )
