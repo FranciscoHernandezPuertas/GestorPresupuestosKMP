@@ -43,7 +43,6 @@ import com.varabyte.kobweb.silk.components.icons.fa.FaTrash
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
-import org.dam.tfg.components.AdvertenciaOverlay
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.ConfirmationDialog
@@ -360,7 +359,7 @@ fun TableSelectorElementsContent() {
         // Footer (mantenemos la función saveData pero ya guardamos en cada cambio)
         BudgetFooter(
             previousScreen = Screen.TableSelectorDimensions,
-            nextScreen = Screen.TableSelectorCubetasSoporteBandejas,
+            nextScreen = Screen.TableSelectorCubetas,
             validateData = {
                 true // No hay validación específica aquí
             },

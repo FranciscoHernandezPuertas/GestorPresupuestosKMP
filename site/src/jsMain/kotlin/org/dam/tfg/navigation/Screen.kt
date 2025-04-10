@@ -10,6 +10,7 @@ sealed class Screen(val route: String) {
 
     object TableSelectorDimensions: Screen(route = "/budget/table/table-selector-dimensions")
     object TableSelectorElements: Screen(route = "/budget/table/table-selector-elements")
-    object TableSelectorCubetasSoporteBandejas: Screen(route = "/budget/table/table-selector-cubetas")
+    object TableSelectorCubetas: Screen(route = "/budget/table/table-selector-cubetas")
     object TableSelectorModules: Screen(route = "/budget/table/table-selector-modules")
+    object TableSelectorResume: Screen(route = "/budget/table/table-selector-resume")
 }

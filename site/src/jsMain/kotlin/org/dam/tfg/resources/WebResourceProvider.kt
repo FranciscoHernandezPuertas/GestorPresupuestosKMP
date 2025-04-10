@@ -55,7 +55,16 @@ class WebResourceProvider : ResourceProvider {
             "MESA_4TRAMOS_MMMC" -> "/form/table/types/mesa4TramosMuralMuralMuralCentral.svg"
             "MESA_4TRAMOS_MMMM" -> "/form/table/types/mesa4TramosMuralMuralMuralMural.svg"
 
-
+            // Módulos
+            "BASTIDOR_CON_ARMARIO_ABIERTO" -> "/form/table/modules/bastidorConArmarioAbierto.svg"
+            "BASTIDOR_CON_ARMARIO_PUERTAS_ABATIBLES" -> "/form/table/modules/bastidorConArmarioPuertasAbatibles.svg"
+            "BASTIDOR_CON_ARMARIO_PUERTAS_CORREDERAS" -> "/form/table/modules/bastidorConArmarioPuertasCorrederas.svg"
+            "BASTIDOR_CON_CAJONERA_CUATRO_CAJONES" -> "/form/table/modules/bastidorConCajoneraCuatroCajones.svg"
+            "BASTIDOR_CON_CAJONERA_TRES_CAJONES" -> "/form/table/modules/bastidorConCajoneraTresCajones.svg"
+            "BASTIDOR_CON_DOS_ESTANTES" -> "/form/table/modules/bastidorConDosEstantes.svg"
+            "BASTIDOR_CON_ESTANTE" -> "/form/table/modules/bastidorConEstante.svg"
+            "BASTIDOR_PARA_FREGADERO_O_SENO" -> "/form/table/modules/bastidorParaFregaderoOSeno.svg"
+            "BASTIDOR_SIN_ESTANTE" -> "/form/table/modules/bastidorSinEstante.svg"
 
             else -> "/form/noSeleccionado.svg"
         }

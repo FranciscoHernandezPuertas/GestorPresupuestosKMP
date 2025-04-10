@@ -152,161 +152,240 @@ object ElementosConstantes {
             name = "Diametro 300x180",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Diametro 360x180" to ItemWithLimits(
             id = "cubeta_d360",
             name = "Diametro 360x180",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Diametro 380x180" to ItemWithLimits(
             id = "cubeta_d380",
             name = "Diametro 380x180",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Diametro 420x180" to ItemWithLimits(
             id = "cubeta_d420",
             name = "Diametro 420x180",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Diametro 460x180" to ItemWithLimits(
             id = "cubeta_d460",
             name = "Diametro 460x180",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Cuadrada 400x400x250" to ItemWithLimits(
             id = "cubeta_c400_250",
             name = "Cuadrada 400x400x250",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Cuadrada 400x400×300" to ItemWithLimits(
             id = "cubeta_c400_300",
             name = "Cuadrada 400x400×300",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Cuadrada 450x450x250" to ItemWithLimits(
             id = "cubeta_c450_250",
             name = "Cuadrada 450x450x250",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Cuadrada 450x450x300" to ItemWithLimits(
             id = "cubeta_c450_300",
             name = "Cuadrada 450x450x300",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Cuadrada 500×500×250" to ItemWithLimits(
             id = "cubeta_c500_250",
             name = "Cuadrada 500×500×250",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Cuadrada 500x500×300" to ItemWithLimits(
             id = "cubeta_c500_300",
             name = "Cuadrada 500x500×300",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 325x300x150" to ItemWithLimits(
             id = "cubeta_r325",
             name = "Rectangular 325x300x150",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 500x300x300" to ItemWithLimits(
             id = "cubeta_r500_300",
             name = "Rectangular 500x300x300",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 500x400x250" to ItemWithLimits(
             id = "cubeta_r500_400",
             name = "Rectangular 500x400x250",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 600x450x300" to ItemWithLimits(
             id = "cubeta_r600_450",
             name = "Rectangular 600x450x300",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 600x500×250" to ItemWithLimits(
             id = "cubeta_r600_500_250",
             name = "Rectangular 600x500×250",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 600x500x300" to ItemWithLimits(
             id = "cubeta_r600_500_300",
             name = "Rectangular 600x500x300",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 600x500x320" to ItemWithLimits(
             id = "cubeta_r600_500_320",
             name = "Rectangular 600x500x320",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 630x510x380" to ItemWithLimits(
             id = "cubeta_r630",
             name = "Rectangular 630x510x380",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 700x450x350" to ItemWithLimits(
             id = "cubeta_r700",
             name = "Rectangular 700x450x350",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 800x500x380" to ItemWithLimits(
             id = "cubeta_r800",
             name = "Rectangular 800x500x380",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 955x510x380" to ItemWithLimits(
             id = "cubeta_r955",
             name = "Rectangular 955x510x380",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         ),
         "Rectangular 1280x510x380" to ItemWithLimits(
             id = "cubeta_r1280",
             name = "Rectangular 1280x510x380",
             minQuantity = 0,
             maxQuantity = 10,
-            initialQuantity = 1
+            initialQuantity = 0
         )
     )
+
+    val MODULOS = listOf(
+        "Bastidor sin estante",
+        "Bastidor con estante",
+        "Bastidor con dos estantes",
+        "Bastidor con armario abierto",
+        "Bastidor con armario puertas abatibles",
+        "Bastidor con armario puertas correderas",
+        "Bastidor con cajonera tres cajones",
+        "Bastidor con cajonera cuatro cajones",
+        "Bastidor para fregadero o seno"
+    )
+
+    val LIMITES_MODULOS = mapOf(
+        "Bastidor sin estante" to ItemWithLimits(
+            id = "bastidor_sin_estante",
+            name = "Bastidor sin estante",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con estante" to ItemWithLimits(
+            id = "bastidor_con_estante",
+            name = "Bastidor con estante",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con dos estantes" to ItemWithLimits(
+            id = "bastidor_con_dos_estantes",
+            name = "Bastidor con dos estantes",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con armario abierto" to ItemWithLimits(
+            id = "bastidor_con_armario_abierto",
+            name = "Bastidor con armario abierto",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con armario puertas abatibles" to ItemWithLimits(
+            id = "bastidor_con_armario_puertas_abatibles",
+            name = "Bastidor con armario puertas abatibles",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con armario puertas correderas" to ItemWithLimits(
+            id = "bastidor_con_armario_puertas_correderas",
+            name = "Bastidor con armario puertas correderas",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con cajonera tres cajones" to ItemWithLimits(
+            id = "bastidor_con_cajonera_tres_cajones",
+            name = "Bastidor con cajonera tres cajones",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor con cajonera cuatro cajones" to ItemWithLimits(
+            id = "bastidor_con_cajonera_cuatro_cajones",
+            name = "Bastidor con cajonera cuatro cajones",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        ),
+        "Bastidor para fregadero o seno" to ItemWithLimits(
+            id = "bastidor_para_fregadero_o_seno",
+            name = "Bastidor para fregadero o seno",
+            minQuantity = 0,
+            maxQuantity = 10,
+            initialQuantity = 0
+        )
+    )
+
 }

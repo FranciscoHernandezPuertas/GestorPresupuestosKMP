@@ -1,5 +1,8 @@
 package org.dam.tfg.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ItemWithLimits(
     val id: String,
     val name: String,

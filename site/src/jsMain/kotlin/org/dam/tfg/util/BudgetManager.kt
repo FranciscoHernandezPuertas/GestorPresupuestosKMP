@@ -5,6 +5,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.dam.tfg.models.table.Cubeta
+import org.dam.tfg.models.table.ModuloSeleccionado
 import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.repositories.BudgetRepository
 import org.dam.tfg.repositories.BudgetRepositoryJs
@@ -104,6 +105,28 @@ object BudgetManager {
         localStorage["elementos_generales"] = Json.encodeToString(elementos)
     }
 
+    fun saveModulos(modulos: List<ModuloSeleccionado>) {
+        try {
+            val json = Json.encodeToString(modulos)
+            localStorage["modulos_data"] = json
+            console.log("Módulos guardados correctamente: $json")
+        } catch (e: Exception) {
+            console.error("Error al guardar módulos: ${e.message}")
+        }
+    }
+
+    fun getModulos(): List<ModuloSeleccionado> {
+        val modulosJson = localStorage["modulos_data"] ?: return emptyList()
+        return try {
+            val resultado = Json.decodeFromString<List<ModuloSeleccionado>>(modulosJson)
+            console.log("Módulos recuperados correctamente: ${resultado.size}")
+            resultado
+        } catch (e: Exception) {
+            console.error("Error al recuperar módulos: ${e.message}")
+            emptyList()
+        }
+    }
+
     // Resetear todos los datos
     fun resetBudgetData() {
         localStorage.removeItem("mesa_tipo")
@@ -115,4 +138,5 @@ object BudgetManager {
         localStorage.removeItem("elementos_generales")
         localStorage.removeItem("elementos_cantidades")
     }
+
 }

@@ -95,26 +95,6 @@ fun ConfirmationDialog(
                     horizontalArrangement = Arrangement.spacedBy(10.px),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón Cancelar
-                    Box(
-                        modifier = Modifier
-                            .padding(10.px)
-                            .backgroundColor(Colors.LightGray)
-                            .borderRadius(4.px)
-                            .padding(topBottom = 8.px, leftRight = 16.px)
-                            .cursor(Cursor.Pointer)
-                            .onClick { onCancel() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        SpanText(
-                            text = "Cancelar",
-                            modifier = Modifier
-                                .fontFamily(Constants.FONT_FAMILY)
-                                .fontSize(14.px)
-                                .color(Colors.Black)
-                        )
-                    }
-
                     // Botón Confirmar
                     Box(
                         modifier = Modifier
@@ -132,6 +112,25 @@ fun ConfirmationDialog(
                                 .fontFamily(Constants.FONT_FAMILY)
                                 .fontSize(14.px)
                                 .color(Colors.White)
+                        )
+                    }
+                    // Botón Cancelar
+                    Box(
+                        modifier = Modifier
+                            .padding(10.px)
+                            .backgroundColor(Colors.LightGray)
+                            .borderRadius(4.px)
+                            .padding(topBottom = 8.px, leftRight = 16.px)
+                            .cursor(Cursor.Pointer)
+                            .onClick { onCancel() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SpanText(
+                            text = "Cancelar",
+                            modifier = Modifier
+                                .fontFamily(Constants.FONT_FAMILY)
+                                .fontSize(14.px)
+                                .color(Colors.Black)
                         )
                     }
                 }
