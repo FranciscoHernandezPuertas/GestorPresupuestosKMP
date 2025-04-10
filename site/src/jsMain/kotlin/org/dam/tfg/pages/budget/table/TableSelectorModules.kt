@@ -10,6 +10,7 @@ import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.graphics.Colors
 import com.varabyte.kobweb.compose.ui.modifiers.*
+import com.varabyte.kobweb.compose.ui.styleModifier
 import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.components.icons.fa.FaCheck
@@ -19,6 +20,7 @@ import com.varabyte.kobweb.silk.components.icons.fa.FaTrash
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
+import com.varabyte.kobweb.silk.theme.name
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -29,9 +31,12 @@ import org.dam.tfg.models.Theme
 import org.dam.tfg.models.table.ModuloSeleccionado
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
+import org.dam.tfg.styles.ModuloInputStyle
 import org.dam.tfg.util.BudgetManager
+import org.dam.tfg.util.Constants
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.isUserLoggedInCheck
+import org.jetbrains.compose.web.css.Position
 import org.jetbrains.compose.web.css.percent
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.rgba
@@ -61,18 +66,13 @@ fun TableSelectorModulesContent() {
 
     // Estado de los módulos seleccionados
     var modulosSeleccionados by remember { mutableStateOf<List<ModuloSeleccionado>>(listOf()) }
-    var moduloEnEdicion by remember { mutableStateOf<String?>(null) }
-
-    // Estados para las dimensiones del módulo en edición
-    var largoEdicion by remember { mutableStateOf("") }
-    var fondoEdicion by remember { mutableStateOf("") }
-    var altoEdicion by remember { mutableStateOf("") }
-    var errorValidacion by remember { mutableStateOf("") }
-
-    // Estados para confirmaciones y mensajes
     var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
     var moduloAEliminar by remember { mutableStateOf<ModuloSeleccionado?>(null) }
     var mostrarConfirmacionLimpiar by remember { mutableStateOf(false) }
+    var mostrarMensajeExito by remember { mutableStateOf(false) }
+    var mensajeExito by remember { mutableStateOf("") }
+    var mostrarMensajeAdvertencia by remember { mutableStateOf(false) }
+    var mensajeAdvertencia by remember { mutableStateOf("") }
 
     // Configuración según tamaño de pantalla
     val numColumnas = if (breakpoint >= Breakpoint.MD) 3 else 1
@@ -83,58 +83,44 @@ fun TableSelectorModulesContent() {
     // Función para guardar en localStorage
     fun guardarModulosSeleccionados() {
         BudgetManager.saveModulos(modulosSeleccionados)
-        // Agregar verificación de guardado
-        console.log("Módulos guardados: ${modulosSeleccionados.size}")
     }
 
+    // Timer para cerrar automáticamente el mensaje de éxito
+    LaunchedEffect(mostrarMensajeExito) {
+        if (mostrarMensajeExito) {
+            kotlinx.browser.window.setTimeout({
+                mostrarMensajeExito = false
+            }, 3000) // 3 segundos
+        }
+    }
+
+    // Cargar módulos guardados previamente
     LaunchedEffect(Unit) {
         val modulosGuardados = BudgetManager.getModulos()
-        console.log("Módulos recuperados: ${modulosGuardados.size}")
         modulosSeleccionados = modulosGuardados
     }
 
     // Función para añadir un nuevo módulo
-    fun añadirModulo() {
-        if (moduloEnEdicion == null) return
-
-        val largo = largoEdicion.toDoubleOrNull() ?: 0.0
-        val fondo = fondoEdicion.toDoubleOrNull() ?: 0.0
-        val alto = altoEdicion.toDoubleOrNull() ?: 0.0
-
-        // Validaciones
-        when {
-            largo <= 0 -> {
-                errorValidacion = "El largo debe ser mayor que 0"
-                return
-            }
-            fondo <= 0 -> {
-                errorValidacion = "El fondo debe ser mayor que 0"
-                return
-            }
-            alto <= 0 -> {
-                errorValidacion = "El alto debe ser mayor que 0"
-                return
-            }
-        }
-
+    fun añadirModulo(nombre: String, largo: Double, fondo: Double, alto: Double) {
         // Comprobar si ya existe un módulo idéntico
         val moduloExistente = modulosSeleccionados.find {
-            it.nombre == moduloEnEdicion &&
+            it.nombre == nombre &&
                     it.largo == largo &&
                     it.fondo == fondo &&
                     it.alto == alto
         }
 
         if (moduloExistente != null) {
-            errorValidacion = "Ya existe un módulo con estas dimensiones"
+            // Mostrar mensaje de advertencia
+            mensajeAdvertencia = "Ya existe un módulo con estas características"
+            mostrarMensajeAdvertencia = true
             return
         }
 
-        // Resto de la función igual
-        val limite = modulosConstantes[moduloEnEdicion]
+        val limite = modulosConstantes[nombre]
         if (limite != null) {
             val nuevoModulo = ModuloSeleccionado(
-                nombre = moduloEnEdicion!!,
+                nombre = nombre,
                 largo = largo,
                 fondo = fondo,
                 alto = alto,
@@ -145,21 +131,16 @@ fun TableSelectorModulesContent() {
             modulosSeleccionados = modulosSeleccionados + nuevoModulo
             guardarModulosSeleccionados()
 
-            // Limpiar estados
-            moduloEnEdicion = null
-            largoEdicion = ""
-            fondoEdicion = ""
-            altoEdicion = ""
-            errorValidacion = ""
+            // Mostrar mensaje de éxito
+            mensajeExito = "Módulo añadido correctamente"
+            mostrarMensajeExito = true
         }
     }
-
-    // Cargar módulos guardados previamente
-    LaunchedEffect(Unit) {
-        val modulosGuardados = BudgetManager.getModulos()
-        if (modulosGuardados.isNotEmpty()) {
-            modulosSeleccionados = modulosGuardados
-        }
+    if (mostrarMensajeAdvertencia) {
+        WarningMessage(
+            mensaje = mensajeAdvertencia,
+            onClose = { mostrarMensajeAdvertencia = false }
+        )
     }
 
     Box(
@@ -175,7 +156,7 @@ fun TableSelectorModulesContent() {
                 .padding(bottom = 100.px),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Título y descripción
+            // Título y descripción (sin cambios)
             SpanText(
                 modifier = Modifier
                     .margin(top = 10.px, bottom = 20.px)
@@ -186,7 +167,7 @@ fun TableSelectorModulesContent() {
                 text = "Configuración de Mesa: Módulos"
             )
 
-            // Descripción / información
+            // Descripción / información (sin cambios)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -214,7 +195,7 @@ fun TableSelectorModulesContent() {
                 }
             }
 
-            // Grid de módulos disponibles
+            // Grid de módulos disponibles (modificado)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -239,196 +220,18 @@ fun TableSelectorModulesContent() {
 
                     ModulosGrid(
                         modulos = modulosConstantes.values.toList(),
-                        moduloEnEdicion = moduloEnEdicion,
-                        onModuloClick = { modulo ->
-                            moduloEnEdicion = modulo.name
-                            errorValidacion = ""
+                        onAddModule = { nombre, largo, fondo, alto ->
+                            añadirModulo(nombre, largo, fondo, alto)
                         },
                         numColumnas = numColumnas,
                         resourceProvider = resourceProvider,
-                        isMobile = isMobile
+                        isMobile = isMobile,
+                        modulosSeleccionados = modulosSeleccionados
                     )
                 }
             }
 
-            // Formulario para añadir módulo con dimensiones
-            if (moduloEnEdicion != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .backgroundColor(Colors.White)
-                        .borderRadius(8.px)
-                        .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 8.px, color = Colors.LightGray)
-                        .padding(16.px)
-                        .margin(bottom = 20.px)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        SpanText(
-                            modifier = Modifier
-                                .margin(bottom = 16.px)
-                                .fontSize(18.px)
-                                .fontWeight(FontWeight.Bold)
-                                .fontFamily(FONT_FAMILY)
-                                .color(Theme.Secondary.rgb),
-                            text = "Añadir ${moduloEnEdicion}"
-                        )
-
-                        if (errorValidacion.isNotEmpty()) {
-                            ValidationError(errorValidacion)
-                        }
-
-                        // Campos para dimensiones
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = if (isMobile) Arrangement.SpaceEvenly else Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Campo Largo
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(10.px)
-                            ) {
-                                SpanText(
-                                    modifier = Modifier
-                                        .fontFamily(FONT_FAMILY)
-                                        .fontSize(14.px)
-                                        .color(Theme.Secondary.rgb),
-                                    text = "Largo (mm)"
-                                )
-                                NumberInput {
-                                    value(largoEdicion)
-                                    onInput { event ->
-                                        largoEdicion = (event.target as HTMLInputElement).value
-                                    }
-                                    style {
-                                        property("height", "40px")
-                                        property("padding", "8px")
-                                        property("width", if (isMobile) "80px" else "120px")
-                                        property("font-size", "16px")
-                                    }
-                                }
-                            }
-
-                            // Campo Fondo
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(10.px)
-                            ) {
-                                SpanText(
-                                    modifier = Modifier
-                                        .fontFamily(FONT_FAMILY)
-                                        .fontSize(14.px)
-                                        .color(Theme.Secondary.rgb),
-                                    text = "Fondo (mm)"
-                                )
-                                NumberInput {
-                                    value(fondoEdicion)
-                                    onInput { event ->
-                                        fondoEdicion = (event.target as HTMLInputElement).value
-                                    }
-                                    style {
-                                        property("height", "40px")
-                                        property("padding", "8px")
-                                        property("width", if (isMobile) "80px" else "120px")
-                                        property("font-size", "16px")
-                                    }
-                                }
-                            }
-
-                            // Campo Alto
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(10.px)
-                            ) {
-                                SpanText(
-                                    modifier = Modifier
-                                        .fontFamily(FONT_FAMILY)
-                                        .fontSize(14.px)
-                                        .color(Theme.Secondary.rgb),
-                                    text = "Alto (mm)"
-                                )
-                                NumberInput {
-                                    value(altoEdicion)
-                                    onInput { event ->
-                                        altoEdicion = (event.target as HTMLInputElement).value
-                                    }
-                                    style {
-                                        property("height", "40px")
-                                        property("padding", "8px")
-                                        property("width", if (isMobile) "80px" else "120px")
-                                        property("font-size", "16px")
-                                    }
-                                }
-                            }
-                        }
-
-                        // Botones de acción
-                        Row(
-                            modifier = Modifier
-                                .margin(top = 20.px)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            // Botón añadir
-                            Box(
-                                modifier = Modifier
-                                    .backgroundColor(Theme.Primary.rgb)
-                                    .borderRadius(4.px)
-                                    .padding(10.px)
-                                    .cursor(Cursor.Pointer)
-                                    .onClick { añadirModulo() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    FaPlus(
-                                        modifier = Modifier
-                                            .margin(right = 8.px)
-                                            .color(Colors.White)
-                                    )
-                                    SpanText(
-                                        modifier = Modifier
-                                            .color(Colors.White)
-                                            .fontFamily(FONT_FAMILY),
-                                        text = "Añadir"
-                                    )
-                                }
-                            }
-
-                            // Botón cancelar
-                            Box(
-                                modifier = Modifier
-                                    .margin(left = 10.px)
-                                    .backgroundColor(Colors.LightGray)
-                                    .borderRadius(4.px)
-                                    .padding(10.px)
-                                    .cursor(Cursor.Pointer)
-                                    .onClick {
-                                        moduloEnEdicion = null
-                                        largoEdicion = ""
-                                        fondoEdicion = ""
-                                        altoEdicion = ""
-                                        errorValidacion = ""
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                SpanText(
-                                    modifier = Modifier
-                                        .color(Theme.Secondary.rgb)
-                                        .fontFamily(FONT_FAMILY),
-                                    text = "Cancelar"
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Lista de módulos seleccionados
+            // Lista de módulos seleccionados (sin cambios significativos)
             if (modulosSeleccionados.isNotEmpty()) {
                 Box(
                     modifier = Modifier
@@ -511,7 +314,7 @@ fun TableSelectorModulesContent() {
             }
         }
 
-        // Diálogos de confirmación
+        // Diálogos de confirmación (sin cambios)
         if (mostrarConfirmacionEliminar && moduloAEliminar != null) {
             ConfirmationDialog(
                 mensaje = "¿Está seguro de que desea eliminar este módulo?",
@@ -542,11 +345,19 @@ fun TableSelectorModulesContent() {
             )
         }
 
-        // Footer con navegación
+        // Mensaje de éxito
+        if (mostrarMensajeExito) {
+            SuccessMessage(
+                mensaje = mensajeExito,
+                onClose = { mostrarMensajeExito = false }
+            )
+        }
+
+        // Footer con navegación (sin cambios)
         BudgetFooter(
             previousScreen = Screen.TableSelectorCubetas,
             nextScreen = Screen.TableSelectorResume,
-            validateData = { true }, // No hay validación específica aquí
+            validateData = { true },
             saveData = { guardarModulosSeleccionados() }
         )
     }
@@ -555,11 +366,11 @@ fun TableSelectorModulesContent() {
 @Composable
 fun ModulosGrid(
     modulos: List<ItemWithLimits>,
-    moduloEnEdicion: String?,
-    onModuloClick: (ItemWithLimits) -> Unit,
+    onAddModule: (moduloNombre: String, largo: Double, fondo: Double, alto: Double) -> Unit,
     numColumnas: Int,
     resourceProvider: WebResourceProvider,
-    isMobile: Boolean
+    isMobile: Boolean,
+    modulosSeleccionados: List<ModuloSeleccionado>
 ) {
     val modulosUnicos = modulos.distinctBy { it.name }.sortedBy { it.name }
 
@@ -568,20 +379,22 @@ fun ModulosGrid(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.px),
+                    .padding(bottom = 20.px),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 for (j in 0 until numColumnas) {
                     val index = i * numColumnas + j
                     Box(
                         modifier = Modifier
-                            .width(if (isMobile) (100f / numColumnas).percent else 160.px)
+                            .width(if (isMobile) (100f / numColumnas).percent else 240.px)
+                            .padding(5.px)
                     ) {
                         if (index < modulosUnicos.size) {
                             ModuloCard(
                                 modulo = modulosUnicos[index],
-                                estaSeleccionado = moduloEnEdicion == modulosUnicos[index].name,
-                                onClick = { onModuloClick(modulosUnicos[index]) },
+                                onClick = { largo, fondo, alto ->
+                                    onAddModule(modulosUnicos[index].name, largo, fondo, alto)
+                                },
                                 resourceProvider = resourceProvider,
                                 isMobile = isMobile
                             )
@@ -596,32 +409,34 @@ fun ModulosGrid(
 @Composable
 fun ModuloCard(
     modulo: ItemWithLimits,
-    estaSeleccionado: Boolean,
-    onClick: () -> Unit,
+    onClick: (Double, Double, Double) -> Unit,
     resourceProvider: WebResourceProvider,
     isMobile: Boolean
 ) {
     val imageKey = getImageKeyFromModuleName(modulo.name)
-    val cardWidth = if (isMobile) 100.percent else 160.px
-    val cardHeight = if (isMobile) 100.px else 220.px
+    val cardWidth = if (isMobile) 100.percent else 220.px
+    val cardHeight = if (isMobile) 360.px else 380.px // Altura aumentada para garantizar espacio suficiente
+
+    var largo by remember { mutableStateOf("") }
+    var fondo by remember { mutableStateOf("") }
+    var alto by remember { mutableStateOf("") }
+    var errorMsg by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
             .width(cardWidth)
             .height(cardHeight)
-            .backgroundColor(if (estaSeleccionado) rgba(0, 150, 0, 0.1) else Colors.White)
+            .backgroundColor(Colors.White)
             .borderRadius(8.px)
             .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray)
-            .padding(10.px)
-            .cursor(Cursor.Pointer)
-            .onClick { onClick() }
+            .padding(16.px)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Top
         ) {
-            // Imagen del módulo con tamaño controlado
+            // Imagen del módulo
             Box(
                 modifier = Modifier
                     .height(80.px)
@@ -644,43 +459,178 @@ fun ModuloCard(
                     .fontSize(14.px)
                     .color(Theme.Secondary.rgb)
                     .textAlign(TextAlign.Center)
-                    .margin(bottom = 8.px),
+                    .margin(bottom = 12.px),
                 text = modulo.name
             )
 
-            // Botón seleccionar
-            if (estaSeleccionado) {
-                Row(
-                    modifier = Modifier
-                        .padding(topBottom = 8.px),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FaCheck(
-                        modifier = Modifier.color(Theme.Primary.rgb)
-                    )
-                    SpanText(
-                        modifier = Modifier
-                            .margin(left = 5.px)
-                            .color(Theme.Primary.rgb)
-                            .fontFamily(FONT_FAMILY),
-                        text = "Seleccionado"
-                    )
-                }
-            } else {
+            // Campos de dimensiones
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Campo Largo
                 Box(
                     modifier = Modifier
-                        .backgroundColor(Theme.Primary.rgb)
-                        .borderRadius(4.px)
-                        .padding(topBottom = 4.px, leftRight = 8.px)
-                        .cursor(Cursor.Pointer),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth(if (isMobile) 90.percent else 100.percent)
+                        .margin(bottom = 8.px)
+                        .padding(leftRight = 10.px)
                 ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SpanText(
+                            modifier = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(12.px)
+                                .color(Theme.Secondary.rgb)
+                                .textAlign(TextAlign.Center),
+                            text = "Largo (mm)"
+                        )
+                        NumberInput(
+                            attrs = {
+                                value(largo)
+                                onInput { event ->
+                                    largo = (event.target as HTMLInputElement).value
+                                    errorMsg = ""
+                                }
+                                // Aplicamos el estilo de Kobweb en lugar de CSS inline
+                                classes(ModuloInputStyle.name)
+                                style {
+                                    property("width", "100%")
+                                    property("padding", "6px")
+                                    property("font-size", "14px")
+                                    property("text-align", "center")
+                                }
+                            }
+                        )
+                    }
+                }
+
+                // Campo Fondo (similar al campo Largo)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(if (isMobile) 90.percent else 100.percent)
+                        .margin(bottom = 8.px)
+                        .padding(leftRight = 10.px)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SpanText(
+                            modifier = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(12.px)
+                                .color(Theme.Secondary.rgb)
+                                .textAlign(TextAlign.Center),
+                            text = "Fondo (mm)"
+                        )
+                        NumberInput {
+                            value(fondo)
+                            onInput { event ->
+                                fondo = (event.target as HTMLInputElement).value
+                                errorMsg = ""
+                            }
+                            classes(ModuloInputStyle.name)
+                            style {
+                                property("width", "100%")
+                                property("padding", "6px")
+                                property("font-size", "14px")
+                                property("text-align", "center")
+                            }
+                        }
+                    }
+                }
+
+                // Campo Alto (similar al campo Largo)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(if (isMobile) 90.percent else 100.percent)
+                        .margin(bottom = 8.px)
+                        .padding(leftRight = 10.px)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SpanText(
+                            modifier = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(12.px)
+                                .color(Theme.Secondary.rgb)
+                                .textAlign(TextAlign.Center),
+                            text = "Alto (mm)"
+                        )
+                        NumberInput {
+                            value(alto)
+                            onInput { event ->
+                                alto = (event.target as HTMLInputElement).value
+                                errorMsg = ""
+                            }
+                            classes(ModuloInputStyle.name)
+                            style {
+                                property("width", "100%")
+                                property("padding", "6px")
+                                property("font-size", "14px")
+                                property("text-align", "center")
+                            }
+                        }
+                    }
+                }
+
+                // Mensaje de error si existe
+                if (errorMsg.isNotEmpty()) {
+                    SpanText(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .color(Colors.Red)
+                            .fontSize(12.px)
+                            .textAlign(TextAlign.Center),
+                        text = errorMsg
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f)) // Empuja el botón hacia abajo
+
+            // Botón añadir
+            Box(
+                modifier = Modifier
+                    .margin(top = 8.px)
+                    .backgroundColor(Theme.Primary.rgb)
+                    .borderRadius(4.px)
+                    .padding(8.px)
+                    .fillMaxWidth(if (isMobile) 90.percent else 100.percent)
+                    .cursor(Cursor.Pointer)
+                    .onClick {
+                        val largoVal = largo.toDoubleOrNull() ?: 0.0
+                        val fondoVal = fondo.toDoubleOrNull() ?: 0.0
+                        val altoVal = alto.toDoubleOrNull() ?: 0.0
+
+                        when {
+                            largoVal <= 0 -> errorMsg = "Largo debe ser mayor que 0"
+                            fondoVal <= 0 -> errorMsg = "Fondo debe ser mayor que 0"
+                            altoVal <= 0 -> errorMsg = "Alto debe ser mayor que 0"
+                            else -> onClick(largoVal, fondoVal, altoVal)
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    FaPlus(
+                        modifier = Modifier
+                            .margin(right = 5.px)
+                            .color(Colors.White)
+                    )
                     SpanText(
                         modifier = Modifier
                             .color(Colors.White)
                             .fontFamily(FONT_FAMILY),
-                        text = "Seleccionar"
+                        text = "Añadir"
                     )
                 }
             }
@@ -867,6 +817,168 @@ fun DimensionDisplay(label: String, value: String) {
                 .color(Theme.Secondary.rgb),
             text = value
         )
+    }
+}
+
+@Composable
+fun SuccessMessage(
+    mensaje: String,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .position(Position.Fixed)
+            .zIndex(1000)
+            .styleModifier {
+                property("top", "0")
+                property("left", "0")
+                property("right", "0")
+                property("bottom", "0")
+            }
+            .backgroundColor(rgba(0, 0, 0, 0.3))
+            .onClick { onClose() },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(300.px)
+                .backgroundColor(Colors.White)
+                .borderRadius(8.px)
+                .border(1.px, color = Colors.LightGray)
+                .padding(20.px)
+                .onClick { it.stopPropagation() },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(15.px)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .cursor(Cursor.Pointer)
+                            .onClick { onClose() }
+                    ) {
+                        // Icono X (puedes usar un icono FA si está disponible)
+                        SpanText(
+                            text = "✕",
+                            modifier = Modifier
+                                .fontSize(18.px)
+                                .color(Theme.Secondary.rgb)
+                        )
+                    }
+                }
+
+                // Símbolo de éxito (check)
+                Box(
+                    modifier = Modifier
+                        .size(40.px)
+                        .backgroundColor(rgba(0, 150, 0, 0.1))
+                        .borderRadius(50.percent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    FaCheck(
+                        modifier = Modifier.color(Theme.Primary.rgb)
+                    )
+                }
+
+                // Mensaje
+                SpanText(
+                    text = mensaje,
+                    modifier = Modifier
+                        .fontFamily(Constants.FONT_FAMILY)
+                        .fontSize(16.px)
+                        .fontWeight(FontWeight.Medium)
+                        .color(Theme.Secondary.rgb)
+                        .textAlign(TextAlign.Center)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WarningMessage(
+    mensaje: String,
+    onClose: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .position(Position.Fixed)
+            .zIndex(1000)
+            .styleModifier {
+                property("top", "0")
+                property("left", "0")
+                property("right", "0")
+                property("bottom", "0")
+            }
+            .backgroundColor(rgba(0, 0, 0, 0.3))
+            .onClick { onClose() },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .width(300.px)
+                .backgroundColor(Colors.White)
+                .borderRadius(8.px)
+                .border(1.px, color = Colors.LightGray)
+                .padding(20.px)
+                .onClick { it.stopPropagation() },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(15.px)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .cursor(Cursor.Pointer)
+                            .onClick { onClose() }
+                    ) {
+                        SpanText(
+                            text = "✕",
+                            modifier = Modifier
+                                .fontSize(18.px)
+                                .color(Theme.Secondary.rgb)
+                        )
+                    }
+                }
+
+                // Símbolo de advertencia
+                Box(
+                    modifier = Modifier
+                        .size(40.px)
+                        .backgroundColor(rgba(255, 150, 0, 0.1))
+                        .borderRadius(50.percent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SpanText(
+                        text = "⚠️",
+                        modifier = Modifier.fontSize(20.px)
+                    )
+                }
+
+                // Mensaje
+                SpanText(
+                    text = mensaje,
+                    modifier = Modifier
+                        .fontFamily(Constants.FONT_FAMILY)
+                        .fontSize(16.px)
+                        .fontWeight(FontWeight.Medium)
+                        .color(Theme.Secondary.rgb)
+                        .textAlign(TextAlign.Center)
+                )
+            }
+        }
     }
 }
 

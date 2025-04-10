@@ -13,6 +13,13 @@ import org.w3c.dom.get
 import org.w3c.dom.set
 
 object BudgetManager {
+
+    private const val MESA_TIPO_KEY = "mesa_tipo"
+    private const val MESA_TRAMOS_KEY = "mesa_tramos"
+    private const val ELEMENTOS_DATA_KEY = "elementos_data" // Renombrado desde elementos_cantidades
+    private const val MODULOS_KEY = "modulos_data"
+    private const val CUBETAS_KEY = "cubetas_data"
+    private const val PRECIO_TOTAL_KEY = "precio_total"
     private val repository: BudgetRepository = BudgetRepositoryJs()
 
     // Funciones para gestionar la mesa y sus tramos

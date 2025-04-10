@@ -15,6 +15,7 @@ import org.jetbrains.compose.web.css.LineStyle
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.ms
 import org.jetbrains.compose.web.css.percent
+import org.jetbrains.compose.web.css.rgba
 
 val TableSelectorStyle = CssStyle {
     base {
@@ -70,5 +71,36 @@ val RadioButtonStyle = CssStyle {
     hover {
         Modifier
             .border(width = 2.px, style = LineStyle.Solid, color = Theme.Primary.rgb)
+    }
+}
+
+val ModuloInputStyle = CssStyle {
+    base {
+        Modifier
+            .border(
+                width = 1.px,
+                style = LineStyle.Solid,
+                color = Theme.HalfBlack.rgb
+            )
+            .borderRadius(4.px)
+            .transition(Transition.of(property = "border", duration = 200.ms))
+    }
+
+    hover {
+        Modifier
+            .border(
+                width = 1.px,
+                style = LineStyle.Solid,
+                color = Theme.Primary.rgb
+            )
+    }
+
+    focus {
+        Modifier
+            .border(
+                width = 1.px,
+                style = LineStyle.Solid,
+                color = Theme.Primary.rgb
+            )
     }
 }
