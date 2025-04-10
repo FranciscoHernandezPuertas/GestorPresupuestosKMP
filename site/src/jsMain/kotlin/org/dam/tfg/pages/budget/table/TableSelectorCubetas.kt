@@ -72,6 +72,7 @@ import org.jetbrains.compose.web.css.Position
 import org.jetbrains.compose.web.css.percent
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.rgba
+import org.jetbrains.compose.web.css.vh
 
 @Page
 @Composable
@@ -208,7 +209,7 @@ fun TableSelectorCubetasContent() {
                     .color(Theme.Secondary.rgb)
                     .textAlign(TextAlign.Center)
                     .margin(bottom = 20.px),
-                text = "Selección de Cubetas"
+                text = "Configuración de Mesa: Selección de Cubetas"
             )
 
             // Layout de selección - adaptable a móvil/escritorio
@@ -551,7 +552,7 @@ fun DropdownSelector(
                     .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 8.px, color = rgba(0, 0, 0, 0.2f))
                     .border(1.px, style = LineStyle.Solid, color = rgba(0, 0, 0, 0.1f))
                     .borderRadius(4.px)
-                    .maxHeight(200.px)
+                    .maxHeight(50.vh)
                     .overflow(Overflow.Auto)
                     .onClick { it.stopPropagation() },
                 verticalArrangement = Arrangement.Top
