@@ -295,7 +295,7 @@ private fun CubetasResumen(cubetas: List<Cubeta>, resourceProvider: WebResourceP
                         )
 
                         SpanText(
-                            text = "${cubeta.tipo} - ${cubeta.largo}x${cubeta.fondo} mm",
+                            text = "${cubeta.tipo} - Largo: ${cubeta.largo} mm, Fondo: ${cubeta.fondo} mm, Alto: ${cubeta.alto} mm",
                             modifier = Modifier
                                 .fontFamily(FONT_FAMILY)
                                 .fontSize(14.px)
