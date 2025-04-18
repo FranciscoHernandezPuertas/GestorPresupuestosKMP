@@ -155,6 +155,9 @@ fun TableSelectorDimensionsContent() {
     // Actualizar tramos cuando cambia la cantidad (se mantiene igual)
     LaunchedEffect(selectedTramoCount) {
         if (tramos.size != selectedTramoCount) {
+            // Crear un mapa para almacenar los tramos existentes por número
+            val tramosPorNumero = tramos.associateBy { it.numero }
+
             val newTramos = if (selectedTramoCount > tramos.size) {
                 tramos + List(selectedTramoCount - tramos.size) { index ->
                     Tramo(
@@ -167,17 +170,49 @@ fun TableSelectorDimensionsContent() {
             } else {
                 tramos.take(selectedTramoCount)
             }
+
+            // Actualizar primero tramos
             tramos = newTramos
 
+            // Ahora que tenemos los tramos actualizados, restaurar valores previos
             val inputValues = tramosInputValues.toMutableMap()
+
             tramos.forEachIndexed { index, tramo ->
-                if (!inputValues.containsKey("largo_${index + 1}")) {
-                    inputValues["largo_${index + 1}"] = if (tramo.largo > 0) tramo.largo.toInt().toString() else ""
+                val tramoNum = index + 1
+
+                // Restaurar valor del largo desde inputValues si existe
+                val largoKey = "largo_$tramoNum"
+                val largoValue = inputValues[largoKey] ?: ""
+                if (largoValue.isNotEmpty()) {
+                    // Actualizar también el objeto Tramo con este valor
+                    val largoDouble = largoValue.toDoubleOrNull() ?: 0.0
+                    if (largoDouble > 0) {
+                        tramos = tramos.toMutableList().apply {
+                            this[index] = this[index].copy(largo = largoDouble)
+                        }
+                    }
+                } else if (tramosPorNumero[tramoNum]?.largo ?: 0.0 > 0) {
+                    // Si el tramo existía anteriormente pero no hay valor en inputValues, usar el valor anterior
+                    inputValues[largoKey] = tramosPorNumero[tramoNum]?.largo?.toInt().toString()
                 }
-                if (!inputValues.containsKey("ancho_${index + 1}")) {
-                    inputValues["ancho_${index + 1}"] = if (tramo.ancho > 0) tramo.ancho.toInt().toString() else ""
+
+                // Restaurar valor del ancho desde inputValues si existe
+                val anchoKey = "ancho_$tramoNum"
+                val anchoValue = inputValues[anchoKey] ?: ""
+                if (anchoValue.isNotEmpty()) {
+                    // Actualizar también el objeto Tramo con este valor
+                    val anchoDouble = anchoValue.toDoubleOrNull() ?: 0.0
+                    if (anchoDouble > 0) {
+                        tramos = tramos.toMutableList().apply {
+                            this[index] = this[index].copy(ancho = anchoDouble)
+                        }
+                    }
+                } else if (tramosPorNumero[tramoNum]?.ancho ?: 0.0 > 0) {
+                    // Si el tramo existía anteriormente pero no hay valor en inputValues, usar el valor anterior
+                    inputValues[anchoKey] = tramosPorNumero[tramoNum]?.ancho?.toInt().toString()
                 }
             }
+
             tramosInputValues = inputValues
         }
     }
