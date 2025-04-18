@@ -663,7 +663,7 @@ fun ElementoSeleccionadoItem(
                 ) {
                     QuantitySelector(
                         value = elemento.numero,
-                        min = minCantidad,
+                        min = 1,
                         max = maxCantidad,
                         onValueChange = { onCantidadChange(it) }
                     )
@@ -707,7 +707,7 @@ fun ElementoSeleccionadoItem(
                     // Selector de cantidad
                     QuantitySelector(
                         value = elemento.numero,
-                        min = minCantidad,
+                        min = 1,
                         max = maxCantidad,
                         onValueChange = { onCantidadChange(it) }
                     )

@@ -10,7 +10,7 @@ class WebResourceProvider : ResourceProvider {
             "ESQUINA_EN_CHAFLAN" -> "/form/table/elements/esquinaEnChaflan.svg"
             "ESQUINA_REDONDEADA" -> "/form/table/elements/esquinaRedondeada.svg"
             "CAJEADO_COLUMNA" -> "/form/table/elements/cajeadoColumna.svg"
-            "ARO_DE_DESBRACE" -> "/form/table/elements/arcoDeDesbrace.svg"
+            "ARO_DE_DESBARACE" -> "/form/table/elements/arcoDeDesbarace.svg"
             "KIT_LAVAMANOS_PULSADOR" -> "/form/table/elements/kitLavamanosPulsador.svg"
             "KIT_LAVAMANOS_PEDAL_SIMPLE" -> "/form/table/elements/kitLavamanosPedalSimple.svg"
             "KIT_LAVAMANOS_PEDAL_DOBLE" -> "/form/table/elements/kitLavamanosPedalDoble.svg"

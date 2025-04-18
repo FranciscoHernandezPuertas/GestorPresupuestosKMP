@@ -675,7 +675,7 @@ private fun getImageKeyFromElementName(name: String): String {
         "Kit lavam. pedal doble" -> "KIT_LAVAMANOS_PEDAL_DOBLE"
         "Cajeado columna" -> "CAJEADO_COLUMNA"
         "Baquetón en seno" -> "BAQUETON_EN_SENO"
-        "Aro de desbarace" -> "ARO_DE_DESBRACE"
+        "Aro de desbarace" -> "ARO_DE_DESBARACE"
         "Baqueton perimetrico" -> "BAQUETON_PERIMETRICO"
         else -> ""
     }
