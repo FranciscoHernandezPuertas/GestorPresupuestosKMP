@@ -286,7 +286,7 @@ private fun CubetasResumen(cubetas: List<Cubeta>, resourceProvider: WebResourceP
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SpanText(
-                            text = "Cubeta ${cubeta.numero}",
+                            text = "${cubeta.numero}x Cubeta ",
                             modifier = Modifier
                                 .fontFamily(FONT_FAMILY)
                                 .fontSize(16.px)
