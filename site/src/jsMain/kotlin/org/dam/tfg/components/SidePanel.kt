@@ -148,6 +148,7 @@ private fun NavigationItems() {
     )
     NavigationItem(
         modifier = Modifier.margin(bottom = 24.px),
+        selected = context.route.path == Screen.AdminHistory.route,
         title = "Historial",
         icon = Res.PathIcon.history,
         onClick = {
