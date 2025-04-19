@@ -101,8 +101,3 @@ fun logout() {
     localStorage.removeItem("userType")
     localStorage["remember"] = "false"
 }
-
-// Comprobar si es administrador
-fun isUserAdmin(): Boolean {
-    return localStorage["userType"] == "admin"
-}

@@ -10,7 +10,6 @@ import org.dam.tfg.models.table.ModuloSeleccionado
 import org.dam.tfg.models.table.Tramo
 import org.w3c.dom.get
 import org.w3c.dom.set
-import kotlin.collections.set
 
 class BudgetRepositoryJs : BudgetRepository {
     override fun saveMesa(mesa: Mesa) {
@@ -23,10 +22,26 @@ class BudgetRepositoryJs : BudgetRepository {
             try {
                 Json.decodeFromString(mesaJson)
             } catch (e: Exception) {
-                Mesa()
+                Mesa(
+                    tipo = "",
+                    tramos = emptyList(),
+                    cubetas = emptyList(),
+                    modulos = emptyList(),
+                    elementosGenerales = emptyMap(),
+                    precioTotal = 0.0,
+                    error = ""
+                )
             }
         } else {
-            Mesa()
+            Mesa(
+                tipo = "",
+                tramos = emptyList(),
+                cubetas = emptyList(),
+                modulos = emptyList(),
+                elementosGenerales = emptyMap(),
+                precioTotal = 0.0,
+                error = ""
+            )
         }
     }
 

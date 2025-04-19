@@ -11,5 +11,5 @@ data class ModuloSeleccionado(
     val fondo: Double,
     val alto: Double,
     val cantidad: Int,
-    @Contextual val limite: ItemWithLimits
+    val limite: ItemWithLimits
 )

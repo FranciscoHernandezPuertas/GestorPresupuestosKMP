@@ -415,7 +415,7 @@ fun ModuloCard(
 ) {
     val imageKey = getImageKeyFromModuleName(modulo.name)
     val cardWidth = if (isMobile) 100.percent else 220.px
-    val cardHeight = if (isMobile) 360.px else 380.px // Altura aumentada para garantizar espacio suficiente
+    val cardHeight = if (isMobile) 380.px else 400.px // Aumenté la altura para asegurar espacio suficiente
 
     var largo by remember { mutableStateOf("") }
     var fondo by remember { mutableStateOf("") }
@@ -430,40 +430,56 @@ fun ModuloCard(
             .borderRadius(8.px)
             .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray)
             .padding(16.px)
+            .styleModifier { // Añadir para asegurar que nada interfiere con el contenedor
+                property("position", "relative")
+                property("overflow", "hidden")  // Evita que el contenido se salga
+            }
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .styleModifier {
+                    property("display", "flex")
+                    property("flex-direction", "column")
+                },
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.SpaceBetween // Cambiado para distribuir el espacio correctamente
         ) {
-            // Imagen del módulo
-            Box(
-                modifier = Modifier
-                    .height(80.px)
-                    .width(80.px)
-                    .margin(bottom = 8.px),
-                contentAlignment = Alignment.Center
+            // Contenido superior (imagen y nombre)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    src = resourceProvider.getImagePath(imageKey),
-                    alt = modulo.name,
-                    modifier = Modifier.maxWidth(100.percent).maxHeight(100.percent)
+                // Imagen del módulo
+                Box(
+                    modifier = Modifier
+                        .height(80.px)
+                        .width(80.px)
+                        .margin(bottom = 8.px),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        src = resourceProvider.getImagePath(imageKey),
+                        alt = modulo.name,
+                        modifier = Modifier.maxWidth(100.percent).maxHeight(100.percent)
+                    )
+                }
+
+                // Nombre del módulo
+                SpanText(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(14.px)
+                        .color(Theme.Secondary.rgb)
+                        .textAlign(TextAlign.Center)
+                        .margin(bottom = 12.px),
+                    text = modulo.name
                 )
             }
 
-            // Nombre del módulo
-            SpanText(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(14.px)
-                    .color(Theme.Secondary.rgb)
-                    .textAlign(TextAlign.Center)
-                    .margin(bottom = 12.px),
-                text = modulo.name
-            )
-
-            // Campos de dimensiones
+            // Campos de dimensiones (centro)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -475,6 +491,7 @@ fun ModuloCard(
                         .margin(bottom = 8.px)
                         .padding(leftRight = 10.px)
                 ) {
+                    // El contenido de los campos es igual que antes
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
@@ -494,7 +511,6 @@ fun ModuloCard(
                                     largo = (event.target as HTMLInputElement).value
                                     errorMsg = ""
                                 }
-                                // Aplicamos el estilo de Kobweb en lugar de CSS inline
                                 classes(ModuloInputStyle.name)
                                 style {
                                     property("width", "100%")
@@ -507,7 +523,7 @@ fun ModuloCard(
                     }
                 }
 
-                // Campo Fondo (similar al campo Largo)
+                // Campo Fondo
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(if (isMobile) 90.percent else 100.percent)
@@ -543,7 +559,7 @@ fun ModuloCard(
                     }
                 }
 
-                // Campo Alto (similar al campo Largo)
+                // Campo Alto
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(if (isMobile) 90.percent else 100.percent)
@@ -592,12 +608,10 @@ fun ModuloCard(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f)) // Empuja el botón hacia abajo
-
-            // Botón añadir
+            // Botón añadir (parte inferior)
             Box(
                 modifier = Modifier
-                    .margin(top = 8.px)
+                    .margin(top = 8.px, bottom = 0.px) // Asegurar margen adecuado
                     .backgroundColor(Theme.Primary.rgb)
                     .borderRadius(4.px)
                     .padding(8.px)

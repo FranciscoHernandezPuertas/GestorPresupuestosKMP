@@ -431,7 +431,7 @@ fun ElementoCard(
     Box(
         modifier = Modifier
             .width(160.px)
-            .height(220.px)
+            .height(240.px)
             .backgroundColor(if (estaSeleccionado) rgba(0, 150, 0, 0.1) else Colors.White)
             .borderRadius(8.px)
             .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Colors.LightGray)
@@ -440,93 +440,122 @@ fun ElementoCard(
             .onClick { if (!estaSeleccionado) onClick() }
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth().fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Imagen
+            // Imagen en la parte superior (con tamaño reducido)
             Box(
                 modifier = Modifier
-                    .height(100.px)
                     .fillMaxWidth()
-                    .margin(bottom = 8.px),
+                    .height(100.px)
+                    .padding(bottom = 5.px),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
+                    modifier = Modifier
+                        .maxWidth(100.percent)
+                        .height(100.percent),
                     src = resourceProvider.getImagePath(imageKey),
                     alt = elemento.name
                 )
             }
 
-            // Nombre del elemento
-            SpanText(
+            // Espacio para separar secciones
+            Spacer()
+
+            // Sección central con textos (con altura explícita)
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(14.px)
-                    .color(Theme.Secondary.rgb)
-                    .textAlign(TextAlign.Center)
-                    .padding(top = 8.px)
-                    .margin(bottom = 2.px),
-                text = elemento.name
-            )
-
-            // Límite máximo
-            SpanText(
-                modifier = Modifier
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(12.px)
-                    .color(Theme.Black.rgb)
-                    .margin(bottom = 2.px),
-                text = "Máx: ${elemento.maxQuantity}"
-            )
-
-            // Botón de añadir o indicador de seleccionado
-            if (estaSeleccionado) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .backgroundColor(Theme.Primary.rgb)
-                        .borderRadius(4.px)
-                        .padding(topBottom = 8.px),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    .height(90.px), // Aumentado para dar más espacio al texto
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    FaCheck(
-                        modifier = Modifier.color(Colors.White)
-                    )
+                    // Nombre del elemento
                     SpanText(
                         modifier = Modifier
-                            .margin(left = 8.px)
+                            .fillMaxWidth()
                             .fontFamily(FONT_FAMILY)
                             .fontSize(14.px)
-                            .color(Colors.White),
-                        text = "Añadido"
+                            .color(Theme.Secondary.rgb)
+                            .textAlign(TextAlign.Center)
+                            .margin(bottom = 6.px),
+                        text = elemento.name
+                    )
+
+                    // Límite máximo
+                    SpanText(
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(12.px)
+                            .color(Theme.Black.rgb),
+                        text = "Máx: ${elemento.maxQuantity}"
                     )
                 }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .backgroundColor(Theme.Primary.rgb)
-                        .borderRadius(4.px)
-                        .padding(topBottom = 8.px)
-                        .cursor(Cursor.Pointer)
-                        .onClick { onClick() },
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FaPlus(
-                        modifier = Modifier.color(Colors.White)
-                    )
-                    SpanText(
+            }
+
+            // Espacio para separar secciones
+            Spacer()
+
+            // Botón en la parte inferior (altura fija)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.px)
+            ) {
+                // Botón de añadir o indicador de seleccionado
+                if (estaSeleccionado) {
+                    Row(
                         modifier = Modifier
-                            .margin(left = 8.px)
-                            .fontFamily(FONT_FAMILY)
-                            .fontSize(14.px)
-                            .color(Colors.White),
-                        text = "Añadir"
-                    )
+                            .fillMaxWidth()
+                            .height(40.px)
+                            .backgroundColor(Theme.Primary.rgb)
+                            .borderRadius(4.px)
+                            .padding(topBottom = 8.px),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FaCheck(
+                            modifier = Modifier.color(Colors.White)
+                        )
+                        SpanText(
+                            modifier = Modifier
+                                .margin(left = 8.px)
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(14.px)
+                                .color(Colors.White),
+                            text = "Añadido"
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.px)
+                            .backgroundColor(Theme.Primary.rgb)
+                            .borderRadius(4.px)
+                            .padding(topBottom = 8.px)
+                            .cursor(Cursor.Pointer)
+                            .onClick { onClick() },
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FaPlus(
+                            modifier = Modifier.color(Colors.White)
+                        )
+                        SpanText(
+                            modifier = Modifier
+                                .margin(left = 8.px)
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(14.px)
+                                .color(Colors.White),
+                            text = "Añadir"
+                        )
+                    }
                 }
             }
         }

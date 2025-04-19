@@ -39,6 +39,7 @@ import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.components.AdminPageLayout
+import org.dam.tfg.components.LoadingIndicator
 import org.dam.tfg.models.HomeContentData
 import org.dam.tfg.models.Theme
 import org.dam.tfg.navigation.Screen
@@ -135,7 +136,7 @@ fun HomeContent(homeContentData: HomeContentData) {
                 }
             }
         } else {
-            println("Cargando contenido...")
+            LoadingIndicator()
         }
     }
 }
