@@ -11,6 +11,7 @@ import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.components.AdminPageLayout
+import org.dam.tfg.components.ComponentesForm
 import org.dam.tfg.util.Constants.SIDE_PANEL_WIDTH
 import org.dam.tfg.util.isAdminCheck
 import org.dam.tfg.util.isUserLoggedInCheck
@@ -35,7 +36,7 @@ fun AdminListScreenContent() {
                 .padding(left = if(breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px),
             contentAlignment = Alignment.TopCenter
         ) {
-
+            ComponentesForm()
         }
     }
 }

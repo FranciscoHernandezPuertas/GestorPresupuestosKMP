@@ -11,12 +11,11 @@ actual class Mesa(
     actual val tipo: String,
     actual val tramos: List<Tramo>,
     actual val cubetas: List<Cubeta>,
-    actual val modulos: List<ModuloSeleccionado>,
+    actual val modulos: List<Modulo>,
     actual val elementosGenerales: Map<String, Int>,
     actual val precioTotal: Double,
     actual var error: String
 ) {
-    actual companion object {}
 
     actual fun isValid(): Boolean {
         if (tramos.isEmpty()) {

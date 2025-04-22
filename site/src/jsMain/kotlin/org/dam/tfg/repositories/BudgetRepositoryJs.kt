@@ -6,7 +6,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.dam.tfg.models.table.Cubeta
 import org.dam.tfg.models.table.Mesa
-import org.dam.tfg.models.table.ModuloSeleccionado
+import org.dam.tfg.models.table.Modulo
 import org.dam.tfg.models.table.Tramo
 import org.w3c.dom.get
 import org.w3c.dom.set
@@ -196,11 +196,11 @@ class BudgetRepositoryJs : BudgetRepository {
         }
     }
 
-    override fun saveModulos(modulos: List<ModuloSeleccionado>) {
+    override fun saveModulos(modulos: List<Modulo>) {
         localStorage["modulos_data"] = Json.encodeToString(modulos)
     }
 
-    override fun getModulos(): List<ModuloSeleccionado> {
+    override fun getModulos(): List<Modulo> {
         val modulosJson = localStorage["modulos_data"]
         return if (!modulosJson.isNullOrBlank()) {
             try {

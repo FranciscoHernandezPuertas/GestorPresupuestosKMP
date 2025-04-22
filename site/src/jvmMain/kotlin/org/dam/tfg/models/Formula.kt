@@ -9,7 +9,6 @@ actual class Formula(
     @SerialName("_id")
     actual val id: String = ObjectId().toHexString(),
     actual val nombre: String,
-    actual val descripcion: String,
     actual val formula: String,
     actual val aplicaA: String,
     actual val variables: Map<String, String>
@@ -20,7 +19,6 @@ actual class Formula(
         return mapOf(
             "_id" to id,
             "nombre" to nombre,
-            "descripcion" to descripcion,
             "formula" to formula,
             "aplicaA" to aplicaA,
             "variables" to variables

@@ -35,7 +35,7 @@ val DropdownItemStyle = CssStyle {
 
     hover {
         Modifier
-            .backgroundColor(rgba(0, 0, 0, 0.05f))
+            .backgroundColor(Theme.LightGray.rgb)
             .color(Theme.Primary.rgb)
     }
 }

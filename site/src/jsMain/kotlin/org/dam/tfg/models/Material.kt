@@ -1,9 +1,11 @@
 package org.dam.tfg.models
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 actual class Material(
+    @SerialName("_id")
     actual val id: String = "",
     actual val nombre: String,
     actual val precio: Double,

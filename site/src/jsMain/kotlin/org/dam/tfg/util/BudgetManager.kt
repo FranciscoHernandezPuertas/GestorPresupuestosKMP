@@ -4,9 +4,8 @@ import kotlinx.browser.localStorage
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.table.Cubeta
-import org.dam.tfg.models.table.ModuloSeleccionado
+import org.dam.tfg.models.table.Modulo
 import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.repositories.BudgetRepository
 import org.dam.tfg.repositories.BudgetRepositoryJs
@@ -97,11 +96,11 @@ object BudgetManager {
     }
 
     // Métodos para módulos
-    fun saveModulosData(modulos: List<ModuloSeleccionado>) {
+    fun saveModulosData(modulos: List<Modulo>) {
         localStorage["modulos_data"] = Json.encodeToString(modulos)
     }
 
-    fun getModulosData(): List<ModuloSeleccionado> {
+    fun getModulosData(): List<Modulo> {
         val modulosJson = localStorage["modulos_data"]
         return if (!modulosJson.isNullOrBlank()) {
             try {
@@ -157,11 +156,11 @@ object BudgetManager {
         return repository.getCubetas()
     }
 
-    fun saveModulos(modulos: List<ModuloSeleccionado>) {
+    fun saveModulos(modulos: List<Modulo>) {
         repository.saveModulos(modulos)
     }
 
-    fun getModulos(): List<ModuloSeleccionado> {
+    fun getModulos(): List<Modulo> {
         return repository.getModulos()
     }
 

@@ -1,24 +1,41 @@
 package org.dam.tfg.pages.admin
 
-import androidx.compose.runtime.Composable
-import com.varabyte.kobweb.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.*
+import com.varabyte.kobweb.compose.css.BorderCollapse
+import com.varabyte.kobweb.compose.foundation.layout.*
 import com.varabyte.kobweb.core.Page
 import org.dam.tfg.components.AdminPageLayout
 import org.dam.tfg.util.isAdminCheck
-import org.dam.tfg.util.isUserLoggedInCheck
-import com.varabyte.kobweb.compose.foundation.layout.Box
 import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
-import com.varabyte.kobweb.compose.ui.modifiers.fillMaxSize
-import com.varabyte.kobweb.compose.ui.modifiers.margin
-import com.varabyte.kobweb.compose.ui.modifiers.maxWidth
-import com.varabyte.kobweb.compose.ui.modifiers.padding
-import com.varabyte.kobweb.compose.foundation.layout.Column
+import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
-import org.dam.tfg.components.ComponentesForm
 import org.dam.tfg.util.Constants.SIDE_PANEL_WIDTH
 import org.jetbrains.compose.web.css.px
+import com.varabyte.kobweb.compose.css.Cursor
+import com.varabyte.kobweb.compose.css.FontWeight
+import com.varabyte.kobweb.compose.css.Overflow
+import com.varabyte.kobweb.compose.css.TextAlign
+import com.varabyte.kobweb.compose.css.TextOverflow
+import com.varabyte.kobweb.compose.css.WhiteSpace
+import com.varabyte.kobweb.compose.foundation.layout.Row
+import com.varabyte.kobweb.compose.ui.graphics.Colors
+import com.varabyte.kobweb.compose.ui.toAttrs
+import com.varabyte.kobweb.silk.components.forms.Button
+import com.varabyte.kobweb.silk.components.forms.TextInput
+import com.varabyte.kobweb.silk.components.text.SpanText
+import kotlinx.coroutines.launch
+import org.dam.tfg.models.Formula
+import org.dam.tfg.models.Material
+import org.dam.tfg.models.Theme
+import org.dam.tfg.models.User
+import org.dam.tfg.util.AdminApi
+import org.dam.tfg.util.Constants.FONT_FAMILY
+import org.jetbrains.compose.web.attributes.InputType
+import org.jetbrains.compose.web.attributes.name
+import org.jetbrains.compose.web.css.*
+import org.jetbrains.compose.web.dom.*
 
 @Page
 @Composable
@@ -35,18 +52,1577 @@ fun AdminEditScreenContent() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .margin(topBottom = 50.px)
-                .padding(left = if(breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px),
+                .padding(left = if (breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px)
+                .padding(top = 20.px),
             contentAlignment = Alignment.TopCenter
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .maxWidth(700.px),
-                verticalArrangement = Arrangement.Top,
+                    .fillMaxWidth(if (breakpoint >= Breakpoint.MD) 80.percent else 95.percent)
+                    .maxWidth(1200.px),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ComponentesForm()
+                // Título
+                SpanText(
+                    text = "Panel de Administración",
+                    modifier = Modifier
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(24.px)
+                        .fontWeight(FontWeight.Bold)
+                        .color(Theme.Secondary.rgb)
+                        .margin(bottom = 20.px)
+                        .textAlign(TextAlign.Center)
+                )
+
+                // Contenedor principal centrado
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .backgroundColor(Colors.White)
+                        .borderRadius(8.px)
+                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                        .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 8.px, color = Colors.LightGray)
+                        .padding(20.px)
+                ) {
+                    AdminCrudTabs()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminCrudTabs() {
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabs = listOf("Materiales", "Fórmulas", "Usuarios")
+    val breakpoint = rememberBreakpoint()
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Tabs headers - Mejorado con estilo similar al resto de la aplicación
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .margin(bottom = 16.px)
+                .borderRadius(8.px)
+                .overflow(Overflow.Hidden)
+                .border(1.px, LineStyle.Solid, Theme.Primary.rgb),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Box(
+                    modifier = Modifier
+                        .padding(12.px)
+                        .backgroundColor(if (selectedTab == index) Theme.Primary.rgb else Colors.White)
+                        .cursor(Cursor.Pointer)
+                        .onClick { selectedTab = index }
+                        .fillMaxWidth((100f / tabs.size).percent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SpanText(
+                        text = title,
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .fontWeight(FontWeight.Medium)
+                            .color(if (selectedTab == index) Colors.White else Theme.Primary.rgb)
+                            .textAlign(TextAlign.Center)
+                    )
+                }
+            }
+        }
+
+        // Tab content
+        when (selectedTab) {
+            0 -> MaterialesTab()
+            1 -> FormulasTab()
+            2 -> UsuariosTab()
+        }
+    }
+}
+
+@Composable
+fun MaterialesTab() {
+    var materiales by remember { mutableStateOf<List<Material>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf("") }
+    var editingMaterial by remember { mutableStateOf<Material?>(null) }
+    var isAdding by remember { mutableStateOf(false) }
+    var showConfirmDelete by remember { mutableStateOf(false) }
+    var materialToDelete by remember { mutableStateOf<Material?>(null) }
+
+    var nombreInput by remember { mutableStateOf("") }
+    var precioInput by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
+    val breakpoint = rememberBreakpoint()
+
+    LaunchedEffect(Unit) {
+        try {
+            materiales = AdminApi.getMaterials()
+            loading = false
+        } catch (e: Exception) {
+            error = "Error al cargar materiales: ${e.message ?: "Desconocido"}"
+            loading = false
+        }
+    }
+
+    // Reset form cuando cambia el modo de edición
+    LaunchedEffect(isAdding, editingMaterial) {
+        if (isAdding) {
+            nombreInput = ""
+            precioInput = ""
+        } else if (editingMaterial != null) {
+            editingMaterial?.let { material ->
+                nombreInput = material.nombre
+                precioInput = material.precio.toString()
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.px)
+    ) {
+        // Error message
+        if (error.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.px)
+                    .backgroundColor(Colors.LightPink)
+                    .border(1.px, LineStyle.Solid, Colors.Red)
+                    .borderRadius(4.px)
+                    .margin(bottom = 16.px)
+            ) {
+                SpanText(error, modifier = Modifier.padding(8.px).color(Colors.Red))
+            }
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        try {
+                            materiales = AdminApi.getMaterials()
+                            loading = false
+                            error = ""
+                        } catch (e: Exception) {
+                            error = "Error al cargar materiales: ${e.message ?: "Desconocido"}"
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .margin(bottom = 16.px)
+                    .borderRadius(4.px)
+                    .backgroundColor(Theme.Primary.rgb)
+                    .color(Colors.White)
+            ) {
+                SpanText("Reintentar")
+            }
+        }
+
+        // Add button
+        if (!isAdding && editingMaterial == null) {
+            Button(
+                onClick = { isAdding = true },
+                modifier = Modifier
+                    .margin(bottom = 16.px)
+                    .borderRadius(4.px)
+                    .backgroundColor(Theme.Primary.rgb)
+                    .color(Colors.White)
+            ) {
+                SpanText("Añadir Material")
+            }
+        }
+
+        // Form
+        if (isAdding || editingMaterial != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.px)
+                    .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                    .borderRadius(8.px)
+                    .margin(bottom = 16.px)
+            ) {
+                SpanText(
+                    text = if (isAdding) "Añadir Material" else "Editar Material",
+                    modifier = Modifier
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(18.px)
+                        .fontWeight(FontWeight.Medium)
+                        .margin(bottom = 16.px)
+                        .color(Theme.Secondary.rgb)
+                )
+
+                TextInput(
+                    text = nombreInput,
+                    onTextChange = { nombreInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 16.px)
+                        .height(40.px)
+                        .padding(leftRight = 10.px),
+                    placeholder = "Nombre del material"
+                )
+
+                TextInput(
+                    text = precioInput,
+                    onTextChange = { precioInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 16.px)
+                        .height(40.px)
+                        .padding(leftRight = 10.px),
+                    placeholder = "Precio (€/m)",
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = {
+                            isAdding = false
+                            editingMaterial = null
+                        },
+                        modifier = Modifier
+                            .margin(right = 8.px)
+                            .borderRadius(4.px)
+                            .backgroundColor(Colors.Red)
+                            .color(Colors.White)
+                    ) {
+                        SpanText("Cancelar")
+                    }
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    val precio = precioInput.toDoubleOrNull() ?: 0.0
+
+                                    if (nombreInput.isBlank()) {
+                                        error = "El nombre no puede estar vacío"
+                                        return@launch
+                                    }
+
+                                    val material = if (editingMaterial != null) {
+                                        Material(
+                                            id = editingMaterial!!.id,
+                                            nombre = nombreInput,
+                                            precio = precio
+                                        )
+                                    } else {
+                                        Material(
+                                            id = "",  // Se generará en el servidor
+                                            nombre = nombreInput,
+                                            precio = precio
+                                        )
+                                    }
+
+                                    AdminApi.saveMaterial(material)
+                                    materiales = AdminApi.getMaterials()
+                                    isAdding = false
+                                    editingMaterial = null
+                                    error = ""
+                                } catch (e: Exception) {
+                                    error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .borderRadius(4.px)
+                            .backgroundColor(Colors.Green)
+                            .color(Colors.White)
+                    ) {
+                        SpanText("Guardar")
+                    }
+                }
+            }
+        }
+
+        // Delete confirmation
+        if (showConfirmDelete && materialToDelete != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.px)
+                    .border(1.px, LineStyle.Solid, Colors.Red)
+                    .borderRadius(8.px)
+                    .backgroundColor(Colors.LightPink)
+                    .margin(bottom = 16.px)
+            ) {
+                Column(modifier = Modifier.padding(16.px)) {
+                    SpanText(
+                        "¿Está seguro de eliminar el material '${materialToDelete?.nombre}'?",
+                        modifier = Modifier.margin(bottom = 16.px)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = {
+                                showConfirmDelete = false
+                                materialToDelete = null
+                            },
+                            modifier = Modifier
+                                .margin(right = 8.px)
+                                .borderRadius(4.px)
+                                .backgroundColor(Theme.Secondary.rgb)
+                                .color(Colors.White)
+                        ) {
+                            SpanText("Cancelar")
+                        }
+
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        materialToDelete?.id?.let { id ->
+                                            AdminApi.deleteMaterial(id)
+                                            materiales = AdminApi.getMaterials()
+                                        }
+                                        showConfirmDelete = false
+                                        materialToDelete = null
+                                        error = ""
+                                    } catch (e: Exception) {
+                                        error = "Error al eliminar: ${e.message ?: "Desconocido"}"
+                                        showConfirmDelete = false
+                                        materialToDelete = null
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .borderRadius(4.px)
+                                .backgroundColor(Colors.Red)
+                                .color(Colors.White)
+                        ) {
+                            SpanText("Eliminar")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Loading or table
+        if (loading) {
+            Box(modifier = Modifier.fillMaxWidth().height(100.px), contentAlignment = Alignment.Center) {
+                SpanText("Cargando...")
+            }
+        } else if (materiales.isEmpty() && !isAdding) {
+            Box(modifier = Modifier.fillMaxWidth().height(100.px), contentAlignment = Alignment.Center) {
+                SpanText("No hay materiales disponibles")
+            }
+        } else {
+            if (breakpoint < Breakpoint.MD) {
+                // Vista móvil: tarjetas en lugar de tabla
+                materiales.forEach { material ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .margin(bottom = 16.px)
+                            .padding(16.px)
+                            .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                            .borderRadius(8.px)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            SpanText(
+                                "Nombre: ${material.nombre}",
+                                modifier = Modifier
+                                    .fontWeight(FontWeight.Bold)
+                                    .fontSize(16.px)
+                                    .margin(bottom = 8.px)
+                            )
+                            SpanText(
+                                "Precio: ${material.precio}€",
+                                modifier = Modifier.margin(bottom = 8.px)
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().margin(top = 8.px),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                Button(
+                                    onClick = { editingMaterial = material },
+                                    modifier = Modifier
+                                        .margin(right = 8.px)
+                                        .borderRadius(4.px)
+                                        .backgroundColor(Theme.Secondary.rgb)
+                                        .color(Colors.White)
+                                ) {
+                                    SpanText("Editar")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        materialToDelete = material
+                                        showConfirmDelete = true
+                                    },
+                                    modifier = Modifier
+                                        .borderRadius(4.px)
+                                        .backgroundColor(Colors.Red)
+                                        .color(Colors.White)
+                                ) {
+                                    SpanText("Eliminar")
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Vista desktop: tabla
+                Table(
+                    attrs = Modifier
+                        .fillMaxWidth()
+                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                        .borderCollapse(BorderCollapse.Collapse)
+                        .borderRadius(8.px)
+                        .toAttrs()
+                ) {
+                    Thead {
+                        Tr {
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(12.px)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) {
+                                Text("Nombre")
+                            }
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(12.px)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) {
+                                Text("Precio (€/m)")
+                            }
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(12.px)
+                                    .textAlign(TextAlign.Center)
+                                    .width(200.px)
+                                    .toAttrs()
+                            ) {
+                                Text("Acciones")
+                            }
+                        }
+                    }
+                    Tbody {
+                        materiales.forEach { material ->
+                            Tr(
+                                attrs = Modifier
+                                    .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                    .toAttrs()
+                            ) {
+                                Td(
+                                    attrs = Modifier
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .toAttrs()
+                                ) {
+                                    Text(material.nombre)
+                                }
+                                Td(
+                                    attrs = Modifier
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .toAttrs()
+                                ) {
+                                    Text(material.precio.toString())
+                                }
+                                Td(
+                                    attrs = Modifier
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .textAlign(TextAlign.Center)
+                                        .toAttrs()
+                                ) {
+                                    Button(
+                                        onClick = { editingMaterial = material },
+                                        modifier = Modifier
+                                            .margin(right = 8.px)
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Theme.Secondary.rgb)
+                                            .color(Colors.White)
+                                    ) {
+                                        Text("Editar")
+                                    }
+                                    Button(
+                                        onClick = {
+                                            materialToDelete = material
+                                            showConfirmDelete = true
+                                        },
+                                        modifier = Modifier
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Colors.Red)
+                                            .color(Colors.White)
+                                    ) {
+                                        Text("Eliminar")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+@Composable
+fun FormulasTab() {
+    var formulas by remember { mutableStateOf<List<Formula>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf("") }
+    var editingFormula by remember { mutableStateOf<Formula?>(null) }
+    var isAdding by remember { mutableStateOf(false) }
+    var showConfirmDelete by remember { mutableStateOf(false) }
+    var formulaToDelete by remember { mutableStateOf<Formula?>(null) }
+
+    var nombreInput by remember { mutableStateOf("") }
+    var descripcionInput by remember { mutableStateOf("") }
+    var formulaInput by remember { mutableStateOf("") }
+    var aplicaAInput by remember { mutableStateOf("") }
+    var variablesInput by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var nuevaVariableNombre by remember { mutableStateOf("") }
+    var nuevaVariableDescripcion by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
+    val breakpoint = rememberBreakpoint()
+
+    LaunchedEffect(Unit) {
+        try {
+            formulas = AdminApi.getFormulas()
+            loading = false
+        } catch (e: Exception) {
+            error = "Error al cargar fórmulas: ${e.message ?: "Desconocido"}"
+            loading = false
+        }
+    }
+
+    // Reset form cuando cambia el modo de edición
+    LaunchedEffect(isAdding, editingFormula) {
+        if (isAdding) {
+            nombreInput = ""
+            descripcionInput = ""
+            formulaInput = ""
+            aplicaAInput = ""
+            variablesInput = emptyList()
+        } else if (editingFormula != null) {
+            editingFormula?.let { formula ->
+                nombreInput = formula.nombre
+                formulaInput = formula.formula
+                aplicaAInput = formula.aplicaA
+                variablesInput = formula.variables.map { it.key to it.value }
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.px)
+    ) {
+        // Mensaje de error
+        if (error.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.px)
+                    .backgroundColor(Colors.LightPink)
+                    .borderRadius(4.px)
+                    .border(1.px, LineStyle.Solid, Colors.Red)
+                    .margin(bottom = 16.px)
+            ) {
+                SpanText(error, modifier = Modifier.padding(8.px).color(Colors.Red))
+            }
+
+            Button(
+                onClick = {
+                    error = ""
+                    loading = true
+                    scope.launch {
+                        try {
+                            formulas = AdminApi.getFormulas()
+                            loading = false
+                        } catch (e: Exception) {
+                            error = "Error al cargar fórmulas: ${e.message ?: "Desconocido"}"
+                            loading = false
+                        }
+                    }
+                },
+                modifier = Modifier.margin(bottom = 16.px).borderRadius(4.px).backgroundColor(Theme.Primary.rgb).color(Colors.White)
+            ) {
+                SpanText("Reintentar")
+            }
+        }
+
+        // Botón añadir
+        if (!isAdding && editingFormula == null) {
+            Button(
+                onClick = { isAdding = true },
+                modifier = Modifier.margin(bottom = 16.px).borderRadius(4.px).backgroundColor(Theme.Primary.rgb).color(Colors.White)
+            ) {
+                SpanText("Añadir Fórmula")
+            }
+        }
+
+        // Formulario
+        if (isAdding || editingFormula != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.px)
+                    .border(1.px, LineStyle.Solid, Colors.LightGray)
+                    .borderRadius(8.px)
+                    .margin(bottom = 16.px)
+            ) {
+                SpanText(
+                    modifier = Modifier
+                        .fontSize(18.px)
+                        .fontWeight(FontWeight.Bold)
+                        .fontFamily(FONT_FAMILY)
+                        .margin(bottom = 16.px),
+                    text = if (isAdding) "Añadir Fórmula" else "Editar Fórmula"
+                )
+
+                TextInput(
+                    text = nombreInput,
+                    onTextChange = { nombreInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 8.px),
+                    placeholder = "Nombre"
+                )
+
+                TextInput(
+                    text = descripcionInput,
+                    onTextChange = { descripcionInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 8.px),
+                    placeholder = "Descripción"
+                )
+
+                TextInput(
+                    text = formulaInput,
+                    onTextChange = { formulaInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 8.px),
+                    placeholder = "Fórmula"
+                )
+
+                TextInput(
+                    text = aplicaAInput,
+                    onTextChange = { aplicaAInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 16.px),
+                    placeholder = "Aplica a"
+                )
+
+                // Variables existentes
+                if (variablesInput.isNotEmpty()) {
+                    SpanText(
+                        text = "Variables:",
+                        modifier = Modifier
+                            .margin(bottom = 8.px)
+                            .fontWeight(FontWeight.Bold)
+                    )
+
+                    variablesInput.forEachIndexed { index, (nombre, descripcion) ->
+                        Row(
+                            modifier = Modifier.margin(bottom = 8.px).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SpanText(
+                                text = "$nombre: $descripcion",
+                                modifier = Modifier.fillMaxWidth(80.percent)
+                            )
+
+                            Button(
+                                onClick = {
+                                    variablesInput = variablesInput.toMutableList().also { it.removeAt(index) }
+                                },
+                                modifier = Modifier.margin(left = 8.px)
+                            ) {
+                                SpanText("Eliminar")
+                            }
+                        }
+                    }
+                }
+
+                // Añadir nueva variable
+                SpanText(
+                    text = "Añadir Variable",
+                    modifier = Modifier
+                        .margin(top = 16.px, bottom = 8.px)
+                        .fontWeight(FontWeight.Medium)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().margin(bottom = 8.px),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextInput(
+                        text = nuevaVariableNombre,
+                        onTextChange = { nuevaVariableNombre = it },
+                        modifier = Modifier.margin(right = 8.px).width(40.percent),
+                        placeholder = "Nombre"
+                    )
+
+                    TextInput(
+                        text = nuevaVariableDescripcion,
+                        onTextChange = { nuevaVariableDescripcion = it },
+                        modifier = Modifier.margin(right = 8.px).width(40.percent),
+                        placeholder = "Descripción"
+                    )
+
+                    Button(
+                        modifier = Modifier.borderRadius(4.px)
+                            .backgroundColor(Theme.Primary.rgb).color(Colors.White),
+                        onClick = {
+                            if (nuevaVariableNombre.isNotEmpty()) {
+                                variablesInput = variablesInput + (nuevaVariableNombre to nuevaVariableDescripcion)
+                                nuevaVariableNombre = ""
+                                nuevaVariableDescripcion = ""
+                            }
+                        }
+                    ) {
+                        SpanText("Añadir")
+                    }
+                }
+
+                // Botones de acción
+                Row(
+                    modifier = Modifier.fillMaxWidth().margin(top = 16.px),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = {
+                            if (isAdding) {
+                                isAdding = false
+                            } else {
+                                editingFormula = null
+                            }
+                        },
+                        modifier = Modifier.margin(right = 8.px).borderRadius(4.px).backgroundColor(Colors.Red).color(Colors.White)
+                    ) {
+                        SpanText("Cancelar")
+                    }
+
+                    Button(
+                        modifier = Modifier.borderRadius(4.px).backgroundColor(Colors.Green).color(Colors.White),
+                        onClick = {
+                            val formula = Formula(
+                                id = editingFormula?.id ?: "",
+                                nombre = nombreInput,
+                                formula = formulaInput,
+                                aplicaA = aplicaAInput,
+                                variables = variablesInput.associate { it.first to it.second }
+                            )
+
+                            scope.launch {
+                                try {
+                                    val result = AdminApi.saveFormula(formula)
+                                    formulas = formulas.toMutableList().apply {
+                                        val index = indexOfFirst { it.id == result.id }
+                                        if (index >= 0) {
+                                            this[index] = result
+                                        } else {
+                                            add(result)
+                                        }
+                                    }
+                                    if (isAdding) isAdding = false
+                                    else editingFormula = null
+                                } catch (e: Exception) {
+                                    error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                }
+                            }
+                        }
+                    ) {
+                        SpanText("Guardar")
+                    }
+                }
+            }
+        }
+
+        // Confirmación de eliminación
+        if (showConfirmDelete && formulaToDelete != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.px)
+                    .border(1.px, LineStyle.Solid, Colors.Red)
+                    .borderRadius(8.px)
+                    .backgroundColor(Colors.LightPink)
+                    .margin(bottom = 16.px)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.px)
+                ) {
+                    SpanText(
+                        "¿Está seguro de eliminar la fórmula '${formulaToDelete?.nombre}'?",
+                        modifier = Modifier.margin(bottom = 16.px)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = {
+                                showConfirmDelete = false
+                                formulaToDelete = null
+                            },
+                            modifier = Modifier.margin(right = 8.px)
+                        ) {
+                            SpanText("Cancelar")
+                        }
+
+                        Button(
+                            onClick = {
+                                formulaToDelete?.let { formula ->
+                                    scope.launch {
+                                        try {
+                                            AdminApi.deleteFormula(formula.id)
+                                            formulas = formulas.filter { it.id != formula.id }
+                                            showConfirmDelete = false
+                                            formulaToDelete = null
+                                        } catch (e: Exception) {
+                                            error = "Error al eliminar: ${e.message ?: "Desconocido"}"
+                                            showConfirmDelete = false
+                                            formulaToDelete = null
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            SpanText("Eliminar")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cargando o mostrar fórmulas
+        if (loading) {
+            Box(modifier = Modifier.fillMaxWidth().height(100.px), contentAlignment = Alignment.Center) {
+                SpanText("Cargando fórmulas...")
+            }
+        } else if (formulas.isEmpty() && !isAdding && error.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().height(100.px), contentAlignment = Alignment.Center) {
+                SpanText("No hay fórmulas disponibles")
+            }
+        } else {
+            if (breakpoint < Breakpoint.MD) {
+                // Vista móvil: tarjetas
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    formulas.forEach { formula ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .margin(bottom = 16.px)
+                                .padding(16.px)
+                                .backgroundColor(Colors.White)
+                                .border(1.px, LineStyle.Solid, Colors.LightGray)
+                                .borderRadius(4.px)
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                SpanText(
+                                    formula.nombre,
+                                    modifier = Modifier
+                                        .fontWeight(FontWeight.Bold)
+                                        .fontSize(16.px)
+                                        .margin(bottom = 8.px)
+                                )
+
+
+                                SpanText(
+                                    "Fórmula: ${formula.formula}",
+                                    modifier = Modifier.margin(bottom = 4.px)
+                                )
+
+                                SpanText(
+                                    "Aplica a: ${formula.aplicaA}",
+                                    modifier = Modifier.margin(bottom = 8.px)
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    Button(
+                                        onClick = { editingFormula = formula },
+                                        modifier = Modifier.margin(right = 8.px)
+                                    ) {
+                                        SpanText("Editar")
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            formulaToDelete = formula
+                                            showConfirmDelete = true
+                                        }
+                                    ) {
+                                        SpanText("Eliminar")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Vista desktop: tabla
+                Table(
+                    attrs = Modifier
+                        .fillMaxWidth()
+                        .borderCollapse(BorderCollapse.Collapse)
+                        .border(1.px, LineStyle.Solid, Colors.LightGray)
+                        .borderRadius(8.px) // Bordes redondeados
+                        .toAttrs()
+                ) {
+                    Thead {
+                        Tr {
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(8.px)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) { Text("Nombre") }
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(8.px)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) { Text("Descripción") }
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(8.px)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) { Text("Fórmula") }
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(8.px)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) { Text("Aplica a") }
+                            Th(
+                                attrs = Modifier
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .padding(8.px)
+                                    .textAlign(TextAlign.Center)
+                                    .width(150.px)
+                                    .toAttrs()
+                            ) { Text("Acciones") }
+                        }
+                    }
+                    Tbody {
+                        formulas.forEach { formula ->
+                            Tr(
+                                attrs = Modifier
+                                    .border(1.px, LineStyle.Solid, Colors.LightGray)
+                                    .toAttrs()
+                            ) {
+                                Td(
+                                    attrs = Modifier
+                                        .padding(8.px)
+                                        .maxWidth(150.px)
+                                        .overflow(Overflow.Hidden)
+                                        .textOverflow(TextOverflow.Ellipsis)
+                                        .whiteSpace(WhiteSpace.NoWrap)
+                                        .toAttrs()
+                                ) { Text(formula.nombre) }
+
+
+                                Td(
+                                    attrs = Modifier
+                                        .padding(8.px)
+                                        .maxWidth(200.px)
+                                        .overflow(Overflow.Hidden)
+                                        .textOverflow(TextOverflow.Ellipsis)
+                                        .whiteSpace(WhiteSpace.NoWrap)
+                                        .toAttrs()
+                                ) { Text(formula.formula) }
+
+                                Td(
+                                    attrs = Modifier
+                                        .padding(8.px)
+                                        .maxWidth(150.px)
+                                        .overflow(Overflow.Hidden)
+                                        .textOverflow(TextOverflow.Ellipsis)
+                                        .whiteSpace(WhiteSpace.NoWrap)
+                                        .toAttrs()
+                                ) { Text(formula.aplicaA) }
+
+                                Td(
+                                    attrs = Modifier
+                                        .padding(8.px)
+                                        .textAlign(TextAlign.Center)
+                                        .toAttrs()
+                                ) {
+                                    Button(
+                                        attrs = Modifier
+                                            .margin(right = 8.px)
+                                            .onClick { editingFormula = formula }
+                                            .toAttrs()
+                                    ) {
+                                        Text("Editar")
+                                    }
+
+                                    Button(
+                                        attrs = Modifier
+                                            .onClick {
+                                                formulaToDelete = formula
+                                                showConfirmDelete = true
+                                            }
+                                            .toAttrs()
+                                    ) {
+                                        Text("Eliminar")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UsuariosTab() {
+    var usuarios by remember { mutableStateOf<List<User>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf("") }
+    var editingUser by remember { mutableStateOf<User?>(null) }
+    var isAdding by remember { mutableStateOf(false) }
+    var showConfirmDelete by remember { mutableStateOf(false) }
+    var userToDelete by remember { mutableStateOf<User?>(null) }
+
+    var usernameInput by remember { mutableStateOf("") }
+    var passwordInput by remember { mutableStateOf("") }
+    var typeInput by remember { mutableStateOf("user") }
+
+    val scope = rememberCoroutineScope()
+    val breakpoint = rememberBreakpoint()
+
+    LaunchedEffect(Unit) {
+        try {
+            usuarios = AdminApi.getUsers()
+            loading = false
+        } catch (e: Exception) {
+            error = "Error al cargar usuarios: ${e.message ?: "Desconocido"}"
+            loading = false
+        }
+    }
+
+    // Reset form cuando cambia el modo de edición
+    LaunchedEffect(isAdding, editingUser) {
+        if (isAdding) {
+            usernameInput = ""
+            passwordInput = ""
+            typeInput = "user"
+        } else if (editingUser != null) {
+            editingUser?.let { user ->
+                usernameInput = user.username
+                passwordInput = ""
+                typeInput = user.type
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.px)
+    ) {
+        // Mensaje de error
+        if (error.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.px)
+                    .backgroundColor(Colors.LightPink)
+                    .borderRadius(4.px)
+                    .border(1.px, LineStyle.Solid, Colors.Red)
+                    .margin(bottom = 16.px)
+            ) {
+                SpanText(
+                    text = error,
+                    modifier = Modifier.padding(8.px).color(Colors.Red)
+                )
+            }
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        try {
+                            usuarios = AdminApi.getUsers()
+                            loading = false
+                            error = ""
+                        } catch (e: Exception) {
+                            error = "Error al cargar usuarios: ${e.message ?: "Desconocido"}"
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .margin(bottom = 16.px)
+                    .borderRadius(4.px)
+                    .backgroundColor(Theme.Primary.rgb)
+                    .color(Colors.White)
+            ) {
+                SpanText("Reintentar")
+            }
+        }
+
+        // Botón añadir
+        if (!isAdding && editingUser == null) {
+            Button(
+                onClick = {
+                    isAdding = true
+                },
+                modifier = Modifier
+                    .margin(bottom = 16.px)
+                    .borderRadius(4.px)
+                    .backgroundColor(Theme.Primary.rgb)
+                    .color(Colors.White)
+            ) {
+                SpanText("Añadir Usuario")
+            }
+        }
+
+        // Formulario
+        if (isAdding || editingUser != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.px)
+                    .border(1.px, LineStyle.Solid, Colors.LightGray)
+                    .borderRadius(8.px)
+                    .margin(bottom = 16.px)
+            ) {
+                SpanText(
+                    if (isAdding) "Añadir Usuario" else "Editar Usuario",
+                    modifier = Modifier
+                        .fontSize(18.px)
+                        .fontWeight(FontWeight.Bold)
+                        .fontFamily(FONT_FAMILY)
+                        .margin(bottom = 16.px)
+                        .color(Theme.Secondary.rgb)
+                )
+
+                TextInput(
+                    text = usernameInput,
+                    onTextChange = { usernameInput = it },
+                    placeholder = "Nombre de usuario",
+                    modifier = Modifier
+                        .margin(bottom = 8.px)
+                        .fillMaxWidth()
+                        .height(40.px)
+                        .padding(leftRight = 10.px)
+                )
+
+                TextInput(
+                    text = passwordInput,
+                    onTextChange = { passwordInput = it },
+                    placeholder = if (editingUser != null) "Nueva contraseña (dejar en blanco para no cambiar)" else "Contraseña",
+                    modifier = Modifier
+                        .margin(bottom = 8.px)
+                        .fillMaxWidth()
+                        .height(40.px)
+                        .padding(leftRight = 10.px)
+                        .attr("type", "password")
+                )
+
+                // Selector de tipo
+                SpanText(
+                    "Tipo:",
+                    modifier = Modifier
+                        .margin(bottom = 4.px)
+                        .fontFamily(FONT_FAMILY)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 16.px)
+                ) {
+                    // Radio button para usuario
+                    Label(
+                        attrs = Modifier
+                            .padding(right = 16.px)
+                            .cursor(Cursor.Pointer)
+                            .toAttrs()
+                    ) {
+                        Input(
+                            type = InputType.Radio,
+                            attrs = Modifier
+                                .toAttrs {
+                                    name("userType")
+                                    checked(typeInput == "user")
+                                    onChange { typeInput = "user" }
+                                }
+                        )
+                        Text(" Usuario")
+                    }
+
+                    // Radio button para administrador
+                    Label(
+                        attrs = Modifier
+                            .cursor(Cursor.Pointer)
+                            .toAttrs()
+                    ) {
+                        Input(
+                            type = InputType.Radio,
+                            attrs = Modifier
+                                .toAttrs {
+                                    name("userType")
+                                    checked(typeInput == "admin")
+                                    onChange { typeInput = "admin" }
+                                }
+                        )
+                        Text(" Administrador")
+                    }
+                }
+
+                // Botones de acción
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = {
+                            isAdding = false
+                            editingUser = null
+                        },
+                        modifier = Modifier
+                            .margin(right = 8.px)
+                            .borderRadius(4.px)
+                            .backgroundColor(Colors.Red)
+                            .color(Colors.White)
+                    ) {
+                        SpanText("Cancelar")
+                    }
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    // Validaciones
+                                    if (usernameInput.isBlank()) {
+                                        error = "El nombre de usuario no puede estar vacío"
+                                        return@launch
+                                    }
+
+                                    if (isAdding && passwordInput.isBlank()) {
+                                        error = "La contraseña no puede estar vacía"
+                                        return@launch
+                                    }
+
+                                    val user = if (editingUser != null) {
+                                        // Si estamos editando, solo actualizamos la contraseña si se ha proporcionado una
+                                        if (passwordInput.isBlank()) {
+                                            editingUser!!.copy(
+                                                username = usernameInput,
+                                                type = typeInput
+                                            )
+                                        } else {
+                                            editingUser!!.copy(
+                                                username = usernameInput,
+                                                password = passwordInput,
+                                                type = typeInput
+                                            )
+                                        }
+                                    } else {
+                                        User(
+                                            id = "",  // Se generará en el servidor
+                                            username = usernameInput,
+                                            password = passwordInput,
+                                            type = typeInput
+                                        )
+                                    }
+
+                                    AdminApi.saveUser(user)
+                                    usuarios = AdminApi.getUsers()
+                                    isAdding = false
+                                    editingUser = null
+                                    error = ""
+                                } catch (e: Exception) {
+                                    error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .borderRadius(4.px)
+                            .backgroundColor(Colors.Green)
+                            .color(Colors.White)
+                    ) {
+                        SpanText("Guardar")
+                    }
+                }
+            }
+        }
+
+        // Confirmación de eliminación
+        if (showConfirmDelete && userToDelete != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.px)
+                    .border(1.px, LineStyle.Solid, Colors.Red)
+                    .borderRadius(8.px)
+                    .backgroundColor(Colors.LightPink)
+                    .margin(bottom = 16.px)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.px)
+                ) {
+                    SpanText(
+                        "¿Está seguro de eliminar al usuario '${userToDelete?.username}'?",
+                        modifier = Modifier.margin(bottom = 16.px)
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = {
+                                showConfirmDelete = false
+                                userToDelete = null
+                            },
+                            modifier = Modifier
+                                .margin(right = 8.px)
+                                .borderRadius(4.px)
+                                .backgroundColor(Theme.Secondary.rgb)
+                                .color(Colors.White)
+                        ) {
+                            SpanText("Cancelar")
+                        }
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        userToDelete?.id?.let { id ->
+                                            AdminApi.deleteUser(id)
+                                            usuarios = AdminApi.getUsers()
+                                            showConfirmDelete = false
+                                            userToDelete = null
+                                            error = ""
+                                        }
+                                    } catch (e: Exception) {
+                                        error = "Error al eliminar: ${e.message ?: "Desconocido"}"
+                                        showConfirmDelete = false
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .borderRadius(4.px)
+                                .backgroundColor(Colors.Red)
+                                .color(Colors.White)
+                        ) {
+                            SpanText("Eliminar")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cargando o mostrar usuarios
+        if (loading) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().height(100.px)
+            ) {
+                SpanText("Cargando usuarios...")
+            }
+        } else if (usuarios.isEmpty() && !isAdding && error.isEmpty()) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().height(100.px)
+            ) {
+                SpanText("No hay usuarios disponibles")
+            }
+        } else {
+            if (breakpoint < Breakpoint.MD) {
+                // Vista móvil: tarjetas
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    usuarios.forEach { user ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .margin(bottom = 16.px)
+                                .padding(16.px)
+                                .backgroundColor(Colors.White)
+                                .border(1.px, LineStyle.Solid, Colors.LightGray)
+                                .borderRadius(8.px)
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                SpanText(
+                                    user.username,
+                                    modifier = Modifier
+                                        .fontWeight(FontWeight.Bold)
+                                        .fontSize(16.px)
+                                        .margin(bottom = 8.px)
+                                )
+
+                                SpanText(
+                                    "Tipo: ${if (user.type == "admin") "Administrador" else "Usuario"}",
+                                    modifier = Modifier.margin(bottom = 8.px)
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    Button(
+                                        onClick = { editingUser = user },
+                                        modifier = Modifier
+                                            .margin(right = 8.px)
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Theme.Secondary.rgb)
+                                            .color(Colors.White)
+                                    ) {
+                                        SpanText("Editar")
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            userToDelete = user
+                                            showConfirmDelete = true
+                                        },
+                                        modifier = Modifier
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Colors.Red)
+                                            .color(Colors.White)
+                                    ) {
+                                        SpanText("Eliminar")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Tabla de usuarios
+                Table(
+                    attrs = Modifier
+                        .fillMaxWidth()
+                        .borderCollapse(BorderCollapse.Collapse)
+                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                        .borderRadius(8.px)
+                        .toAttrs()
+                ) {
+                    Thead {
+                        Tr {
+                            Th(
+                                attrs = Modifier
+                                    .padding(12.px)
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .textAlign(TextAlign.Left)
+                                    .toAttrs()
+                            ) {
+                                Text("Usuario")
+                            }
+                            Th(
+                                attrs = Modifier
+                                    .padding(12.px)
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .textAlign(TextAlign.Center)
+                                    .toAttrs()
+                            ) {
+                                Text("Tipo")
+                            }
+                            Th(
+                                attrs = Modifier
+                                    .padding(12.px)
+                                    .backgroundColor(Theme.Primary.rgb)
+                                    .color(Colors.White)
+                                    .textAlign(TextAlign.Center)
+                                    .width(200.px)
+                                    .toAttrs()
+                            ) {
+                                Text("Acciones")
+                            }
+                        }
+                    }
+                    Tbody {
+                        usuarios.forEach { user ->
+                            Tr(
+                                attrs = Modifier
+                                    .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                    .toAttrs()
+                            ) {
+                                Td(
+                                    attrs = Modifier
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .toAttrs()
+                                ) {
+                                    Text(user.username)
+                                }
+                                Td(
+                                    attrs = Modifier
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .textAlign(TextAlign.Center)
+                                        .toAttrs()
+                                ) {
+                                    Text(if (user.type == "admin") "Administrador" else "Usuario")
+                                }
+                                Td(
+                                    attrs = Modifier
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .textAlign(TextAlign.Center)
+                                        .toAttrs()
+                                ) {
+                                    Button(
+                                        onClick = { editingUser = user },
+                                        modifier = Modifier
+                                            .margin(right = 8.px)
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Theme.Secondary.rgb)
+                                            .color(Colors.White)
+                                    ) {
+                                        Text("Editar")
+                                    }
+                                    Button(
+                                        onClick = {
+                                            userToDelete = user
+                                            showConfirmDelete = true
+                                        },
+                                        modifier = Modifier
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Colors.Red)
+                                            .color(Colors.White)
+                                    ) {
+                                        Text("Eliminar")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

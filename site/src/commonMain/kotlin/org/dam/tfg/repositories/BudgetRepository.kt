@@ -2,7 +2,7 @@ package org.dam.tfg.repositories
 
 import org.dam.tfg.models.table.Cubeta
 import org.dam.tfg.models.table.Mesa
-import org.dam.tfg.models.table.ModuloSeleccionado
+import org.dam.tfg.models.table.Modulo
 import org.dam.tfg.models.table.Tramo
 
 interface BudgetRepository {
@@ -44,8 +44,6 @@ interface BudgetRepository {
     fun getMesaPrecioTotal(): Double
     fun saveCubetas(cubetas: List<Cubeta>)
     fun getCubetas(): List<Cubeta>
-
-    // Nuevos métodos para módulos
-    fun saveModulos(modulos: List<ModuloSeleccionado>)
-    fun getModulos(): List<ModuloSeleccionado>
+    fun saveModulos(modulos: List<Modulo>)
+    fun getModulos(): List<Modulo>
 }

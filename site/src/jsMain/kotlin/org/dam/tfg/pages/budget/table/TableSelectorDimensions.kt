@@ -7,12 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.varabyte.kobweb.compose.css.FontWeight
-import com.varabyte.kobweb.compose.css.TextAlign
 import com.varabyte.kobweb.compose.foundation.layout.Arrangement
 import com.varabyte.kobweb.compose.foundation.layout.Box
 import com.varabyte.kobweb.compose.foundation.layout.Column
 import com.varabyte.kobweb.compose.foundation.layout.Row
-import com.varabyte.kobweb.compose.foundation.layout.Spacer
 import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.graphics.Colors
@@ -30,14 +28,10 @@ import com.varabyte.kobweb.compose.ui.modifiers.height
 import com.varabyte.kobweb.compose.ui.modifiers.id
 import com.varabyte.kobweb.compose.ui.modifiers.margin
 import com.varabyte.kobweb.compose.ui.modifiers.maxWidth
-import com.varabyte.kobweb.compose.ui.modifiers.minHeight
-import com.varabyte.kobweb.compose.ui.modifiers.onClick
 import com.varabyte.kobweb.compose.ui.modifiers.padding
-import com.varabyte.kobweb.compose.ui.modifiers.textAlign
 import com.varabyte.kobweb.compose.ui.modifiers.width
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.core.Page
-import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
@@ -46,14 +40,14 @@ import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.ValidationError
-import org.dam.tfg.constants.ElementosConstantes
+import org.dam.tfg.models.table.ElementosConstantesLimites
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.table.LimiteTramo
+import org.dam.tfg.models.table.MesasTipos
 import org.dam.tfg.models.table.TipoTramo
 import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
-import org.dam.tfg.styles.RadioButtonStyle
 import org.dam.tfg.styles.TableSelectorStyle
 import org.dam.tfg.util.BudgetManager
 import org.dam.tfg.util.Constants.FONT_FAMILY
@@ -86,7 +80,7 @@ fun TableSelectorDimensionsContent() {
     var selectedTramoCount by remember { mutableStateOf(1) }
     var tramos by remember { mutableStateOf<List<Tramo>>(listOf()) }
     var validationErrors by remember { mutableStateOf<Map<String, String>>(mapOf()) }
-    val limites = remember { ElementosConstantes.MESAS_LIMITES }
+    val limites = remember { ElementosConstantesLimites.MESAS_LIMITES }
     var tramosInputValues by remember { mutableStateOf<Map<String, String>>(mapOf()) }
 
     // Valores responsivos según el breakpoint
@@ -402,7 +396,15 @@ fun TableSelectorDimensionsContent() {
                 val errors = mutableMapOf<String, String>()
                 tramos.forEachIndexed { index, tramo ->
                     val clave = if (selectedTramoCount == 1) "1 tramo" else "$selectedTramoCount tramos"
-                    val limiteTramo = limites[clave]?.get(index + 1)
+                    val mesaTipo = when(selectedTramoCount) {
+                        1 -> MesasTipos.TRAMOS_1
+                        2 -> MesasTipos.TRAMOS_2
+                        3 -> MesasTipos.TRAMOS_3
+                        4 -> MesasTipos.TRAMOS_4
+                        else -> MesasTipos.TRAMOS_1
+                    }
+
+                    val limiteTramo = limites[mesaTipo]?.get(index + 1)
 
                     if (limiteTramo != null) {
                         if (tramo.largo < limiteTramo.minLargo || tramo.largo > limiteTramo.maxLargo) {
@@ -470,7 +472,7 @@ fun DimensionFields(
     tramos: List<Tramo>,
     tramosInputValues: Map<String, String>,
     selectedTramoCount: Int,
-    limites: Map<String, Map<Int, LimiteTramo>>,
+    limites: Map<MesasTipos, Map<Int, LimiteTramo>>,
     validationErrors: Map<String, String>,
     isMobile: Boolean = false,
     onValueChange: (Int, String, String) -> Unit,
@@ -481,8 +483,15 @@ fun DimensionFields(
         verticalArrangement = Arrangement.spacedBy(if (isMobile) 24.px else 10.px),
     ) {
         tramos.forEachIndexed { index, tramo ->
-            val clave = if (selectedTramoCount == 1) "1 tramo" else "$selectedTramoCount tramos"
-            val limiteTramo = limites[clave]?.get(index + 1)
+            val mesaTipo = when(selectedTramoCount) {
+                1 -> MesasTipos.TRAMOS_1
+                2 -> MesasTipos.TRAMOS_2
+                3 -> MesasTipos.TRAMOS_3
+                4 -> MesasTipos.TRAMOS_4
+                else -> MesasTipos.TRAMOS_1
+            }
+
+            val limiteTramo = limites[mesaTipo]?.get(index + 1)
 
             Column(
                 modifier = Modifier

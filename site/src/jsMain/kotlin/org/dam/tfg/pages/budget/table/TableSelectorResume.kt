@@ -14,7 +14,7 @@ import com.varabyte.kobweb.silk.components.text.SpanText
 import org.dam.tfg.components.*
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.table.Cubeta
-import org.dam.tfg.models.table.ModuloSeleccionado
+import org.dam.tfg.models.table.Modulo
 import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
@@ -308,7 +308,7 @@ private fun CubetasResumen(cubetas: List<Cubeta>, resourceProvider: WebResourceP
 }
 
 @Composable
-private fun ModulosResumen(modulos: List<ModuloSeleccionado>, resourceProvider: WebResourceProvider) {
+private fun ModulosResumen(modulos: List<Modulo>, resourceProvider: WebResourceProvider) {
     Card {
         Column(
             modifier = Modifier.fillMaxWidth().padding(15.px)

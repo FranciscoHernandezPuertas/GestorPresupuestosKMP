@@ -34,6 +34,8 @@ import com.varabyte.kobweb.compose.ui.modifiers.margin
 import com.varabyte.kobweb.compose.ui.modifiers.maxHeight
 import com.varabyte.kobweb.compose.ui.modifiers.maxWidth
 import com.varabyte.kobweb.compose.ui.modifiers.onClick
+import com.varabyte.kobweb.compose.ui.modifiers.onMouseEnter
+import com.varabyte.kobweb.compose.ui.modifiers.onMouseLeave
 import com.varabyte.kobweb.compose.ui.modifiers.overflow
 import com.varabyte.kobweb.compose.ui.modifiers.padding
 import com.varabyte.kobweb.compose.ui.modifiers.position
@@ -55,7 +57,7 @@ import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.ConfirmationDialog
 import org.dam.tfg.components.QuantitySelector
-import org.dam.tfg.constants.ElementosConstantes
+import org.dam.tfg.models.table.ElementosConstantesLimites
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.table.Cubeta
@@ -106,12 +108,12 @@ fun TableSelectorCubetasContent() {
     var seleccionActual: String
     fun getOpcionesDisponibles(seleccionadas: List<Cubeta>): List<ItemWithLimits> {
         val tiposSeleccionados = seleccionadas.map { it.tipo }.toSet()
-        return ElementosConstantes.LIMITES_CUBETAS
-            .filter { (nombre, _) -> nombre !in tiposSeleccionados }
-            .map { (nombre, item) ->
+        return ElementosConstantesLimites.LIMITES_CUBETAS.entries
+            .filter { (cubetaEnum, _) -> cubetaEnum.displayName !in tiposSeleccionados }
+            .map { (cubetaEnum, item) ->
                 ItemWithLimits(
                     id = item.id,
-                    name = nombre,
+                    name = cubetaEnum.displayName,
                     minQuantity = item.minQuantity,
                     maxQuantity = item.maxQuantity,
                     initialQuantity = item.initialQuantity
@@ -139,7 +141,7 @@ fun TableSelectorCubetasContent() {
         val largo = dimensiones.first
         val ancho = dimensiones.second
         val alto = dimensiones.third
-        val maxQuantity = ElementosConstantes.LIMITES_CUBETAS[nombre]?.maxQuantity ?: 1
+        val maxQuantity = ElementosConstantesLimites.getItemWithLimitsForCubeta(nombre)?.maxQuantity ?: 1
 
         val nuevaCubeta = Cubeta(
             tipo = nombre,
@@ -503,7 +505,7 @@ fun DropdownSelector(
             .fillMaxWidth()
             .position(Position.Relative)
     ) {
-        // Selector visible sin borde adicional
+        // Selector visible
         Row(
             modifier = DropdownSelectorStyle.toModifier()
                 .fillMaxWidth()
@@ -558,18 +560,28 @@ fun DropdownSelector(
                 verticalArrangement = Arrangement.Top
             ) {
                 opciones.forEach { opcion ->
+                    val isSelected = opcion == seleccionActual
+                    var isHovered by remember { mutableStateOf(false) }
+
                     Box(
                         modifier = DropdownItemStyle.toModifier()
                             .fillMaxWidth()
                             .padding(10.px)
                             .cursor(Cursor.Pointer)
+                            .backgroundColor(
+                                when {
+                                    isSelected -> Theme.Primary.rgb
+                                    isHovered -> Theme.LightGray.rgb
+                                    else -> Colors.Transparent
+                                }
+                            )
+                            .color(if (isSelected) Colors.White else Theme.Secondary.rgb)
                             .onClick {
                                 onSeleccion(opcion)
                                 mostrarOpciones = false
                             }
-                            .backgroundColor(
-                                if (opcion == seleccionActual) rgba(0, 0, 0, 0.05f) else Colors.Transparent
-                            )
+                            .onMouseEnter { isHovered = true }
+                            .onMouseLeave { isHovered = false }
                     ) {
                         SpanText(
                             text = opcion,
@@ -603,7 +615,7 @@ fun ElementoSeleccionadoItem(
                 (elemento.alto?.let { ", Alto: ${it.toInt()} mm" } ?: "")
     }
     val maxCantidad = elemento.maxQuantity ?: Int.MAX_VALUE
-    val minCantidad = ElementosConstantes.LIMITES_CUBETAS[elemento.tipo]?.minQuantity ?: 0
+    val minCantidad = ElementosConstantesLimites.getItemWithLimitsForCubeta(elemento.tipo)?.minQuantity ?: 0
 
     Box(
         modifier = Modifier

@@ -1,15 +1,21 @@
 package org.dam.tfg.models.table
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.dam.tfg.models.ItemWithLimits
 
 @Serializable
-data class ModuloSeleccionado(
+data class Modulo(
     val nombre: String,
     val largo: Double,
     val fondo: Double,
     val alto: Double,
+    val cantidad: Int,
+    val limite: ItemWithLimits
+)
+
+@Serializable
+data class ElementoSeleccionado(
+    val nombre: String,
     val cantidad: Int,
     val limite: ItemWithLimits
 )

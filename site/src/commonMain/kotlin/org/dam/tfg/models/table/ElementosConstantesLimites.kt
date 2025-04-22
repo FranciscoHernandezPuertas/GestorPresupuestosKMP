@@ -1,30 +1,23 @@
-package org.dam.tfg.constants
+package org.dam.tfg.models.table
 
 import org.dam.tfg.models.ItemWithLimits
-import org.dam.tfg.models.table.LimiteTramo
 
-object ElementosConstantes {
-    val MESAS = listOf(
-        "1 tramo",
-        "2 tramos",
-        "3 tramos",
-        "4 tramos"
-    )
+object ElementosConstantesLimites {
 
     val MESAS_LIMITES = mapOf(
-        "1 tramo" to mapOf(
+        MesasTipos.TRAMOS_1 to mapOf(
             1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         ),
-        "2 tramos" to mapOf(
+        MesasTipos.TRAMOS_2 to mapOf(
             1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
             2 to LimiteTramo(numTramo = 2, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         ),
-        "3 tramos" to mapOf(
+        MesasTipos.TRAMOS_3 to mapOf(
             1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
             2 to LimiteTramo(numTramo = 2, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
             3 to LimiteTramo(numTramo = 3, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0)
         ),
-        "4 tramos" to mapOf(
+        MesasTipos.TRAMOS_4 to mapOf(
             1 to LimiteTramo(numTramo = 1, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
             2 to LimiteTramo(numTramo = 2, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
             3 to LimiteTramo(numTramo = 3, minLargo = 200.0, maxLargo = 6000.0, minAncho = 200.0, maxAncho = 6000.0),
@@ -32,86 +25,71 @@ object ElementosConstantes {
         )
     )
 
-    val ELEMENTOS_GENERALES = listOf(
-        "Peto lateral",
-        "Kit lavamanos pulsador",
-        "Peto lateral",
-        "Kit lavamanos pulsador",
-        "Esquina en chaflán",
-        "Kit lavam. pedal simple",
-        "Esquina redondeada",
-        "Kit lavam. pedal doble",
-        "Cajeado columna",
-        "Baquetón en seno",
-        "Aro de desbarace",
-        "Baqueton perimetrico"
-    )
-
     val LIMITES_ELEMENTOS_GENERALES = mapOf(
-        "Peto lateral" to ItemWithLimits(
+        MesasElementosGenerales.PETO_LATERAL to ItemWithLimits(
             id = "peto_lateral",
             name = "Peto lateral",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Kit lavamanos pulsador" to ItemWithLimits(
+        MesasElementosGenerales.KIT_LAVAMANOS_PULSADOR to ItemWithLimits(
             id = "kit_lavamanos_pulsador",
             name = "Kit lavamanos pulsador",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Esquina en chaflán" to ItemWithLimits(
+        MesasElementosGenerales.ESQUINA_CHAFLAN to ItemWithLimits(
             id = "esquina_chaflan",
             name = "Esquina en chaflán",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Kit lavam. pedal simple" to ItemWithLimits(
+        MesasElementosGenerales.KIT_LAVAMANOS_PEDAL_SIMPLE to ItemWithLimits(
             id = "kit_lavamanos_pedal_simple",
             name = "Kit lavam. pedal simple",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Esquina redondeada" to ItemWithLimits(
+        MesasElementosGenerales.ESQUINA_REDONDEADA to ItemWithLimits(
             id = "esquina_redondeada",
             name = "Esquina redondeada",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Kit lavam. pedal doble" to ItemWithLimits(
+        MesasElementosGenerales.KIT_LAVAMANOS_PEDAL_DOBLE to ItemWithLimits(
             id = "kit_lavamanos_pedal_doble",
             name = "Kit lavam. pedal doble",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Cajeado columna" to ItemWithLimits(
+        MesasElementosGenerales.CAJEADO_COLUMNA to ItemWithLimits(
             id = "cajeado_columna",
             name = "Cajeado columna",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Baquetón en seno" to ItemWithLimits(
+        MesasElementosGenerales.BAQUETON_SENO to ItemWithLimits(
             id = "baqueton_seno",
             name = "Baquetón en seno",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Aro de desbarace" to ItemWithLimits(
+        MesasElementosGenerales.ARO_DESBARACE to ItemWithLimits(
             id = "aro_desbarace",
             name = "Aro de desbarace",
             minQuantity = 0,
             maxQuantity = 5,
             initialQuantity = 0
         ),
-        "Baqueton perimetrico" to ItemWithLimits(
+        MesasElementosGenerales.BAQUETON_PERIMETRICO to ItemWithLimits(
             id = "baqueton_perimetrico",
             name = "Baqueton perimetrico",
             minQuantity = 0,
@@ -120,188 +98,162 @@ object ElementosConstantes {
         )
     )
 
-    val TIPOS_CUBETAS = listOf(
-        "Diametro 300x180",
-        "Diametro 360x180",
-        "Diametro 380x180",
-        "Diametro 420x180",
-        "Diametro 460x180",
-        "Cuadrada 400x400x250",
-        "Cuadrada 400x400×300",
-        "Cuadrada 450x450x250",
-        "Cuadrada 450x450x300",
-        "Cuadrada 500×500×250",
-        "Cuadrada 500x500×300",
-        "Rectangular 325x300x150",
-        "Rectangular 500x300x300",
-        "Rectangular 500x400x250",
-        "Rectangular 600x450x300",
-        "Rectangular 600x500×250",
-        "Rectangular 600x500x300",
-        "Rectangular 600x500x320",
-        "Rectangular 630x510x380",
-        "Rectangular 700x450x350",
-        "Rectangular 800x500x380",
-        "Rectangular 955x510x380",
-        "Rectangular 1280x510x380"
-    )
-
     val LIMITES_CUBETAS = mapOf(
-        "Diametro 300x180" to ItemWithLimits(
+        MesasCubetas.DIAMETRO_300X180 to ItemWithLimits(
             id = "cubeta_d300",
             name = "Diametro 300x180",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Diametro 360x180" to ItemWithLimits(
+        MesasCubetas.DIAMETRO_360X180 to ItemWithLimits(
             id = "cubeta_d360",
             name = "Diametro 360x180",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Diametro 380x180" to ItemWithLimits(
+        MesasCubetas.DIAMETRO_380X180 to ItemWithLimits(
             id = "cubeta_d380",
             name = "Diametro 380x180",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Diametro 420x180" to ItemWithLimits(
+        MesasCubetas.DIAMETRO_420X180 to ItemWithLimits(
             id = "cubeta_d420",
             name = "Diametro 420x180",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Diametro 460x180" to ItemWithLimits(
+        MesasCubetas.DIAMETRO_460X180 to ItemWithLimits(
             id = "cubeta_d460",
             name = "Diametro 460x180",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Cuadrada 400x400x250" to ItemWithLimits(
+        MesasCubetas.CUADRADA_400X400X250 to ItemWithLimits(
             id = "cubeta_c400_250",
             name = "Cuadrada 400x400x250",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Cuadrada 400x400×300" to ItemWithLimits(
+        MesasCubetas.CUADRADA_400X400X300 to ItemWithLimits(
             id = "cubeta_c400_300",
-            name = "Cuadrada 400x400×300",
+            name = "Cuadrada 400x400x300",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Cuadrada 450x450x250" to ItemWithLimits(
+        MesasCubetas.CUADRADA_450X450X250 to ItemWithLimits(
             id = "cubeta_c450_250",
             name = "Cuadrada 450x450x250",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Cuadrada 450x450x300" to ItemWithLimits(
+        MesasCubetas.CUADRADA_450X450X300 to ItemWithLimits(
             id = "cubeta_c450_300",
             name = "Cuadrada 450x450x300",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Cuadrada 500×500×250" to ItemWithLimits(
+        MesasCubetas.CUADRADA_500X500X250 to ItemWithLimits(
             id = "cubeta_c500_250",
-            name = "Cuadrada 500×500×250",
+            name = "Cuadrada 500x500x250",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Cuadrada 500x500×300" to ItemWithLimits(
+        MesasCubetas.CUADRADA_500X500X300 to ItemWithLimits(
             id = "cubeta_c500_300",
-            name = "Cuadrada 500x500×300",
+            name = "Cuadrada 500x500x300",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 325x300x150" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_325X300X150 to ItemWithLimits(
             id = "cubeta_r325",
             name = "Rectangular 325x300x150",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 500x300x300" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_500X300X300 to ItemWithLimits(
             id = "cubeta_r500_300",
             name = "Rectangular 500x300x300",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 500x400x250" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_500X400X250 to ItemWithLimits(
             id = "cubeta_r500_400",
             name = "Rectangular 500x400x250",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 600x450x300" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_600X450X300 to ItemWithLimits(
             id = "cubeta_r600_450",
             name = "Rectangular 600x450x300",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 600x500×250" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_600X500X250 to ItemWithLimits(
             id = "cubeta_r600_500_250",
-            name = "Rectangular 600x500×250",
+            name = "Rectangular 600x500x250",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 600x500x300" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_600X500X300 to ItemWithLimits(
             id = "cubeta_r600_500_300",
             name = "Rectangular 600x500x300",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 600x500x320" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_600X500X320 to ItemWithLimits(
             id = "cubeta_r600_500_320",
             name = "Rectangular 600x500x320",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 630x510x380" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_630X510X380 to ItemWithLimits(
             id = "cubeta_r630",
             name = "Rectangular 630x510x380",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 700x450x350" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_700X450X350 to ItemWithLimits(
             id = "cubeta_r700",
             name = "Rectangular 700x450x350",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 800x500x380" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_800X500X380 to ItemWithLimits(
             id = "cubeta_r800",
             name = "Rectangular 800x500x380",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 955x510x380" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_955X510X380 to ItemWithLimits(
             id = "cubeta_r955",
             name = "Rectangular 955x510x380",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Rectangular 1280x510x380" to ItemWithLimits(
+        MesasCubetas.RECTANGULAR_1280X510X380 to ItemWithLimits(
             id = "cubeta_r1280",
             name = "Rectangular 1280x510x380",
             minQuantity = 0,
@@ -310,76 +262,67 @@ object ElementosConstantes {
         )
     )
 
-    val MODULOS = listOf(
-        "Bastidor sin estante",
-        "Bastidor con estante",
-        "Bastidor con dos estantes",
-        "Bastidor con armario abierto",
-        "Bastidor con armario puertas abatibles",
-        "Bastidor con armario puertas correderas",
-        "Bastidor con cajonera tres cajones",
-        "Bastidor con cajonera cuatro cajones",
-        "Bastidor para fregadero o seno"
-    )
+    // Reemplazando la lista MODULOS por una función que devuelve los valores de la enum
+    val MODULOS = MesasModulos.values().map { it.displayName }
 
     val LIMITES_MODULOS = mapOf(
-        "Bastidor sin estante" to ItemWithLimits(
+        MesasModulos.BASTIDOR_SIN_ESTANTE to ItemWithLimits(
             id = "bastidor_sin_estante",
             name = "Bastidor sin estante",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con estante" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_ESTANTE to ItemWithLimits(
             id = "bastidor_con_estante",
             name = "Bastidor con estante",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con dos estantes" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_DOS_ESTANTES to ItemWithLimits(
             id = "bastidor_con_dos_estantes",
             name = "Bastidor con dos estantes",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con armario abierto" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_ARMARIO_ABIERTO to ItemWithLimits(
             id = "bastidor_con_armario_abierto",
             name = "Bastidor con armario abierto",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con armario puertas abatibles" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_ARMARIO_PUERTAS_ABATIBLES to ItemWithLimits(
             id = "bastidor_con_armario_puertas_abatibles",
             name = "Bastidor con armario puertas abatibles",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con armario puertas correderas" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_ARMARIO_PUERTAS_CORREDERAS to ItemWithLimits(
             id = "bastidor_con_armario_puertas_correderas",
             name = "Bastidor con armario puertas correderas",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con cajonera tres cajones" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_CAJONERA_TRES_CAJONES to ItemWithLimits(
             id = "bastidor_con_cajonera_tres_cajones",
             name = "Bastidor con cajonera tres cajones",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor con cajonera cuatro cajones" to ItemWithLimits(
+        MesasModulos.BASTIDOR_CON_CAJONERA_CUATRO_CAJONES to ItemWithLimits(
             id = "bastidor_con_cajonera_cuatro_cajones",
             name = "Bastidor con cajonera cuatro cajones",
             minQuantity = 0,
             maxQuantity = 10,
             initialQuantity = 0
         ),
-        "Bastidor para fregadero o seno" to ItemWithLimits(
+        MesasModulos.BASTIDOR_PARA_FREGADERO_O_SENO to ItemWithLimits(
             id = "bastidor_para_fregadero_o_seno",
             name = "Bastidor para fregadero o seno",
             minQuantity = 0,
@@ -388,4 +331,29 @@ object ElementosConstantes {
         )
     )
 
+    // Métodos auxiliares para mantener compatibilidad con código existente
+
+    fun getMesaLimiteByDisplayName(displayName: String): Map<Int, LimiteTramo>? {
+        return MesasTipos.values()
+            .find { it.displayName == displayName }
+            ?.let { MESAS_LIMITES[it] }
+    }
+
+    fun getItemWithLimitsForElementoGeneral(nombre: String): ItemWithLimits? {
+        return MesasElementosGenerales.values()
+            .find { it.displayName == nombre }
+            ?.let { LIMITES_ELEMENTOS_GENERALES[it] }
+    }
+
+    fun getItemWithLimitsForCubeta(nombre: String): ItemWithLimits? {
+        return MesasCubetas.values()
+            .find { it.displayName == nombre }
+            ?.let { LIMITES_CUBETAS[it] }
+    }
+
+    fun getItemWithLimitsForModulo(nombre: String): ItemWithLimits? {
+        return MesasModulos.values()
+            .find { it.displayName == nombre }
+            ?.let { LIMITES_MODULOS[it] }
+    }
 }

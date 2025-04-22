@@ -21,14 +21,11 @@ import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
 import com.varabyte.kobweb.silk.theme.breakpoint.rememberBreakpoint
 import com.varabyte.kobweb.silk.theme.name
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.dam.tfg.components.*
-import org.dam.tfg.constants.ElementosConstantes
+import org.dam.tfg.models.table.ElementosConstantesLimites
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
-import org.dam.tfg.models.table.ModuloSeleccionado
+import org.dam.tfg.models.table.Modulo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
 import org.dam.tfg.styles.ModuloInputStyle
@@ -41,7 +38,6 @@ import org.jetbrains.compose.web.css.percent
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.rgba
 import org.jetbrains.compose.web.dom.NumberInput
-import org.jetbrains.compose.web.dom.TextInput
 import org.w3c.dom.HTMLInputElement
 
 @Page
@@ -62,12 +58,12 @@ fun TableSelectorModulesPage() {
 fun TableSelectorModulesContent() {
     val breakpoint = rememberBreakpoint()
     val resourceProvider = remember { WebResourceProvider() }
-    val modulosConstantes = ElementosConstantes.LIMITES_MODULOS
+    val modulosConstantes = ElementosConstantesLimites.LIMITES_MODULOS
 
     // Estado de los módulos seleccionados
-    var modulosSeleccionados by remember { mutableStateOf<List<ModuloSeleccionado>>(listOf()) }
+    var modulosSeleccionados by remember { mutableStateOf<List<Modulo>>(listOf()) }
     var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
-    var moduloAEliminar by remember { mutableStateOf<ModuloSeleccionado?>(null) }
+    var moduloAEliminar by remember { mutableStateOf<Modulo?>(null) }
     var mostrarConfirmacionLimpiar by remember { mutableStateOf(false) }
     var mostrarMensajeExito by remember { mutableStateOf(false) }
     var mensajeExito by remember { mutableStateOf("") }
@@ -117,9 +113,9 @@ fun TableSelectorModulesContent() {
             return
         }
 
-        val limite = modulosConstantes[nombre]
+        val limite = ElementosConstantesLimites.getItemWithLimitsForModulo(nombre)
         if (limite != null) {
-            val nuevoModulo = ModuloSeleccionado(
+            val nuevoModulo = Modulo(
                 nombre = nombre,
                 largo = largo,
                 fondo = fondo,
@@ -370,7 +366,7 @@ fun ModulosGrid(
     numColumnas: Int,
     resourceProvider: WebResourceProvider,
     isMobile: Boolean,
-    modulosSeleccionados: List<ModuloSeleccionado>
+    modulosSeleccionados: List<Modulo>
 ) {
     val modulosUnicos = modulos.distinctBy { it.name }.sortedBy { it.name }
 
@@ -654,7 +650,7 @@ fun ModuloCard(
 
 @Composable
 fun ModuloSeleccionadoItem(
-    modulo: ModuloSeleccionado,
+    modulo: Modulo,
     onCantidadChange: (Int) -> Unit,
     onEliminar: () -> Unit,
     breakpoint: Breakpoint,

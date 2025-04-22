@@ -4,22 +4,22 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Cubeta(
-    override val tipo: String = "Cubeta",
-    override val numero: Int = 0,
-    override val largo: Double = 0.0,
-    override val fondo: Double = 0.0,
-    override val alto: Double? = null,
-    override val precio: Double = 0.0,
-    override var error: String = "",
+    val tipo: String = "Cubeta",
+    val numero: Int = 0,
+    val largo: Double = 0.0,
+    val fondo: Double = 0.0,
+    val alto: Double? = null,
+    val precio: Double = 0.0,
+    var error: String = "",
     val maxQuantity: Int?,
     val minQuantity: Int = 0,
-) : Extra() {
-    override fun calcularPrecio(): Double {
+) {
+    fun calcularPrecio(): Double {
         // Lógica pendiente
         return 0.0
     }
 
-    override fun isValid(): Boolean {
+    fun isValid(): Boolean {
         if (largo <= 0) {
             error = "El largo debe ser mayor a 0"
             return false

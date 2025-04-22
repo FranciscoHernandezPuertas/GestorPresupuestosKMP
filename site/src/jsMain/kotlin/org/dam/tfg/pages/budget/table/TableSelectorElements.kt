@@ -47,9 +47,10 @@ import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.ConfirmationDialog
 import org.dam.tfg.components.QuantitySelector
-import org.dam.tfg.constants.ElementosConstantes
+import org.dam.tfg.models.table.ElementosConstantesLimites
 import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
+import org.dam.tfg.models.table.ElementoSeleccionado
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
 import org.dam.tfg.util.BudgetManager
@@ -72,20 +73,12 @@ fun TableSelectorElementsPage() {
     }
 }
 
-// Modelo de datos para elementos seleccionados
-data class ElementoSeleccionado(
-    val nombre: String,
-    val cantidad: Int,
-    val limite: ItemWithLimits
-)
 
 @Composable
 fun TableSelectorElementsContent() {
     val breakpoint = rememberBreakpoint()
     val resourceProvider = remember { WebResourceProvider() }
-    val elementosConstantes = ElementosConstantes.LIMITES_ELEMENTOS_GENERALES
-
-    // Estado de los elementos seleccionados
+    val elementosConstantes = ElementosConstantesLimites.LIMITES_ELEMENTOS_GENERALES
     var elementosSeleccionados by remember { mutableStateOf<List<ElementoSeleccionado>>(listOf()) }
 
     // Estados para confirmaciones y advertencias
@@ -120,7 +113,7 @@ fun TableSelectorElementsContent() {
 
         if (elementosGuardados.isNotEmpty()) {
             val elementos = elementosGuardados.mapNotNull { nombreElemento ->
-                val limite = elementosConstantes[nombreElemento]
+                val limite = ElementosConstantesLimites.getItemWithLimitsForElementoGeneral(nombreElemento)
                 if (limite != null) {
                     ElementoSeleccionado(
                         nombre = nombreElemento,
@@ -132,7 +125,6 @@ fun TableSelectorElementsContent() {
             elementosSeleccionados = elementos
         }
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -208,7 +200,7 @@ fun TableSelectorElementsContent() {
                     )
 
                     ElementosGrid(
-                        elementos = elementosConstantes.values.toList(),
+                        elementos = ElementosConstantesLimites.LIMITES_ELEMENTOS_GENERALES.values.toList(),
                         elementosSeleccionados = elementosSeleccionados.map { it.nombre },
                         numColumnas = numColumnas,
                         onElementoClick = { elemento ->

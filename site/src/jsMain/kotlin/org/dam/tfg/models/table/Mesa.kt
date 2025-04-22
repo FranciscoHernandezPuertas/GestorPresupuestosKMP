@@ -1,20 +1,20 @@
 package org.dam.tfg.models.table
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 actual class Mesa(
+    @SerialName("_id")
     actual val id: String = "",
     actual val tipo: String,
     actual val tramos: List<Tramo>,
     actual val cubetas: List<Cubeta>,
-    actual val modulos: List<ModuloSeleccionado>,
+    actual val modulos: List<Modulo>,
     actual val elementosGenerales: Map<String, Int>,
     actual val precioTotal: Double,
     actual var error: String
 ) {
-    actual companion object {}
-
     actual fun isValid(): Boolean {
         if (tramos.isEmpty()) {
             error = "Una mesa debe tener al menos un tramo"
