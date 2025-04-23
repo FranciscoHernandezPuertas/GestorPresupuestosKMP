@@ -30,8 +30,19 @@ import org.dam.tfg.models.Formula
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.User
-import org.dam.tfg.util.AdminApi
 import org.dam.tfg.util.Constants.FONT_FAMILY
+import org.dam.tfg.util.addFormula
+import org.dam.tfg.util.addMaterial
+import org.dam.tfg.util.addUser
+import org.dam.tfg.util.deleteFormula
+import org.dam.tfg.util.deleteMaterial
+import org.dam.tfg.util.deleteUser
+import org.dam.tfg.util.getAllFormulas
+import org.dam.tfg.util.getAllMaterials
+import org.dam.tfg.util.getAllUsers
+import org.dam.tfg.util.updateFormula
+import org.dam.tfg.util.updateMaterial
+import org.dam.tfg.util.updateUser
 import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.css.*
@@ -158,7 +169,7 @@ fun MaterialesTab() {
 
     LaunchedEffect(Unit) {
         try {
-            materiales = AdminApi.getMaterials()
+            materiales = getAllMaterials()
             loading = false
         } catch (e: Exception) {
             error = "Error al cargar materiales: ${e.message ?: "Desconocido"}"
@@ -202,7 +213,7 @@ fun MaterialesTab() {
                 onClick = {
                     scope.launch {
                         try {
-                            materiales = AdminApi.getMaterials()
+                            materiales = getAllMaterials()
                             loading = false
                             error = ""
                         } catch (e: Exception) {
@@ -319,8 +330,12 @@ fun MaterialesTab() {
                                         )
                                     }
 
-                                    AdminApi.saveMaterial(material)
-                                    materiales = AdminApi.getMaterials()
+                                    if (editingMaterial != null) {
+                                        updateMaterial(material)
+                                    } else {
+                                        addMaterial(material)
+                                    }
+                                    materiales = getAllMaterials()
                                     isAdding = false
                                     editingMaterial = null
                                     error = ""
@@ -380,8 +395,8 @@ fun MaterialesTab() {
                                 scope.launch {
                                     try {
                                         materialToDelete?.id?.let { id ->
-                                            AdminApi.deleteMaterial(id)
-                                            materiales = AdminApi.getMaterials()
+                                            deleteMaterial(id)
+                                            materiales = getAllMaterials()
                                         }
                                         showConfirmDelete = false
                                         materialToDelete = null
@@ -599,7 +614,7 @@ fun FormulasTab() {
 
     LaunchedEffect(Unit) {
         try {
-            formulas = AdminApi.getFormulas()
+            formulas = getAllFormulas()
             loading = false
         } catch (e: Exception) {
             error = "Error al cargar fórmulas: ${e.message ?: "Desconocido"}"
@@ -650,7 +665,7 @@ fun FormulasTab() {
                     loading = true
                     scope.launch {
                         try {
-                            formulas = AdminApi.getFormulas()
+                            formulas = getAllFormulas()
                             loading = false
                         } catch (e: Exception) {
                             error = "Error al cargar fórmulas: ${e.message ?: "Desconocido"}"
@@ -832,7 +847,13 @@ fun FormulasTab() {
 
                             scope.launch {
                                 try {
-                                    val result = AdminApi.saveFormula(formula)
+                                    val result = if (editingFormula != null) {
+                                        updateFormula(formula)
+                                        formula
+                                    } else {
+                                        addFormula(formula)
+                                        formula
+                                    }
                                     formulas = formulas.toMutableList().apply {
                                         val index = indexOfFirst { it.id == result.id }
                                         if (index >= 0) {
@@ -893,7 +914,7 @@ fun FormulasTab() {
                                 formulaToDelete?.let { formula ->
                                     scope.launch {
                                         try {
-                                            AdminApi.deleteFormula(formula.id)
+                                            deleteFormula(formula.id)
                                             formulas = formulas.filter { it.id != formula.id }
                                             showConfirmDelete = false
                                             formulaToDelete = null
@@ -1127,7 +1148,7 @@ fun UsuariosTab() {
 
     LaunchedEffect(Unit) {
         try {
-            usuarios = AdminApi.getUsers()
+            usuarios = getAllUsers()
             loading = false
         } catch (e: Exception) {
             error = "Error al cargar usuarios: ${e.message ?: "Desconocido"}"
@@ -1176,7 +1197,7 @@ fun UsuariosTab() {
                 onClick = {
                     scope.launch {
                         try {
-                            usuarios = AdminApi.getUsers()
+                            usuarios = getAllUsers()
                             loading = false
                             error = ""
                         } catch (e: Exception) {
@@ -1360,8 +1381,12 @@ fun UsuariosTab() {
                                         )
                                     }
 
-                                    AdminApi.saveUser(user)
-                                    usuarios = AdminApi.getUsers()
+                                    if (editingUser != null) {
+                                        updateUser(user)
+                                    } else {
+                                        addUser(user)
+                                    }
+                                    usuarios = getAllUsers()
                                     isAdding = false
                                     editingUser = null
                                     error = ""
@@ -1421,8 +1446,8 @@ fun UsuariosTab() {
                                 scope.launch {
                                     try {
                                         userToDelete?.id?.let { id ->
-                                            AdminApi.deleteUser(id)
-                                            usuarios = AdminApi.getUsers()
+                                            deleteUser(id)
+                                            usuarios = getAllUsers()
                                             showConfirmDelete = false
                                             userToDelete = null
                                             error = ""

@@ -12,5 +12,4 @@ expect class Formula {
 
     fun toMap(): Map<String, Any>
 
-    companion object
 }

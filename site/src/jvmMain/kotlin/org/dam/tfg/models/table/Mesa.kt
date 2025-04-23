@@ -10,9 +10,9 @@ actual class Mesa(
     actual val id: String = ObjectId().toHexString(),
     actual val tipo: String,
     actual val tramos: List<Tramo>,
+    actual val elementosGenerales: List<ElementoSeleccionado>,
     actual val cubetas: List<Cubeta>,
     actual val modulos: List<Modulo>,
-    actual val elementosGenerales: Map<String, Int>,
     actual val precioTotal: Double,
     actual var error: String
 ) {

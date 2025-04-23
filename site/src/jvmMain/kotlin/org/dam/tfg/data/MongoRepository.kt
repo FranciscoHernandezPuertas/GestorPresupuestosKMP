@@ -1,6 +1,7 @@
 package org.dam.tfg.data
 
 import org.dam.tfg.models.Formula
+import org.dam.tfg.models.History
 import org.dam.tfg.models.User
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.table.Mesa
@@ -32,4 +33,10 @@ interface MongoRepository {
     suspend fun deleteMesa(id: String): Boolean
     suspend fun getMesaById(id: String): Mesa?
     suspend fun getAllMesas(): List<Mesa>
+
+    suspend fun addHistory(history: History): Boolean
+    suspend fun updateHistory(history: History): Boolean
+    suspend fun deleteHistory(id: String): Boolean
+    suspend fun getHistoryById(id: String): History?
+    suspend fun getAllHistory(): List<History>
 }

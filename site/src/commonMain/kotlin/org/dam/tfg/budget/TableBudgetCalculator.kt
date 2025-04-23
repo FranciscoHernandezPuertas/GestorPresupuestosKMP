@@ -1,6 +1,7 @@
 package org.dam.tfg.budget
 import org.dam.tfg.models.Formula
 import org.dam.tfg.models.table.Cubeta
+import org.dam.tfg.models.table.ElementoSeleccionado
 import org.dam.tfg.models.table.Mesa
 import org.dam.tfg.models.table.Modulo
 import org.dam.tfg.models.table.Tramo
@@ -21,7 +22,7 @@ class TableBudgetCalculator(private val formulas: List<Formula>) {
         tramos: List<Tramo>,
         cubetas: List<Cubeta>,
         modulos: List<Modulo>,
-        elementos: Map<String, Int>,
+        elementos: List<ElementoSeleccionado>,
         material: String
     ): Double {
         return calcularPrecioMesa(tramos, material) +
@@ -51,7 +52,7 @@ class TableBudgetCalculator(private val formulas: List<Formula>) {
         return 0.0
     }
 
-    private fun calcularPrecioElementos(elementos: Map<String, Int>): Double {
+    private fun calcularPrecioElementos(elementos: List<ElementoSeleccionado>): Double {
         val formulasElemento = formulas.filter { it.aplicaA == "ELEMENTO" }
         // Implementación del cálculo
         return 0.0

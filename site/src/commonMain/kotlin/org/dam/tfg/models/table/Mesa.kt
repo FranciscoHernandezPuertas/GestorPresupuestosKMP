@@ -6,9 +6,9 @@ expect class Mesa {
     val id: String
     val tipo: String
     val tramos: List<Tramo>
+    val elementosGenerales: List<ElementoSeleccionado>
     val cubetas: List<Cubeta>
     val modulos: List<Modulo>
-    val elementosGenerales: Map<String, Int>
     val precioTotal: Double
     var error: String
 

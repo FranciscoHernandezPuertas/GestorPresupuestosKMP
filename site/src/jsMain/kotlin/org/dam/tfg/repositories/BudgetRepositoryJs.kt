@@ -27,7 +27,7 @@ class BudgetRepositoryJs : BudgetRepository {
                     tramos = emptyList(),
                     cubetas = emptyList(),
                     modulos = emptyList(),
-                    elementosGenerales = emptyMap(),
+                    elementosGenerales = emptyList(),
                     precioTotal = 0.0,
                     error = ""
                 )
@@ -38,7 +38,7 @@ class BudgetRepositoryJs : BudgetRepository {
                 tramos = emptyList(),
                 cubetas = emptyList(),
                 modulos = emptyList(),
-                elementosGenerales = emptyMap(),
+                elementosGenerales = emptyList(),
                 precioTotal = 0.0,
                 error = ""
             )

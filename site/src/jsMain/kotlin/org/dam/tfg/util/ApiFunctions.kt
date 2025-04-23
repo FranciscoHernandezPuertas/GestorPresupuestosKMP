@@ -8,9 +8,13 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.dam.tfg.models.AuthResponse
 import org.dam.tfg.models.ErrorResponse
+import org.dam.tfg.models.Formula
+import org.dam.tfg.models.History
+import org.dam.tfg.models.Material
 import org.dam.tfg.models.TokenValidationRequest
 import org.dam.tfg.models.User
 import org.dam.tfg.models.UserWithoutPassword
+import org.dam.tfg.models.table.Mesa
 import org.w3c.dom.get
 import org.w3c.dom.set
 
@@ -100,4 +104,325 @@ fun logout() {
     localStorage.removeItem("username")
     localStorage.removeItem("userType")
     localStorage["remember"] = "false"
+}
+
+suspend fun addUser(user: User): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/addUser",
+            body = Json.encodeToString(user).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    }
+    catch (e: Exception) {
+        println(e.message.toString())
+        false
+    }
+}
+
+suspend fun updateUser(user: User): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/updateUser",
+            body = Json.encodeToString(user).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun deleteUser(id: String): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/deleteUser",
+            body = Json.encodeToString(id).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun getUserById(id: String): User? {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getUserById?id=$id"
+        )
+
+        result?.decodeToString()?.let { jsonResponse ->
+            try {
+                Json.decodeFromString<User>(jsonResponse)
+            } catch (e: Exception) {
+                console.error("Error al obtener usuario: $jsonResponse")
+                null
+            }
+        }
+    } catch (e: Exception) {
+        console.error(e.message)
+        null
+    }
+}
+
+suspend fun getAllUsers(): List<User> {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getAllUsers"
+        )
+
+        result?.decodeToString()?.let { jsonResponse ->
+            try {
+                Json.decodeFromString<List<User>>(jsonResponse)
+            } catch (e: Exception) {
+                console.error("Error al obtener usuarios: $jsonResponse")
+                emptyList()
+            }
+        } ?: emptyList()
+    } catch (e: Exception) {
+        console.error(e.message)
+        emptyList()
+    }
+}
+
+suspend fun addMaterial(material: Material): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/addMaterial",
+            body = Json.encodeToString(material).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun updateMaterial(material: Material): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/updateMaterial",
+            body = Json.encodeToString(material).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun deleteMaterial(id: String): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/deleteMaterial",
+            body = Json.encodeToString(id).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun getMaterialById(id: String): Material? {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getMaterialById?id=$id"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<Material>(it) }
+    } catch (e: Exception) {
+        console.error(e.message)
+        null
+    }
+}
+
+// En ApiFunctions.kt
+suspend fun getAllMaterials(): List<Material> {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getAllMaterials" // Agrega el prefijo "admin/"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<List<Material>>(it) } ?: emptyList()
+    } catch (e: Exception) {
+        console.error(e.message)
+        emptyList()
+    }
+}
+
+// FÓRMULA - CRUD
+suspend fun addFormula(formula: Formula): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/addFormula",
+            body = Json.encodeToString(formula).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun updateFormula(formula: Formula): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/updateFormula",
+            body = Json.encodeToString(formula).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun deleteFormula(id: String): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/deleteFormula",
+            body = Json.encodeToString(id).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun getFormulaById(id: String): Formula? {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getFormulaById?id=$id"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<Formula>(it) }
+    } catch (e: Exception) {
+        console.error(e.message)
+        null
+    }
+}
+
+suspend fun getAllFormulas(): List<Formula> {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getAllFormulas"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<List<Formula>>(it) } ?: emptyList()
+    } catch (e: Exception) {
+        console.error(e.message)
+        emptyList()
+    }
+}
+
+// MESA - CRUD
+suspend fun addMesa(mesa: Mesa): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/addMesa",
+            body = Json.encodeToString(mesa).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun updateMesa(mesa: Mesa): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/updateMesa",
+            body = Json.encodeToString(mesa).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun deleteMesa(id: String): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/deleteMesa",
+            body = Json.encodeToString(id).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun getMesaById(id: String): Mesa? {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getMesaById?id=$id"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<Mesa>(it) }
+    } catch (e: Exception) {
+        console.error(e.message)
+        null
+    }
+}
+
+suspend fun getAllMesas(): List<Mesa> {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getAllMesas"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<List<Mesa>>(it) } ?: emptyList()
+    } catch (e: Exception) {
+        console.error(e.message)
+        emptyList()
+    }
+}
+
+// HISTORY - CRUD
+suspend fun addHistory(history: History): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/addHistory",
+            body = Json.encodeToString(history).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun updateHistory(history: History): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/updateHistory",
+            body = Json.encodeToString(history).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun deleteHistory(id: String): Boolean {
+    return try {
+        window.api.tryPost(
+            apiPath = "admin/deleteHistory",
+            body = Json.encodeToString(id).encodeToByteArray()
+        )?.decodeToString().toBoolean()
+    } catch (e: Exception) {
+        console.error(e.message.toString())
+        false
+    }
+}
+
+suspend fun getHistoryById(id: String): History? {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getHistoryById?id=$id"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<History>(it) }
+    } catch (e: Exception) {
+        console.error(e.message)
+        null
+    }
+}
+
+suspend fun getAllHistory(): List<History> {
+    return try {
+        val result = window.api.tryGet(
+            apiPath = "admin/getAllHistory"
+        )
+        result?.decodeToString()?.let { Json.decodeFromString<List<History>>(it) } ?: emptyList()
+    } catch (e: Exception) {
+        console.error(e.message)
+        emptyList()
+    }
 }

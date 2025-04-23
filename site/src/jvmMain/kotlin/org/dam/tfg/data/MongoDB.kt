@@ -12,12 +12,9 @@ import com.mongodb.client.model.Filters.eq
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import org.dam.tfg.models.Formula
+import org.dam.tfg.models.History
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.table.Mesa
-import org.dam.tfg.repositories.FormulaRepository
-import org.dam.tfg.repositories.MaterialRepository
-import org.dam.tfg.repositories.MesaRepository
-import org.dam.tfg.repositories.UserRepository
 
 @InitApi
 fun initMongoDB(context: InitApiContext) {
@@ -32,11 +29,8 @@ class MongoDB(private val context: InitApiContext) : MongoRepository {
     private val materialCollection: MongoCollection<Material> = database.getCollection("materials")
     private val formulaCollection: MongoCollection<Formula> = database.getCollection("formulas")
     private val mesaCollection: MongoCollection<Mesa> = database.getCollection("mesas")
+    private val historyCollection: MongoCollection<History> = database.getCollection("history")
 
-    val userRepository = UserRepository(userCollection)
-    val materialRepository = MaterialRepository(materialCollection)
-    val formulaRepository = FormulaRepository(formulaCollection)
-    val mesaRepository = MesaRepository(mesaCollection)
 
     override suspend fun checkUserExistence(user: User): User? {
         return try {
@@ -248,6 +242,54 @@ class MongoDB(private val context: InitApiContext) : MongoRepository {
     override suspend fun getAllMesas(): List<Mesa> {
         return try {
             mesaCollection.find().toList()
+        } catch (e: Exception) {
+            context.logger.error(e.message.toString())
+            emptyList()
+        }
+    }
+
+    override suspend fun addHistory(history: History): Boolean {
+        return try {
+            historyCollection.insertOne(history)
+            true
+        } catch (e: Exception) {
+            context.logger.error(e.message.toString())
+            false
+        }
+    }
+
+    override suspend fun updateHistory(history: History): Boolean {
+        return try {
+            val result = historyCollection.replaceOne(eq("_id", history.id), history)
+            result.modifiedCount > 0
+        } catch (e: Exception) {
+            context.logger.error(e.message.toString())
+            false
+        }
+    }
+
+    override suspend fun deleteHistory(id: String): Boolean {
+        return try {
+            val result = historyCollection.deleteOne(eq("_id", id))
+            result.deletedCount > 0
+        } catch (e: Exception) {
+            context.logger.error(e.message.toString())
+            false
+        }
+    }
+
+    override suspend fun getHistoryById(id: String): History? {
+        return try {
+            historyCollection.find(eq("_id", id)).first()
+        } catch (e: Exception) {
+            context.logger.error(e.message.toString())
+            null
+        }
+    }
+
+    override suspend fun getAllHistory(): List<History> {
+        return try {
+            historyCollection.find().toList()
         } catch (e: Exception) {
             context.logger.error(e.message.toString())
             emptyList()

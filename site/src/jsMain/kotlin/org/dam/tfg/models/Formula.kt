@@ -12,7 +12,6 @@ actual class Formula(
     actual val aplicaA: String,
     actual val variables: Map<String, String>
 ) {
-    actual companion object {}
 
     actual fun toMap(): Map<String, Any> {
         return mapOf(
