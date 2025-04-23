@@ -184,8 +184,8 @@ fun MaterialesTab() {
             precioInput = ""
         } else if (editingMaterial != null) {
             editingMaterial?.let { material ->
-                nombreInput = material.nombre
-                precioInput = material.precio.toString()
+                nombreInput = material.name
+                precioInput = material.price.toString()
             }
         }
     }
@@ -284,7 +284,7 @@ fun MaterialesTab() {
                         .margin(bottom = 16.px)
                         .height(40.px)
                         .padding(leftRight = 10.px),
-                    placeholder = "Precio (€/m)",
+                    placeholder = "Precio (€/mm)",
                 )
 
                 Row(
@@ -319,14 +319,14 @@ fun MaterialesTab() {
                                     val material = if (editingMaterial != null) {
                                         Material(
                                             id = editingMaterial!!.id,
-                                            nombre = nombreInput,
-                                            precio = precio
+                                            name = nombreInput,
+                                            price = precio
                                         )
                                     } else {
                                         Material(
                                             id = "",  // Se generará en el servidor
-                                            nombre = nombreInput,
-                                            precio = precio
+                                            name = nombreInput,
+                                            price = precio
                                         )
                                     }
 
@@ -366,15 +366,15 @@ fun MaterialesTab() {
                     .backgroundColor(Colors.LightPink)
                     .margin(bottom = 16.px)
             ) {
-                Column(modifier = Modifier.padding(16.px)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(16.px)) {
                     SpanText(
-                        "¿Está seguro de eliminar el material '${materialToDelete?.nombre}'?",
+                        "¿Está seguro de eliminar el material '${materialToDelete?.name}'?",
                         modifier = Modifier.margin(bottom = 16.px)
                     )
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
                             onClick = {
@@ -443,14 +443,14 @@ fun MaterialesTab() {
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             SpanText(
-                                "Nombre: ${material.nombre}",
+                                "Nombre: ${material.name}",
                                 modifier = Modifier
                                     .fontWeight(FontWeight.Bold)
                                     .fontSize(16.px)
                                     .margin(bottom = 8.px)
                             )
                             SpanText(
-                                "Precio: ${material.precio}€",
+                                "Precio: ${material.price}€",
                                 modifier = Modifier.margin(bottom = 8.px)
                             )
 
@@ -490,8 +490,8 @@ fun MaterialesTab() {
                 Table(
                     attrs = Modifier
                         .fillMaxWidth()
-                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
                         .borderCollapse(BorderCollapse.Collapse)
+                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                         .borderRadius(8.px)
                         .toAttrs()
                 ) {
@@ -534,29 +534,29 @@ fun MaterialesTab() {
                         materiales.forEach { material ->
                             Tr(
                                 attrs = Modifier
-                                    .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                    .border(1.px, LineStyle.Solid, Colors.LightGray)
                                     .toAttrs()
                             ) {
                                 Td(
                                     attrs = Modifier
                                         .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .toAttrs()
                                 ) {
-                                    Text(material.nombre)
+                                    Text(material.name)
                                 }
                                 Td(
                                     attrs = Modifier
                                         .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .toAttrs()
                                 ) {
-                                    Text(material.precio.toString())
+                                    Text(material.price.toString())
                                 }
                                 Td(
                                     attrs = Modifier
                                         .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .textAlign(TextAlign.Center)
                                         .toAttrs()
                                 ) {
@@ -632,7 +632,7 @@ fun FormulasTab() {
             variablesInput = emptyList()
         } else if (editingFormula != null) {
             editingFormula?.let { formula ->
-                nombreInput = formula.nombre
+                nombreInput = formula.name
                 formulaInput = formula.formula
                 aplicaAInput = formula.aplicaA
                 variablesInput = formula.variables.map { it.key to it.value }
@@ -767,7 +767,11 @@ fun FormulasTab() {
                                 onClick = {
                                     variablesInput = variablesInput.toMutableList().also { it.removeAt(index) }
                                 },
-                                modifier = Modifier.margin(left = 8.px)
+                                modifier = Modifier
+                                    .margin(left = 8.px)
+                                    .borderRadius(4.px)
+                                    .backgroundColor(Colors.Red)
+                                    .color(Colors.White)
                             ) {
                                 SpanText("Eliminar")
                             }
@@ -839,7 +843,7 @@ fun FormulasTab() {
                         onClick = {
                             val formula = Formula(
                                 id = editingFormula?.id ?: "",
-                                nombre = nombreInput,
+                                name = nombreInput,
                                 formula = formulaInput,
                                 aplicaA = aplicaAInput,
                                 variables = variablesInput.associate { it.first to it.second }
@@ -891,7 +895,7 @@ fun FormulasTab() {
                     modifier = Modifier.fillMaxWidth().padding(16.px)
                 ) {
                     SpanText(
-                        "¿Está seguro de eliminar la fórmula '${formulaToDelete?.nombre}'?",
+                        "¿Está seguro de eliminar la fórmula '${formulaToDelete?.name}'?",
                         modifier = Modifier.margin(bottom = 16.px)
                     )
 
@@ -904,12 +908,21 @@ fun FormulasTab() {
                                 showConfirmDelete = false
                                 formulaToDelete = null
                             },
-                            modifier = Modifier.margin(right = 8.px)
+                            modifier = Modifier
+                                .margin(right = 8.px)
+                                .borderRadius(4.px)
+                                .backgroundColor(Theme.Secondary.rgb)
+                                .color(Colors.White)
                         ) {
                             SpanText("Cancelar")
                         }
 
                         Button(
+                            modifier = Modifier
+                                .margin(right = 8.px)
+                                .borderRadius(4.px)
+                                .backgroundColor(Colors.Red)
+                                .color(Colors.White),
                             onClick = {
                                 formulaToDelete?.let { formula ->
                                     scope.launch {
@@ -959,7 +972,7 @@ fun FormulasTab() {
                         ) {
                             Column(modifier = Modifier.fillMaxWidth()) {
                                 SpanText(
-                                    formula.nombre,
+                                    formula.name,
                                     modifier = Modifier
                                         .fontWeight(FontWeight.Bold)
                                         .fontSize(16.px)
@@ -983,8 +996,13 @@ fun FormulasTab() {
                                 ) {
                                     Button(
                                         onClick = { editingFormula = formula },
-                                        modifier = Modifier.margin(right = 8.px)
-                                    ) {
+                                        modifier = Modifier
+                                            .margin(right = 8.px)
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Theme.Secondary.rgb)
+                                            .color(Colors.White)
+                                    )
+                                    {
                                         SpanText("Editar")
                                     }
 
@@ -992,7 +1010,11 @@ fun FormulasTab() {
                                         onClick = {
                                             formulaToDelete = formula
                                             showConfirmDelete = true
-                                        }
+                                        },
+                                        modifier = Modifier
+                                            .borderRadius(4.px)
+                                            .backgroundColor(Colors.Red)
+                                            .color(Colors.White)
                                     ) {
                                         SpanText("Eliminar")
                                     }
@@ -1008,7 +1030,7 @@ fun FormulasTab() {
                         .fillMaxWidth()
                         .borderCollapse(BorderCollapse.Collapse)
                         .border(1.px, LineStyle.Solid, Colors.LightGray)
-                        .borderRadius(8.px) // Bordes redondeados
+                        .borderRadius(8.px)
                         .toAttrs()
                 ) {
                     Thead {
@@ -1017,7 +1039,7 @@ fun FormulasTab() {
                                 attrs = Modifier
                                     .backgroundColor(Theme.Primary.rgb)
                                     .color(Colors.White)
-                                    .padding(8.px)
+                                    .padding(12.px)
                                     .textAlign(TextAlign.Left)
                                     .toAttrs()
                             ) { Text("Nombre") }
@@ -1025,15 +1047,7 @@ fun FormulasTab() {
                                 attrs = Modifier
                                     .backgroundColor(Theme.Primary.rgb)
                                     .color(Colors.White)
-                                    .padding(8.px)
-                                    .textAlign(TextAlign.Left)
-                                    .toAttrs()
-                            ) { Text("Descripción") }
-                            Th(
-                                attrs = Modifier
-                                    .backgroundColor(Theme.Primary.rgb)
-                                    .color(Colors.White)
-                                    .padding(8.px)
+                                    .padding(12.px)
                                     .textAlign(TextAlign.Left)
                                     .toAttrs()
                             ) { Text("Fórmula") }
@@ -1041,7 +1055,7 @@ fun FormulasTab() {
                                 attrs = Modifier
                                     .backgroundColor(Theme.Primary.rgb)
                                     .color(Colors.White)
-                                    .padding(8.px)
+                                    .padding(12.px)
                                     .textAlign(TextAlign.Left)
                                     .toAttrs()
                             ) { Text("Aplica a") }
@@ -1049,7 +1063,7 @@ fun FormulasTab() {
                                 attrs = Modifier
                                     .backgroundColor(Theme.Primary.rgb)
                                     .color(Colors.White)
-                                    .padding(8.px)
+                                    .padding(12.px)
                                     .textAlign(TextAlign.Center)
                                     .width(150.px)
                                     .toAttrs()
@@ -1065,18 +1079,19 @@ fun FormulasTab() {
                             ) {
                                 Td(
                                     attrs = Modifier
-                                        .padding(8.px)
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .maxWidth(150.px)
                                         .overflow(Overflow.Hidden)
                                         .textOverflow(TextOverflow.Ellipsis)
                                         .whiteSpace(WhiteSpace.NoWrap)
                                         .toAttrs()
-                                ) { Text(formula.nombre) }
-
+                                ) { Text(formula.name) }
 
                                 Td(
                                     attrs = Modifier
-                                        .padding(8.px)
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .maxWidth(200.px)
                                         .overflow(Overflow.Hidden)
                                         .textOverflow(TextOverflow.Ellipsis)
@@ -1086,7 +1101,8 @@ fun FormulasTab() {
 
                                 Td(
                                     attrs = Modifier
-                                        .padding(8.px)
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .maxWidth(150.px)
                                         .overflow(Overflow.Hidden)
                                         .textOverflow(TextOverflow.Ellipsis)
@@ -1096,28 +1112,38 @@ fun FormulasTab() {
 
                                 Td(
                                     attrs = Modifier
-                                        .padding(8.px)
+                                        .padding(12.px)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .textAlign(TextAlign.Center)
                                         .toAttrs()
                                 ) {
-                                    Button(
-                                        attrs = Modifier
-                                            .margin(right = 8.px)
-                                            .onClick { editingFormula = formula }
-                                            .toAttrs()
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("Editar")
-                                    }
+                                        Button(
+                                            onClick = { editingFormula = formula },
+                                            modifier = Modifier
+                                                .borderRadius(4.px)
+                                                .backgroundColor(Theme.Secondary.rgb)
+                                                .color(Colors.White)
+                                                .margin(right = 8.px)
+                                        ) {
+                                            Text("Editar")
+                                        }
 
-                                    Button(
-                                        attrs = Modifier
-                                            .onClick {
+                                        Button(
+                                            onClick = {
                                                 formulaToDelete = formula
                                                 showConfirmDelete = true
-                                            }
-                                            .toAttrs()
-                                    ) {
-                                        Text("Eliminar")
+                                            },
+                                            modifier = Modifier
+                                                .borderRadius(4.px)
+                                                .backgroundColor(Colors.Red)
+                                                .color(Colors.White)
+                                        ) {
+                                            Text("Eliminar")
+                                        }
                                     }
                                 }
                             }
@@ -1551,7 +1577,7 @@ fun UsuariosTab() {
                     attrs = Modifier
                         .fillMaxWidth()
                         .borderCollapse(BorderCollapse.Collapse)
-                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                         .borderRadius(8.px)
                         .toAttrs()
                 ) {
@@ -1594,13 +1620,13 @@ fun UsuariosTab() {
                         usuarios.forEach { user ->
                             Tr(
                                 attrs = Modifier
-                                    .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                    .border(1.px, LineStyle.Solid, Colors.LightGray)
                                     .toAttrs()
                             ) {
                                 Td(
                                     attrs = Modifier
                                         .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .toAttrs()
                                 ) {
                                     Text(user.username)
@@ -1608,7 +1634,7 @@ fun UsuariosTab() {
                                 Td(
                                     attrs = Modifier
                                         .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .textAlign(TextAlign.Center)
                                         .toAttrs()
                                 ) {
@@ -1617,7 +1643,7 @@ fun UsuariosTab() {
                                 Td(
                                     attrs = Modifier
                                         .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                                         .textAlign(TextAlign.Center)
                                         .toAttrs()
                                 ) {

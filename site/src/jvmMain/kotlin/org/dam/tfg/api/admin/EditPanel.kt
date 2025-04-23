@@ -16,7 +16,6 @@ import org.dam.tfg.models.Formula
 import org.dam.tfg.models.History
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.table.Mesa
-import org.dam.tfg.util.JwtManager
 import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
 
@@ -198,11 +197,11 @@ suspend fun addMaterial(context: ApiContext) {
         }
 
         // Validaciones
-        if (material.nombre.isBlank()) {
+        if (material.name.isBlank()) {
             throw Exception("El nombre del material no puede estar vacío")
         }
 
-        if (material.precio < 0) {
+        if (material.price < 0) {
             throw Exception("El precio no puede ser negativo")
         }
 
@@ -235,11 +234,11 @@ suspend fun updateMaterial(context: ApiContext) {
             throw Exception("ID de material no proporcionado")
         }
 
-        if (material.nombre.isBlank()) {
+        if (material.name.isBlank()) {
             throw Exception("El nombre del material no puede estar vacío")
         }
 
-        if (material.precio < 0) {
+        if (material.price < 0) {
             throw Exception("El precio no puede ser negativo")
         }
 
@@ -340,7 +339,7 @@ suspend fun addFormula(context: ApiContext) {
         }
 
         // Validaciones básicas
-        if (formula.nombre.isBlank()) {
+        if (formula.name.isBlank()) {
             throw Exception("El nombre de la fórmula no puede estar vacío")
         }
 
@@ -377,7 +376,7 @@ suspend fun updateFormula(context: ApiContext) {
             throw Exception("ID de fórmula no proporcionado")
         }
 
-        if (formula.nombre.isBlank()) {
+        if (formula.name.isBlank()) {
             throw Exception("El nombre de la fórmula no puede estar vacío")
         }
 

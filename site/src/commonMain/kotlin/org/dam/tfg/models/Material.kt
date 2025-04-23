@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 expect class Material {
     val id: String
-    val nombre: String
-    val precio: Double
+    val name: String
+    val price: Double
 
     companion object {
         fun fromMap(map: Map<String, Any>): Material

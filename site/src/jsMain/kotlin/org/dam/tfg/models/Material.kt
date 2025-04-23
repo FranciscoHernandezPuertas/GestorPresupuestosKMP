@@ -7,15 +7,15 @@ import kotlinx.serialization.Serializable
 actual class Material(
     @SerialName("_id")
     actual val id: String = "",
-    actual val nombre: String,
-    actual val precio: Double,
+    actual val name: String,
+    actual val price: Double,
 ) {
     actual companion object {
         actual fun fromMap(map: Map<String, Any>): Material {
             return Material(
                 id = map["_id"] as String,
-                nombre = map["nombre"] as String,
-                precio = (map["precio"] as Number).toDouble()
+                name = map["nombre"] as String,
+                price = (map["precio"] as Number).toDouble()
             )
         }
     }
@@ -23,8 +23,8 @@ actual class Material(
     actual fun toMap(): Map<String, Any> {
         return mapOf(
             "_id" to id,
-            "nombre" to nombre,
-            "precio" to precio
+            "nombre" to name,
+            "precio" to price
         )
     }
 }
