@@ -91,7 +91,7 @@ fun AdminEditScreenContent() {
                         .fillMaxWidth()
                         .backgroundColor(Colors.White)
                         .borderRadius(8.px)
-                        .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                        .border(1.px, LineStyle.Solid, Colors.LightGray)
                         .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 8.px, color = Colors.LightGray)
                         .padding(20.px)
                 ) {
@@ -251,7 +251,7 @@ fun MaterialesTab() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.px)
-                    .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                    .border(1.px, LineStyle.Solid, Colors.LightGray)
                     .borderRadius(8.px)
                     .margin(bottom = 16.px)
             ) {
@@ -438,7 +438,7 @@ fun MaterialesTab() {
                             .fillMaxWidth()
                             .margin(bottom = 16.px)
                             .padding(16.px)
-                            .border(1.px, LineStyle.Solid, Theme.LightGray.rgb)
+                            .border(1.px, LineStyle.Solid, Colors.LightGray)
                             .borderRadius(8.px)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
