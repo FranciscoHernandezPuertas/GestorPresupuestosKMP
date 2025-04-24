@@ -273,35 +273,54 @@ suspend fun deleteFormula(id: String): Boolean {
     return try {
         window.api.tryPost(
             apiPath = "admin/deleteFormula",
-            body = Json.encodeToString(id).encodeToByteArray()
+            body = id.encodeToByteArray()
         )?.decodeToString().toBoolean()
     } catch (e: Exception) {
-        console.error(e.message.toString())
+        console.error("Error al eliminar fórmula: ${e.message}")
         false
     }
 }
 
-suspend fun getFormulaById(id: String): Formula? {
+suspend fun getAllFormulas(userType: String = "user"): List<Formula> {
     return try {
+        // Codificar el parámetro userType para evitar problemas con caracteres especiales
+        val encodedUserType = js("encodeURIComponent")(userType) as String
+
         val result = window.api.tryGet(
-            apiPath = "admin/getFormulaById?id=$id"
+            apiPath = "admin/getAllFormulas?userType=$encodedUserType"
         )
-        result?.decodeToString()?.let { Json.decodeFromString<Formula>(it) }
+
+        if (result != null) {
+            val jsonString = result.decodeToString()
+            try {
+                Json.decodeFromString<List<Formula>>(jsonString)
+            } catch (e: Exception) {
+                console.error("Error al decodificar fórmulas: ${e.message}")
+                console.error("Response recibida: $jsonString")
+                emptyList()
+            }
+        } else {
+            console.error("No se recibió respuesta del servidor")
+            emptyList()
+        }
     } catch (e: Exception) {
-        console.error(e.message)
-        null
+        console.error("Error al obtener fórmulas: ${e.message}")
+        emptyList()
     }
 }
 
-suspend fun getAllFormulas(): List<Formula> {
+suspend fun getFormulaById(id: String, userType: String = "user"): Formula? {
     return try {
+        val encodedUserType = js("encodeURIComponent")(userType) as String
+
         val result = window.api.tryGet(
-            apiPath = "admin/getAllFormulas"
+            apiPath = "admin/getFormulaById?id=$id&userType=$encodedUserType"
         )
-        result?.decodeToString()?.let { Json.decodeFromString<List<Formula>>(it) } ?: emptyList()
+
+        result?.decodeToString()?.let { Json.decodeFromString<Formula>(it) }
     } catch (e: Exception) {
-        console.error(e.message)
-        emptyList()
+        console.error("Error al obtener fórmula: ${e.message}")
+        null
     }
 }
 

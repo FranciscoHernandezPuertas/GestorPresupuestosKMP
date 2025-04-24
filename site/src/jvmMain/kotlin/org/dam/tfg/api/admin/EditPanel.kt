@@ -16,6 +16,7 @@ import org.dam.tfg.models.Formula
 import org.dam.tfg.models.History
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.table.Mesa
+import org.dam.tfg.util.FormulaEncryption
 import java.security.MessageDigest
 import java.nio.charset.StandardCharsets
 
@@ -332,57 +333,92 @@ suspend fun addFormula(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de fórmula")
 
-        val formula = try {
-            json.decodeFromString<Formula>(bodyText)
+        val formulaDto = try {
+            Json.decodeFromString<Formula>(bodyText)
         } catch (e: Exception) {
             throw Exception("Error al decodificar datos de fórmula: ${e.message}")
         }
 
         // Validaciones básicas
-        if (formula.name.isBlank()) {
+        if (formulaDto.name.isBlank()) {
             throw Exception("El nombre de la fórmula no puede estar vacío")
         }
 
-        if (formula.formula.isBlank()) {
+        if (formulaDto.formula.isBlank()) {
             throw Exception("La fórmula no puede estar vacía")
         }
+
+        // Encriptar la fórmula si no está encriptada
+        val encryptedFormula = if (!formulaDto.formulaEncrypted) {
+            FormulaEncryption.encrypt(formulaDto.formula)
+        } else {
+            formulaDto.formula
+        }
+
+        // Crear una nueva instancia de Formula con la fórmula encriptada
+        val formula = Formula(
+            id = formulaDto.id,
+            name = formulaDto.name,
+            formula = encryptedFormula,
+            formulaEncrypted = true, // Siempre marcamos como encriptada
+            aplicaA = formulaDto.aplicaA,
+            variables = formulaDto.variables
+        )
 
         val success = context.data.getValue<MongoDB>().addFormula(formula)
         context.res.setBodyText(success.toString())
     } catch (e: Exception) {
         context.res.status = 400
         context.res.setBodyText(
-            json.encodeToString(
+            Json.encodeToString(
                 ErrorResponse("Error al agregar fórmula: ${e.message}")
             )
         )
     }
 }
 
+// Modificación para updateFormula
 @Api(routeOverride = "updateFormula")
 suspend fun updateFormula(context: ApiContext) {
     try {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de fórmula")
 
-        val formula = try {
-            json.decodeFromString<Formula>(bodyText)
+        val formulaDto = try {
+            Json.decodeFromString<Formula>(bodyText)
         } catch (e: Exception) {
             throw Exception("Error al decodificar datos de fórmula: ${e.message}")
         }
 
         // Validaciones
-        if (formula.id.isBlank()) {
+        if (formulaDto.id.isBlank()) {
             throw Exception("ID de fórmula no proporcionado")
         }
 
-        if (formula.name.isBlank()) {
+        if (formulaDto.name.isBlank()) {
             throw Exception("El nombre de la fórmula no puede estar vacío")
         }
 
-        if (formula.formula.isBlank()) {
+        if (formulaDto.formula.isBlank()) {
             throw Exception("La fórmula no puede estar vacía")
         }
+
+        // Encriptar la fórmula si no está encriptada
+        val encryptedFormula = if (!formulaDto.formulaEncrypted) {
+            FormulaEncryption.encrypt(formulaDto.formula)
+        } else {
+            formulaDto.formula
+        }
+
+        // Crear una nueva instancia de Formula con la fórmula encriptada
+        val formula = Formula(
+            id = formulaDto.id,
+            name = formulaDto.name,
+            formula = encryptedFormula,
+            formulaEncrypted = true, // Siempre marcamos como encriptada
+            aplicaA = formulaDto.aplicaA,
+            variables = formulaDto.variables
+        )
 
         val success = context.data.getValue<MongoDB>().updateFormula(formula)
 
@@ -394,8 +430,97 @@ suspend fun updateFormula(context: ApiContext) {
     } catch (e: Exception) {
         context.res.status = 400
         context.res.setBodyText(
-            json.encodeToString(
+            Json.encodeToString(
                 ErrorResponse("Error al actualizar fórmula: ${e.message}")
+            )
+        )
+    }
+}
+
+// Modificación para getFormulaById
+@Api(routeOverride = "getFormulaById")
+suspend fun getFormulaById(context: ApiContext) {
+    try {
+        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        val userType = context.req.params["userType"] ?: "user" // Default a user si no se especifica
+
+        if (id.isBlank()) {
+            throw Exception("ID de fórmula no puede estar vacío")
+        }
+
+        val formula = context.data.getValue<MongoDB>().getFormulaById(id)
+            ?: throw Exception("Fórmula no encontrada")
+
+        // Solo desencriptamos para admins
+        if (FormulaEncryption.canViewFormula(userType) && formula.formulaEncrypted) {
+            val decryptedFormula = Formula(
+                id = formula.id,
+                name = formula.name,
+                formula = FormulaEncryption.decrypt(formula.formula),
+                formulaEncrypted = false, // Marcamos como desencriptada para la vista
+                aplicaA = formula.aplicaA,
+                variables = formula.variables
+            )
+            context.res.setBodyText(Json.encodeToString(decryptedFormula))
+        } else {
+            context.res.setBodyText(Json.encodeToString(formula))
+        }
+    } catch (e: Exception) {
+        context.res.status = 404 // Not Found
+        context.res.setBodyText(
+            Json.encodeToString(
+                ErrorResponse("Error al obtener fórmula: ${e.message}")
+            )
+        )
+    }
+}
+
+// Modificación para getAllFormulas
+@Api(routeOverride = "getAllFormulas")
+suspend fun getAllFormulas(context: ApiContext) {
+    try {
+        val userType = context.req.params["userType"] ?: "user"
+        context.logger.info("Obteniendo fórmulas para userType: $userType")
+
+        val formulas = context.data.getValue<MongoDB>().getAllFormulas()
+
+        // Si es admin, desencriptamos las fórmulas
+        if (FormulaEncryption.canViewFormula(userType)) {
+            try {
+                val decryptedFormulas = formulas.map { formula ->
+                    try {
+                        if (formula.formulaEncrypted) {
+                            Formula(
+                                id = formula.id,
+                                name = formula.name,
+                                formula = FormulaEncryption.decrypt(formula.formula),
+                                formulaEncrypted = false,
+                                aplicaA = formula.aplicaA,
+                                variables = formula.variables
+                            )
+                        } else {
+                            formula
+                        }
+                    } catch (e: Exception) {
+                        context.logger.error("Error al desencriptar fórmula ${formula.id}: ${e.message}")
+                        // Devolvemos la fórmula original si no se puede desencriptar
+                        formula
+                    }
+                }
+                context.res.setBodyText(Json.encodeToString(decryptedFormulas))
+            } catch (e: Exception) {
+                context.logger.error("Error al procesar fórmulas para admin: ${e.message}")
+                context.res.setBodyText(Json.encodeToString(formulas))
+            }
+        } else {
+            context.res.setBodyText(Json.encodeToString(formulas))
+        }
+    } catch (e: Exception) {
+        context.logger.error("Error en getAllFormulas: ${e.message}")
+        context.res.status = 500
+        context.res.setBodyText(
+            Json.encodeToString(
+                ErrorResponse("Error al obtener fórmulas: ${e.message}")
             )
         )
     }
@@ -428,43 +553,6 @@ suspend fun deleteFormula(context: ApiContext) {
     }
 }
 
-@Api(routeOverride = "getFormulaById")
-suspend fun getFormulaById(context: ApiContext) {
-    try {
-        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
-
-        if (id.isBlank()) {
-            throw Exception("ID de fórmula no puede estar vacío")
-        }
-
-        val formula = context.data.getValue<MongoDB>().getFormulaById(id)
-            ?: throw Exception("Fórmula no encontrada")
-
-        context.res.setBodyText(json.encodeToString(formula))
-    } catch (e: Exception) {
-        context.res.status = 404 // Not Found
-        context.res.setBodyText(
-            json.encodeToString(
-                ErrorResponse("Error al obtener fórmula: ${e.message}")
-            )
-        )
-    }
-}
-
-@Api(routeOverride = "getAllFormulas")
-suspend fun getAllFormulas(context: ApiContext) {
-    try {
-        val formulas = context.data.getValue<MongoDB>().getAllFormulas()
-        context.res.setBodyText(json.encodeToString(formulas))
-    } catch (e: Exception) {
-        context.res.status = 500 // Internal Server Error
-        context.res.setBodyText(
-            json.encodeToString(
-                ErrorResponse("Error al obtener fórmulas: ${e.message}")
-            )
-        )
-    }
-}
 
 // MESAS - CRUD
 

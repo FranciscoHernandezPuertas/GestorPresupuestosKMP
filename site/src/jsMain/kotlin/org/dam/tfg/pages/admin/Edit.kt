@@ -25,6 +25,7 @@ import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.components.forms.Button
 import com.varabyte.kobweb.silk.components.forms.TextInput
 import com.varabyte.kobweb.silk.components.text.SpanText
+import kotlinx.browser.localStorage
 import kotlinx.coroutines.launch
 import org.dam.tfg.models.Formula
 import org.dam.tfg.models.Material
@@ -40,6 +41,7 @@ import org.dam.tfg.util.deleteUser
 import org.dam.tfg.util.getAllFormulas
 import org.dam.tfg.util.getAllMaterials
 import org.dam.tfg.util.getAllUsers
+import org.dam.tfg.util.getFormulaById
 import org.dam.tfg.util.updateFormula
 import org.dam.tfg.util.updateMaterial
 import org.dam.tfg.util.updateUser
@@ -47,6 +49,7 @@ import org.jetbrains.compose.web.attributes.InputType
 import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
+import org.w3c.dom.get
 
 @Page
 @Composable
@@ -611,10 +614,11 @@ fun FormulasTab() {
 
     val scope = rememberCoroutineScope()
     val breakpoint = rememberBreakpoint()
+    val userType = remember { localStorage["userType"] ?: "user" }
 
     LaunchedEffect(Unit) {
         try {
-            formulas = getAllFormulas()
+            formulas = getAllFormulas(userType)
             loading = false
         } catch (e: Exception) {
             error = "Error al cargar fórmulas: ${e.message ?: "Desconocido"}"
@@ -623,20 +627,21 @@ fun FormulasTab() {
     }
 
     // Reset form cuando cambia el modo de edición
-    LaunchedEffect(isAdding, editingFormula) {
-        if (isAdding) {
-            nombreInput = ""
-            descripcionInput = ""
-            formulaInput = ""
-            aplicaAInput = ""
-            variablesInput = emptyList()
-        } else if (editingFormula != null) {
-            editingFormula?.let { formula ->
-                nombreInput = formula.name
-                formulaInput = formula.formula
-                aplicaAInput = formula.aplicaA
-                variablesInput = formula.variables.map { it.key to it.value }
+    LaunchedEffect(key1 = editingFormula?.id) {  // Cambia la dependencia a solo el ID
+        try {
+            if (editingFormula != null) {
+                val formulaDetail = getFormulaById(editingFormula!!.id, userType)
+                formulaDetail?.let {
+                    nombreInput = it.name
+                    formulaInput = it.formula
+                    aplicaAInput = it.aplicaA
+                    variablesInput = it.variables.entries.map { entry ->
+                        entry.key to entry.value
+                    }
+                }
             }
+        } catch (e: Exception) {
+            error = e.message ?: "Error desconocido"
         }
     }
 
@@ -665,7 +670,7 @@ fun FormulasTab() {
                     loading = true
                     scope.launch {
                         try {
-                            formulas = getAllFormulas()
+                            formulas = getAllFormulas(userType)
                             loading = false
                         } catch (e: Exception) {
                             error = "Error al cargar fórmulas: ${e.message ?: "Desconocido"}"
@@ -840,36 +845,48 @@ fun FormulasTab() {
 
                     Button(
                         modifier = Modifier.borderRadius(4.px).backgroundColor(Colors.Green).color(Colors.White),
-                        onClick = {
+                        onClick = onClick@{
+                            // Primero validamos los campos
+                            if (nombreInput.isBlank() || formulaInput.isBlank() || aplicaAInput.isBlank()) {
+                                error = "Todos los campos son obligatorios"
+                                return@onClick
+                            }
+
                             val formula = Formula(
-                                id = editingFormula?.id ?: "",
-                                name = nombreInput,
-                                formula = formulaInput,
-                                aplicaA = aplicaAInput,
+                                id = editingFormula?.id ?: "",  // Asegura que el ID se conserva
+                                name = nombreInput.trim(),
+                                formula = formulaInput.trim(),
+                                formulaEncrypted = false,  // Indica al servidor que debe encriptar
+                                aplicaA = aplicaAInput.trim(),
                                 variables = variablesInput.associate { it.first to it.second }
                             )
 
                             scope.launch {
                                 try {
-                                    val result = if (editingFormula != null) {
-                                        updateFormula(formula)
-                                        formula
-                                    } else {
-                                        addFormula(formula)
-                                        formula
-                                    }
-                                    formulas = formulas.toMutableList().apply {
-                                        val index = indexOfFirst { it.id == result.id }
-                                        if (index >= 0) {
-                                            this[index] = result
+                                    // Mostrar los datos para depuración
+                                    console.log("Enviando fórmula:", JSON.stringify(formula))
+
+                                    if (editingFormula != null) {
+                                        val success = updateFormula(formula)
+                                        if (success) {
+                                            // Actualiza la lista solo si fue exitoso
+                                            formulas = getAllFormulas(userType)
+                                            editingFormula = null
                                         } else {
-                                            add(result)
+                                            error = "No se pudo actualizar la fórmula"
+                                        }
+                                    } else {
+                                        val newFormula = addFormula(formula)
+                                        if (newFormula != null) {
+                                            formulas = getAllFormulas(userType)
+                                            isAdding = false
+                                        } else {
+                                            error = "No se pudo añadir la fórmula"
                                         }
                                     }
-                                    if (isAdding) isAdding = false
-                                    else editingFormula = null
                                 } catch (e: Exception) {
                                     error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                    console.error("Error al guardar:", e)
                                 }
                             }
                         }
