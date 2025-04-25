@@ -564,7 +564,7 @@ fun MaterialesTab() {
                                     .textAlign(TextAlign.Left)
                                     .toAttrs()
                             ) {
-                                Text("Precio (€/m)")
+                                Text("Precio (€/mm)")
                             }
                             Th(
                                 attrs = Modifier

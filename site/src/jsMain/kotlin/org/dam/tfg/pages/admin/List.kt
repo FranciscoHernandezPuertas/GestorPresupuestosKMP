@@ -42,7 +42,7 @@ fun AdminListScreenContent() {
             contentAlignment = Alignment.TopCenter
         ) {
             SpanText(
-                text = "Aquí iría un listado de los presupuestos generados por los usuarios, ordenados por fecha.",
+                text = "Aquí iría un listado de los presupuestos generados por los usuarios, guardados en la base de datos MongoDB, ordenados por fecha.",
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(left = 20.px, right = 20.px, top = 20.px, bottom = 20.px)
