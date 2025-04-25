@@ -25,12 +25,14 @@ import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.silk.components.forms.Button
 import com.varabyte.kobweb.silk.components.forms.TextInput
 import com.varabyte.kobweb.silk.components.text.SpanText
+import com.varabyte.kobweb.silk.style.toModifier
 import kotlinx.browser.localStorage
 import kotlinx.coroutines.launch
 import org.dam.tfg.models.Formula
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.User
+import org.dam.tfg.styles.RadioButtonStyle
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.addFormula
 import org.dam.tfg.util.addMaterial
@@ -257,6 +259,50 @@ fun MaterialesTab() {
                     .border(1.px, LineStyle.Solid, Colors.LightGray)
                     .borderRadius(8.px)
                     .margin(bottom = 16.px)
+                    .keyboardActions(
+                        onEnter = {
+                            scope.launch {
+                                try {
+                                    val precio = precioInput.toDoubleOrNull() ?: 0.0
+
+                                    if (nombreInput.isBlank()) {
+                                        error = "El nombre no puede estar vacío"
+                                        return@launch
+                                    }
+
+                                    val material = if (editingMaterial != null) {
+                                        Material(
+                                            id = editingMaterial!!.id,
+                                            name = nombreInput,
+                                            price = precio
+                                        )
+                                    } else {
+                                        Material(
+                                            id = "",  // Se generará en el servidor
+                                            name = nombreInput,
+                                            price = precio
+                                        )
+                                    }
+
+                                    if (editingMaterial != null) {
+                                        updateMaterial(material)
+                                    } else {
+                                        addMaterial(material)
+                                    }
+                                    materiales = getAllMaterials()
+                                    isAdding = false
+                                    editingMaterial = null
+                                    error = ""
+                                } catch (e: Exception) {
+                                    error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                }
+                            }
+                        },
+                        onEscape = {
+                            isAdding = false
+                            editingMaterial = null
+                        }
+                    )
             ) {
                 SpanText(
                     text = if (isAdding) "Añadir Material" else "Editar Material",
@@ -703,6 +749,60 @@ fun FormulasTab() {
                     .border(1.px, LineStyle.Solid, Colors.LightGray)
                     .borderRadius(8.px)
                     .margin(bottom = 16.px)
+                    .keyboardActions(
+                        onEnter = {
+                            // Primero validamos los campos
+                            if (nombreInput.isBlank() || formulaInput.isBlank() || aplicaAInput.isBlank()) {
+                                error = "Todos los campos son obligatorios"
+                                return@keyboardActions
+                            }
+
+                            val formula = Formula(
+                                id = editingFormula?.id ?: "",  // Asegura que el ID se conserva
+                                name = nombreInput.trim(),
+                                formula = formulaInput.trim(),
+                                formulaEncrypted = false,  // Indica al servidor que debe encriptar
+                                aplicaA = aplicaAInput.trim(),
+                                variables = variablesInput.associate { it.first to it.second }
+                            )
+
+                            scope.launch {
+                                try {
+                                    // Mostrar los datos para depuración
+                                    console.log("Enviando fórmula:", JSON.stringify(formula))
+
+                                    if (editingFormula != null) {
+                                        val success = updateFormula(formula)
+                                        if (success) {
+                                            // Actualiza la lista solo si fue exitoso
+                                            formulas = getAllFormulas(userType)
+                                            editingFormula = null
+                                        } else {
+                                            error = "No se pudo actualizar la fórmula"
+                                        }
+                                    } else {
+                                        val newFormula = addFormula(formula)
+                                        if (newFormula != null) {
+                                            formulas = getAllFormulas(userType)
+                                            isAdding = false
+                                        } else {
+                                            error = "No se pudo añadir la fórmula"
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                    console.error("Error al guardar:", e)
+                                }
+                            }
+                        },
+                        onEscape = {
+                            if (isAdding) {
+                                isAdding = false
+                            } else {
+                                editingFormula = null
+                            }
+                        }
+                    )
             ) {
                 SpanText(
                     modifier = Modifier
@@ -1283,6 +1383,63 @@ fun UsuariosTab() {
                     .border(1.px, LineStyle.Solid, Colors.LightGray)
                     .borderRadius(8.px)
                     .margin(bottom = 16.px)
+                    .keyboardActions(
+                        onEnter = {
+                            scope.launch {
+                                try {
+                                    // Validaciones
+                                    if (usernameInput.isBlank()) {
+                                        error = "El nombre de usuario no puede estar vacío"
+                                        return@launch
+                                    }
+
+                                    if (isAdding && passwordInput.isBlank()) {
+                                        error = "La contraseña no puede estar vacía"
+                                        return@launch
+                                    }
+
+                                    val user = if (editingUser != null) {
+                                        // Si estamos editando, solo actualizamos la contraseña si se ha proporcionado una
+                                        if (passwordInput.isBlank()) {
+                                            editingUser!!.copy(
+                                                username = usernameInput,
+                                                type = typeInput
+                                            )
+                                        } else {
+                                            editingUser!!.copy(
+                                                username = usernameInput,
+                                                password = passwordInput,
+                                                type = typeInput
+                                            )
+                                        }
+                                    } else {
+                                        User(
+                                            id = "",  // Se generará en el servidor
+                                            username = usernameInput,
+                                            password = passwordInput,
+                                            type = typeInput
+                                        )
+                                    }
+
+                                    if (editingUser != null) {
+                                        updateUser(user)
+                                    } else {
+                                        addUser(user)
+                                    }
+                                    usuarios = getAllUsers()
+                                    isAdding = false
+                                    editingUser = null
+                                    error = ""
+                                } catch (e: Exception) {
+                                    error = "Error al guardar: ${e.message ?: "Desconocido"}"
+                                }
+                            }
+                        },
+                        onEscape = {
+                            isAdding = false
+                            editingUser = null
+                        }
+                    )
             ) {
                 SpanText(
                     if (isAdding) "Añadir Usuario" else "Editar Usuario",
@@ -1318,52 +1475,147 @@ fun UsuariosTab() {
                 )
 
                 // Selector de tipo
+                // Reemplaza la sección de radio buttons en UsuariosTab() por este código:
                 SpanText(
                     "Tipo:",
                     modifier = Modifier
                         .margin(bottom = 4.px)
                         .fontFamily(FONT_FAMILY)
                 )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .margin(bottom = 16.px)
+                        .margin(bottom = 16.px),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Radio button para usuario
-                    Label(
-                        attrs = Modifier
-                            .padding(right = 16.px)
-                            .cursor(Cursor.Pointer)
-                            .toAttrs()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.margin(right = 20.px)
                     ) {
-                        Input(
-                            type = InputType.Radio,
-                            attrs = Modifier
-                                .toAttrs {
-                                    name("userType")
-                                    checked(typeInput == "user")
-                                    onChange { typeInput = "user" }
+                        Box(
+                            modifier = Modifier.width(20.px).height(20.px)
+                        ) {
+                            // Input radio real pero escondido
+                            Input(
+                                type = InputType.Radio,
+                                attrs = Modifier
+                                    .id("radio-user")
+                                    .toAttrs {
+                                        name("userType")
+                                        checked(typeInput == "user")
+                                        onChange { typeInput = "user" }
+                                        style {
+                                            property("opacity", "0")
+                                            property("position", "absolute")
+                                        }
+                                    }
+                            )
+
+                            // Círculo personalizado visible
+                            Box(
+                                modifier = RadioButtonStyle.toModifier()
+                                    .width(20.px)
+                                    .height(20.px)
+                                    .border(
+                                        width = 2.px,
+                                        style = LineStyle.Solid,
+                                        color = if (typeInput == "user") Theme.Primary.rgb else Theme.HalfBlack.rgb
+                                    )
+                                    .borderRadius(50.percent)
+                                    .backgroundColor(Colors.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (typeInput == "user") {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(12.px)
+                                            .height(12.px)
+                                            .backgroundColor(Theme.Primary.rgb)
+                                            .borderRadius(50.percent)
+                                    )
                                 }
-                        )
-                        Text(" Usuario")
+                            }
+                        }
+
+                        Label(
+                            attrs = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(16.px)
+                                .margin(left = 8.px)
+                                .color(Theme.Secondary.rgb)
+                                .cursor(Cursor.Pointer)
+                                .toAttrs {
+                                    attr("for", "radio-user")
+                                }
+                        ) {
+                            Text("Usuario")
+                        }
                     }
 
                     // Radio button para administrador
-                    Label(
-                        attrs = Modifier
-                            .cursor(Cursor.Pointer)
-                            .toAttrs()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Input(
-                            type = InputType.Radio,
-                            attrs = Modifier
-                                .toAttrs {
-                                    name("userType")
-                                    checked(typeInput == "admin")
-                                    onChange { typeInput = "admin" }
+                        Box(
+                            modifier = Modifier.width(20.px).height(20.px)
+                        ) {
+                            // Input radio real pero escondido
+                            Input(
+                                type = InputType.Radio,
+                                attrs = Modifier
+                                    .id("radio-admin")
+                                    .toAttrs {
+                                        name("userType")
+                                        checked(typeInput == "admin")
+                                        onChange { typeInput = "admin" }
+                                        style {
+                                            property("opacity", "0")
+                                            property("position", "absolute")
+                                        }
+                                    }
+                            )
+
+                            // Círculo personalizado visible
+                            Box(
+                                modifier = RadioButtonStyle.toModifier()
+                                    .width(20.px)
+                                    .height(20.px)
+                                    .border(
+                                        width = 2.px,
+                                        style = LineStyle.Solid,
+                                        color = if (typeInput == "admin") Theme.Primary.rgb else Theme.HalfBlack.rgb
+                                    )
+                                    .borderRadius(50.percent)
+                                    .backgroundColor(Colors.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (typeInput == "admin") {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(12.px)
+                                            .height(12.px)
+                                            .backgroundColor(Theme.Primary.rgb)
+                                            .borderRadius(50.percent)
+                                    )
                                 }
-                        )
-                        Text(" Administrador")
+                            }
+                        }
+
+                        Label(
+                            attrs = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(16.px)
+                                .margin(left = 8.px)
+                                .color(Theme.Secondary.rgb)
+                                .cursor(Cursor.Pointer)
+                                .toAttrs {
+                                    attr("for", "radio-admin")
+                                }
+                        ) {
+                            Text("Administrador")
+                        }
                     }
                 }
 
@@ -1694,4 +1946,23 @@ fun UsuariosTab() {
             }
         }
     }
+}
+
+// Función auxiliar para manejar eventos de teclado
+private fun Modifier.keyboardActions(onEnter: () -> Unit, onEscape: () -> Unit): Modifier {
+    return this.then(
+        Modifier.onKeyDown { event ->
+            when (event.key) {
+                "Enter" -> {
+                    onEnter()
+                    true
+                }
+                "Escape" -> {
+                    onEscape()
+                    true
+                }
+                else -> false
+            }
+        }
+    )
 }

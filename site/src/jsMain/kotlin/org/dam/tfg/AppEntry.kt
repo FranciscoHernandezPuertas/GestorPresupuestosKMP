@@ -7,7 +7,9 @@ import com.varabyte.kobweb.silk.SilkApp
 import com.varabyte.kobweb.silk.components.layout.Surface
 import com.varabyte.kobweb.silk.style.common.SmoothColorStyle
 import com.varabyte.kobweb.silk.style.toModifier
+import org.dam.tfg.navigation.Screen
 import org.jetbrains.compose.web.css.*
+import org.w3c.dom.Navigator
 
 @App
 @Composable
