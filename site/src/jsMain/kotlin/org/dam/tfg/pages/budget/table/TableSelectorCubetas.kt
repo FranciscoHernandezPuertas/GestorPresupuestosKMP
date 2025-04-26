@@ -75,6 +75,7 @@ import org.jetbrains.compose.web.css.percent
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.css.rgba
 import org.jetbrains.compose.web.css.vh
+import kotlin.text.toInt
 
 @Page
 @Composable
@@ -139,7 +140,7 @@ fun TableSelectorCubetasContent() {
     fun anadirCubeta(nombre: String) {
         val dimensiones = DimensionExtractors.extractCubetaDimensions(nombre)
         val largo = dimensiones.first
-        val ancho = dimensiones.second
+        val fondo = dimensiones.second
         val alto = dimensiones.third
         val maxQuantity = ElementosConstantesLimites.getItemWithLimitsForCubeta(nombre)?.maxQuantity ?: 1
 
@@ -147,18 +148,16 @@ fun TableSelectorCubetasContent() {
             tipo = nombre,
             numero = 1,
             largo = largo,
-            fondo = ancho,
+            fondo = fondo,
             alto = alto,
             maxQuantity = maxQuantity
         )
 
         val nuevaListaCubetas = cubetasSeleccionadas + nuevaCubeta
         cubetasSeleccionadas = nuevaListaCubetas
-        // Actualizar opciones disponibles
+        // Actualizar opciones disponibles y guardar
         opcionesCubetasDisponibles = getOpcionesDisponibles(nuevaListaCubetas)
-        // Guardar en BudgetManager
         BudgetManager.saveCubetas(nuevaListaCubetas)
-        // Limpiar selección actual
         seleccionActual = ""
     }
 
@@ -604,16 +603,13 @@ fun ElementoSeleccionadoItem(
     isMobile: Boolean
 ) {
     val dimensiones = if (elemento.tipo.startsWith("Diametro")) {
-        // Extraemos directamente los valores del tipo
-        val match = Regex("Diametro (\\d+)x(\\d+)").find(elemento.tipo)
-        val diametro = match?.groupValues?.get(1) ?: "0"
-        val alto = match?.groupValues?.get(2) ?: "0"
-        "Diámetro: $diametro mm, Alto: $alto mm"
+        // Simplemente usa los valores del objeto
+        "Largo: ${elemento.largo.toInt()} mm, Fondo: ${elemento.largo.toInt()} mm, Alto: ${elemento.alto?.toInt() ?: 0} mm"
     } else {
-        // Para cubetas rectangulares y cuadradas
         "Largo: ${elemento.largo.toInt()} mm, Fondo: ${elemento.fondo.toInt()} mm" +
                 (elemento.alto?.let { ", Alto: ${it.toInt()} mm" } ?: "")
     }
+
     val maxCantidad = elemento.maxQuantity ?: Int.MAX_VALUE
     val minCantidad = ElementosConstantesLimites.getItemWithLimitsForCubeta(elemento.tipo)?.minQuantity ?: 0
 

@@ -248,7 +248,7 @@ fun TableSelectorDimensionsContent() {
                 modifier = Modifier
                     .fillMaxWidth()
                     // Usar altura fija en lugar de minHeight
-                    .height(if (breakpoint >= Breakpoint.MD) 500.px else (400 + 4 * 140).px) // Altura para acomodar 4 tramos
+                    .height(if (breakpoint >= Breakpoint.MD) 600.px else (400 + 4 * 140).px) // Altura para acomodar 4 tramos
                     .padding(containerPadding)
                     .backgroundColor(Colors.White)
                     .borderRadius(8.px)

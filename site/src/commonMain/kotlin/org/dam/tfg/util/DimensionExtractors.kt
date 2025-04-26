@@ -13,7 +13,7 @@ object DimensionExtractors {
         }
 
         // Para cubetas circulares (diámetro)
-        val regexDiametro = Regex("Diametro (\\d+)x(\\d+)")
+        val regexDiametro = Regex("Di[aá]metro\\s+(\\d+)x(\\d+)")
         regexDiametro.find(nombre)?.let {
             val diametro = it.groupValues[1].toDoubleOrNull() ?: 0.0
             val alto = it.groupValues[2].toDoubleOrNull() ?: 0.0
