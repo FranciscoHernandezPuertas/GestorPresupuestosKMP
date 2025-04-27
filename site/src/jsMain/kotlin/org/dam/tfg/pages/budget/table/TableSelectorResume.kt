@@ -9,6 +9,7 @@ import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
 import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.core.Page
+import com.varabyte.kobweb.core.rememberPageContext
 import com.varabyte.kobweb.silk.components.graphics.Image
 import com.varabyte.kobweb.silk.components.text.SpanText
 import org.dam.tfg.components.*
@@ -43,6 +44,7 @@ fun TableSelectorResumePage() {
 fun TableSelectorResumeContent() {
     var showConfirmDialog by remember { mutableStateOf(false) }
     val resourceProvider = remember { WebResourceProvider() }
+    val context = rememberPageContext()
 
     // Recuperar datos del localStorage
     val mesaTipo = BudgetManager.getMesaTipo()
@@ -116,8 +118,8 @@ fun TableSelectorResumeContent() {
         FinalConfirmDialog(
             onConfirm = {
                 showConfirmDialog = false
-                // Aquí se llamaría al cálculo final del presupuesto
-                // BudgetCalculator.calcularPresupuestoFinal()
+                // Navegar a la siguiente pantalla
+                context.router.navigateTo(Screen.TableSelectorBudget.route)
             },
             onDismiss = {
                 showConfirmDialog = false

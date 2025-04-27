@@ -98,7 +98,7 @@ Progreso:
 ### Implementado (✅)
 - Sistema completo de autenticación con JWT
 - Selección de tipo de mesa (1-4 tramos)
-- Configuración de dimensiones para cada tramo
+- Configuración de dimensiones y tipo para cada tramo
 - Selección de elementos adicionales (cubetas de diferentes tipos y dimensiones)
 - Selección de módulos (bastidores, armarios, cajoneras)
 - Interfaz adaptativa para móvil y escritorio
