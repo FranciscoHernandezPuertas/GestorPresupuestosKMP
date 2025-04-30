@@ -7,7 +7,8 @@
 Para ejecutar el proyecto, es necesario tener instalado Java 23 (se requiere Java 16 o superior). Puedes descargarlo para tu sistema operativo desde:
 
 - [Java 23](https://www.oracle.com/java/technologies/javase/jdk23-archive-downloads.html)
-  Asegúrate de que la ruta de instalación de Java esté añadida al PATH del sistema y a la variable JAVA_HOME de variables de entorno del sistema.
+  
+  (Asegúrate de que la ruta de instalación de Java esté añadida al PATH del sistema y la carpeta /bin/ a la variable JAVA_HOME de variables de entorno del sistema).
 
 
 ### Instalación de Kobweb:

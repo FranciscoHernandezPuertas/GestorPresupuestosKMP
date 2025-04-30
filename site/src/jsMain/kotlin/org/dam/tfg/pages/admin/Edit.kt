@@ -651,9 +651,7 @@ fun FormulasTab() {
     var formulaToDelete by remember { mutableStateOf<Formula?>(null) }
 
     var nombreInput by remember { mutableStateOf("") }
-    var descripcionInput by remember { mutableStateOf("") }
     var formulaInput by remember { mutableStateOf("") }
-    var aplicaAInput by remember { mutableStateOf("") }
     var variablesInput by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var nuevaVariableNombre by remember { mutableStateOf("") }
     var nuevaVariableDescripcion by remember { mutableStateOf("") }
@@ -680,7 +678,6 @@ fun FormulasTab() {
                 formulaDetail?.let {
                     nombreInput = it.name
                     formulaInput = it.formula
-                    aplicaAInput = it.aplicaA
                     variablesInput = it.variables.entries.map { entry ->
                         entry.key to entry.value
                     }
@@ -752,7 +749,7 @@ fun FormulasTab() {
                     .keyboardActions(
                         onEnter = {
                             // Primero validamos los campos
-                            if (nombreInput.isBlank() || formulaInput.isBlank() || aplicaAInput.isBlank()) {
+                            if (nombreInput.isBlank() || formulaInput.isBlank() ) {
                                 error = "Todos los campos son obligatorios"
                                 return@keyboardActions
                             }
@@ -762,7 +759,6 @@ fun FormulasTab() {
                                 name = nombreInput.trim(),
                                 formula = formulaInput.trim(),
                                 formulaEncrypted = false,  // Indica al servidor que debe encriptar
-                                aplicaA = aplicaAInput.trim(),
                                 variables = variablesInput.associate { it.first to it.second }
                             )
 
@@ -823,30 +819,12 @@ fun FormulasTab() {
                 )
 
                 TextInput(
-                    text = descripcionInput,
-                    onTextChange = { descripcionInput = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .margin(bottom = 8.px),
-                    placeholder = "Descripción"
-                )
-
-                TextInput(
                     text = formulaInput,
                     onTextChange = { formulaInput = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .margin(bottom = 8.px),
                     placeholder = "Fórmula"
-                )
-
-                TextInput(
-                    text = aplicaAInput,
-                    onTextChange = { aplicaAInput = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .margin(bottom = 16.px),
-                    placeholder = "Aplica a"
                 )
 
                 // Variables existentes
@@ -947,7 +925,7 @@ fun FormulasTab() {
                         modifier = Modifier.borderRadius(4.px).backgroundColor(Colors.Green).color(Colors.White),
                         onClick = onClick@{
                             // Primero validamos los campos
-                            if (nombreInput.isBlank() || formulaInput.isBlank() || aplicaAInput.isBlank()) {
+                            if (nombreInput.isBlank() || formulaInput.isBlank() ) {
                                 error = "Todos los campos son obligatorios"
                                 return@onClick
                             }
@@ -957,7 +935,6 @@ fun FormulasTab() {
                                 name = nombreInput.trim(),
                                 formula = formulaInput.trim(),
                                 formulaEncrypted = false,  // Indica al servidor que debe encriptar
-                                aplicaA = aplicaAInput.trim(),
                                 variables = variablesInput.associate { it.first to it.second }
                             )
 
@@ -1102,10 +1079,6 @@ fun FormulasTab() {
                                     modifier = Modifier.margin(bottom = 4.px)
                                 )
 
-                                SpanText(
-                                    "Aplica a: ${formula.aplicaA}",
-                                    modifier = Modifier.margin(bottom = 8.px)
-                                )
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1173,14 +1146,6 @@ fun FormulasTab() {
                                     .backgroundColor(Theme.Primary.rgb)
                                     .color(Colors.White)
                                     .padding(12.px)
-                                    .textAlign(TextAlign.Left)
-                                    .toAttrs()
-                            ) { Text("Aplica a") }
-                            Th(
-                                attrs = Modifier
-                                    .backgroundColor(Theme.Primary.rgb)
-                                    .color(Colors.White)
-                                    .padding(12.px)
                                     .textAlign(TextAlign.Center)
                                     .width(150.px)
                                     .toAttrs()
@@ -1215,17 +1180,6 @@ fun FormulasTab() {
                                         .whiteSpace(WhiteSpace.NoWrap)
                                         .toAttrs()
                                 ) { Text(formula.formula) }
-
-                                Td(
-                                    attrs = Modifier
-                                        .padding(12.px)
-                                        .border(1.px, LineStyle.Solid, Colors.LightGray)
-                                        .maxWidth(150.px)
-                                        .overflow(Overflow.Hidden)
-                                        .textOverflow(TextOverflow.Ellipsis)
-                                        .whiteSpace(WhiteSpace.NoWrap)
-                                        .toAttrs()
-                                ) { Text(formula.aplicaA) }
 
                                 Td(
                                     attrs = Modifier

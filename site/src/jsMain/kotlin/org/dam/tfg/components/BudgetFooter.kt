@@ -54,7 +54,8 @@ fun BudgetFooter(
     previousScreen: Screen,
     nextScreen: Screen,
     validateData: () -> Boolean,
-    saveData: () -> Unit
+    saveData: () -> Unit,
+    continueButtonText: () -> String = { "Continuar" }
 ) {
     val context = rememberPageContext()
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -65,11 +66,11 @@ fun BudgetFooter(
             .fillMaxWidth()
             .height(80.px)
             .position(Position.Fixed)
-            .bottom(0.px)  // Fijar al fondo explícitamente
-            .left(0.px)    // Fijar a la izquierda explícitamente
+            .bottom(0.px)
+            .left(0.px)
             .backgroundColor(Theme.Primary.rgb)
             .padding(leftRight = 20.px)
-            .zIndex(100),  // Asegurar que esté por encima de otros elementos
+            .zIndex(100),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -116,7 +117,7 @@ fun BudgetFooter(
                 // Envolvemos el botón "Continuar" en un Box y aplicamos un margen a la izquierda
                 Box(modifier = Modifier.margin(left = 8.px)) {
                     FooterButton(
-                        text = "Continuar",
+                        text = continueButtonText(),
                         backgroundColor = Colors.Green,
                         onClick = {
                             if (validateData()) {
@@ -135,13 +136,12 @@ fun BudgetFooter(
         }
     }
 
-            // Diálogo de confirmación para cancelar
     if (showConfirmDialog) {
         ConfirmDialog(
             message = "¿Está seguro que desea cancelar? Se perderán todos los datos introducidos.",
             onConfirm = {
                 showConfirmDialog = false
-                BudgetManager.clearAllData() // Resetear los datos
+                BudgetManager.clearAllData()
                 context.router.navigateTo(Screen.Home.route)
             },
             onDismiss = { showConfirmDialog = false }

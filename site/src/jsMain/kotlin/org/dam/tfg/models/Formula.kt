@@ -10,7 +10,6 @@ actual class Formula(
     actual val name: String,
     actual val formula: String,
     actual val formulaEncrypted: Boolean = true,
-    actual val aplicaA: String,
     actual val variables: Map<String, String>
 ) {
     actual fun toMap(): Map<String, Any> {
@@ -19,7 +18,6 @@ actual class Formula(
             "nombre" to name,
             "formula" to formula,
             "formulaEncrypted" to formulaEncrypted,
-            "aplicaA" to aplicaA,
             "variables" to variables
         )
     }

@@ -97,7 +97,7 @@ fun TableSelectorResumeContent() {
             }
 
             // Información adicional antes de continuar
-            InfoBox()
+            // InfoBox()
         }
     }
 
@@ -106,9 +106,9 @@ fun TableSelectorResumeContent() {
         previousScreen = Screen.TableSelectorModules,
         nextScreen = Screen.TableSelectorBudget,
         validateData = {
-            // Mostrar confirmación antes de continuar
-            showConfirmDialog = true
-            false // No continuar automáticamente
+            // No Mostrar confirmación antes de continuar
+            showConfirmDialog = false
+            true // Si continuar automáticamente
         },
         saveData = { /* No es necesario guardar datos aquí */ }
     )
@@ -425,7 +425,7 @@ private fun Card(content: @Composable () -> Unit) {
         content()
     }
 }
-
+/*
 @Composable
 private fun InfoBox() {
     Box(
@@ -448,7 +448,7 @@ private fun InfoBox() {
                 .textAlign(TextAlign.Center)
         )
     }
-}
+} */
 
 @Composable
 fun FinalConfirmDialog(

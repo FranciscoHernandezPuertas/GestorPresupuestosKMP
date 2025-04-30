@@ -361,7 +361,6 @@ suspend fun addFormula(context: ApiContext) {
             name = formulaDto.name,
             formula = encryptedFormula,
             formulaEncrypted = true, // Siempre marcamos como encriptada
-            aplicaA = formulaDto.aplicaA,
             variables = formulaDto.variables
         )
 
@@ -416,7 +415,6 @@ suspend fun updateFormula(context: ApiContext) {
             name = formulaDto.name,
             formula = encryptedFormula,
             formulaEncrypted = true, // Siempre marcamos como encriptada
-            aplicaA = formulaDto.aplicaA,
             variables = formulaDto.variables
         )
 
@@ -458,7 +456,6 @@ suspend fun getFormulaById(context: ApiContext) {
                 name = formula.name,
                 formula = FormulaEncryption.decrypt(formula.formula),
                 formulaEncrypted = false, // Marcamos como desencriptada para la vista
-                aplicaA = formula.aplicaA,
                 variables = formula.variables
             )
             context.res.setBodyText(Json.encodeToString(decryptedFormula))
@@ -495,7 +492,6 @@ suspend fun getAllFormulas(context: ApiContext) {
                                 name = formula.name,
                                 formula = FormulaEncryption.decrypt(formula.formula),
                                 formulaEncrypted = false,
-                                aplicaA = formula.aplicaA,
                                 variables = formula.variables
                             )
                         } else {

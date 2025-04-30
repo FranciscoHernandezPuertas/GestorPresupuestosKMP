@@ -14,4 +14,5 @@ sealed class Screen(val route: String) {
     object TableSelectorModules: Screen(route = "/budget/table/table-selector-modules")
     object TableSelectorResume: Screen(route = "/budget/table/table-selector-resume")
     object TableSelectorBudget: Screen(route = "/budget/table/table-selector-budget")
+    object PdfGenerator: Screen(route = "/budget/pdf-generator")
 }
