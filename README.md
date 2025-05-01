@@ -135,6 +135,7 @@ El módulo Android tendrá UI nativa utilizando Compose y aprovechará las venta
 - Compose: 1.7.3
 - KotlinX Serialization: 1.4.1
 - JWT: 4.2.1
+- exp4j 0.4.8
 ```
 
 ## Licencia

@@ -81,60 +81,6 @@ object BudgetManager {
     }
 
 
-    // Métodos para cubetas
-    fun saveCubetasData(cubetas: List<Cubeta>) {
-        localStorage["cubetas_data"] = Json.encodeToString(cubetas)
-    }
-
-    fun getCubetasData(): List<Cubeta> {
-        val cubetasJson = localStorage["cubetas_data"]
-        return if (!cubetasJson.isNullOrBlank()) {
-            try {
-                Json.decodeFromString(cubetasJson)
-            } catch (e: Exception) {
-                emptyList()
-            }
-        } else {
-            emptyList()
-        }
-    }
-
-    // Métodos para módulos
-    fun saveModulosData(modulos: List<Modulo>) {
-        localStorage["modulos_data"] = Json.encodeToString(modulos)
-    }
-
-    fun getModulosData(): List<Modulo> {
-        val modulosJson = localStorage["modulos_data"]
-        return if (!modulosJson.isNullOrBlank()) {
-            try {
-                Json.decodeFromString(modulosJson)
-            } catch (e: Exception) {
-                emptyList()
-            }
-        } else {
-            emptyList()
-        }
-    }
-
-    // Estado del formulario
-    fun saveFormState(state: Map<String, Boolean>) {
-        localStorage["form_state"] = Json.encodeToString(state)
-    }
-
-    fun getFormState(): Map<String, Boolean> {
-        val stateJson = localStorage["form_state"]
-        return if (!stateJson.isNullOrBlank()) {
-            try {
-                Json.decodeFromString(stateJson)
-            } catch (e: Exception) {
-                emptyMap()
-            }
-        } else {
-            emptyMap()
-        }
-    }
-
     // Métodos adicionales para errores o validaciones
     fun setCubetaError(error: String) {
         repository.setCubetaError(error)

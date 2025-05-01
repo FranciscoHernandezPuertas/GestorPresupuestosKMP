@@ -8,6 +8,7 @@ serialization = "1.4.1"
 foundation-layout-android = "1.7.8"
 ktor = "2.3.2"
 java-jwt = "4.2.1"
+exp4j = "0.4.8"
 
 [libraries]
 # MongoDB Official Driver
@@ -30,6 +31,7 @@ ksp-api = { group = "com.google.devtools.ksp", name = "symbol-processing-api", v
 foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundation-layout-android" }
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 java-jwt = { module = "com.auth0:java-jwt", version.ref = "java-jwt" }
+exp4j = { module = "net.objecthunter:exp4j", version.ref = "exp4j" }
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

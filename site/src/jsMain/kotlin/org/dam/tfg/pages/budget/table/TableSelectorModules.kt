@@ -78,7 +78,11 @@ fun TableSelectorModulesContent() {
 
     // Función para guardar en localStorage
     fun guardarModulosSeleccionados() {
-        BudgetManager.saveModulos(modulosSeleccionados)
+        // Asegurar que cada módulo tenga un precio (aunque sea 0.0 inicialmente)
+        val modulosConPrecio = modulosSeleccionados.map { modulo ->
+            modulo.copy(precio = modulo.precio)
+        }
+        BudgetManager.saveModulos(modulosConPrecio)
     }
 
     // Timer para cerrar automáticamente el mensaje de éxito
@@ -97,7 +101,7 @@ fun TableSelectorModulesContent() {
     }
 
     // Función para añadir un nuevo módulo
-    fun añadirModulo(nombre: String, largo: Double, fondo: Double, alto: Double) {
+    fun anadirModulo(nombre: String, largo: Double, fondo: Double, alto: Double) {
         // Comprobar si ya existe un módulo idéntico
         val moduloExistente = modulosSeleccionados.find {
             it.nombre == nombre &&
@@ -218,7 +222,7 @@ fun TableSelectorModulesContent() {
                     ModulosGrid(
                         modulos = modulosConstantes.values.toList(),
                         onAddModule = { nombre, largo, fondo, alto ->
-                            añadirModulo(nombre, largo, fondo, alto)
+                            anadirModulo(nombre, largo, fondo, alto)
                         },
                         numColumnas = numColumnas,
                         resourceProvider = resourceProvider,

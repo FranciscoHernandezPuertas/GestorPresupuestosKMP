@@ -186,6 +186,14 @@ fun TableSelectorCubetasContent() {
         return true
     }
 
+    fun guardarCubetasConPrecio(cubetas: List<Cubeta>) {
+        // Asegurar que cada cubeta tenga un precio (aunque sea 0.0 inicialmente)
+        val cubetasConPrecio = cubetas.map {
+            it.copy(precio = it.precio ?: 0.0)
+        }
+        BudgetManager.saveCubetas(cubetasConPrecio)
+    }
+
     // Calcular valores responsivos
     val contentWidth = if (breakpoint >= Breakpoint.MD) 80.percent else 95.percent
     val isFlexColumn = breakpoint < Breakpoint.MD
@@ -313,7 +321,8 @@ fun TableSelectorCubetasContent() {
         previousScreen = Screen.TableSelectorElements,
         nextScreen = Screen.TableSelectorModules,
         validateData = { guardarSelecciones() },
-        saveData = { /* Opcional: lógica adicional al guardar */ }
+        saveData = { guardarCubetasConPrecio(cubetasSeleccionadas)
+        }
     )
 }
 

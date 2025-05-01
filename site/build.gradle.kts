@@ -56,6 +56,7 @@ kotlin {
             implementation(libs.mongodb.driver.kotlin.coroutine)
             implementation(libs.bson.kotlinx)
             implementation(libs.java.jwt)
+            implementation(libs.exp4j)
 
         }
         dependencies {

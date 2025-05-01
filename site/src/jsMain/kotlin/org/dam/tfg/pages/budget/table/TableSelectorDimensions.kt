@@ -438,7 +438,7 @@ fun TableSelectorDimensionsContent() {
             saveData = {
                 BudgetManager.saveMesaData(
                     tipoMesa = selectedTramoCount.toString(),
-                    tramos = tramos,
+                    tramos = tramos.map { it.copy(precio = 0.0) }, // Añadir precio aquí
                     extras = BudgetManager.getElementosNombres(),
                     precioTotal = 0.0
                 )
