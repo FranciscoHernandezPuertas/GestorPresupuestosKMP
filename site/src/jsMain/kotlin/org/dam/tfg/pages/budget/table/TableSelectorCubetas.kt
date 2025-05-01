@@ -150,7 +150,7 @@ fun TableSelectorCubetasContent() {
             largo = largo,
             fondo = fondo,
             alto = alto,
-            maxQuantity = maxQuantity
+            precio = 0.0
         )
 
         val nuevaListaCubetas = cubetasSeleccionadas + nuevaCubeta

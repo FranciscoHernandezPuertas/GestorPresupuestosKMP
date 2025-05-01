@@ -140,7 +140,8 @@ fun TableSelectorDimensionsContent() {
                     numero = index + 1,
                     largo = 0.0,
                     ancho = 0.0,
-                    tipo = TipoTramo.CENTRAL
+                    tipo = TipoTramo.CENTRAL,
+                    precio = 0.0
                 )
             }
         }
@@ -158,7 +159,8 @@ fun TableSelectorDimensionsContent() {
                         numero = tramos.size + index + 1,
                         largo = 0.0,
                         ancho = 0.0,
-                        tipo = TipoTramo.CENTRAL
+                        tipo = TipoTramo.CENTRAL,
+                        precio = 0.0
                     )
                 }
             } else {

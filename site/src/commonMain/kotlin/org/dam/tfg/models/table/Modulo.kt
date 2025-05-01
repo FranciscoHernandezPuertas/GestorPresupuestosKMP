@@ -10,12 +10,21 @@ data class Modulo(
     val fondo: Double,
     val alto: Double,
     val cantidad: Int,
-    val limite: ItemWithLimits
+    val limite: ItemWithLimits,
+    val precio: Double = 0.0,
 )
 
 @Serializable
 data class ElementoSeleccionado(
     val nombre: String,
     val cantidad: Int,
+    val precio: Double = 0.0,
     val limite: ItemWithLimits
+)
+
+@Serializable
+data class ElementoDetail(
+    val nombre: String,
+    val cantidad: Int = 0,
+    val precio: Double = 0.0
 )

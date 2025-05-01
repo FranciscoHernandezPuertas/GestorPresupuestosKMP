@@ -11,7 +11,7 @@ data class Cubeta(
     val alto: Double? = null,
     val precio: Double = 0.0,
     var error: String = "",
-    val maxQuantity: Int?,
+    val maxQuantity: Int? = null,
     val minQuantity: Int = 0,
 ) {
     fun calcularPrecio(): Double {

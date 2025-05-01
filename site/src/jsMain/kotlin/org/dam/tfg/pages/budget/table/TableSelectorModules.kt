@@ -121,6 +121,7 @@ fun TableSelectorModulesContent() {
                 fondo = fondo,
                 alto = alto,
                 cantidad = 1,
+                precio = 0.0,
                 limite = limite
             )
 

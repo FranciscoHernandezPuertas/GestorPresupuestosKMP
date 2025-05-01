@@ -213,13 +213,16 @@ private fun MesaResumen(tipoMesa: String, tramos: List<Tramo>, resourceProvider:
 }
 
 @Composable
-private fun ElementosResumen(elementos: Map<String, Int>, resourceProvider: WebResourceProvider) {
+private fun ElementosResumen(elementos: Map<String, Map<String, Int>>, resourceProvider: WebResourceProvider) {
     Card {
         Column(
             modifier = Modifier.fillMaxWidth().padding(15.px)
         ) {
-            elementos.entries.forEach { (elemento, cantidad) ->
-                if (cantidad > 0) {
+            elementos.entries.forEach { (elemento, detalles) ->
+                // Verificamos si hay algún valor mayor que 0 en el mapa de detalles
+                val cantidadTotal = detalles["cantidad"] ?: 0
+
+                if (cantidadTotal > 0) {
                     val imageKey = getElementoImageKey(elemento)
 
                     Row(
@@ -247,7 +250,7 @@ private fun ElementosResumen(elementos: Map<String, Int>, resourceProvider: WebR
                         }
 
                         // Nombre y cantidad
-                        ResumeItem(elemento, "$cantidad unidades")
+                        ResumeItem(elemento, "$cantidadTotal unidades")
                     }
                 }
             }

@@ -94,36 +94,32 @@ fun TableSelectorElementsContent() {
     val titleFontSize = if (breakpoint >= Breakpoint.MD) 24.px else 20.px
 
     // Función para guardar en localStorage
+    // Modificación 1: Cambiar la estructura de datos para elementos
     fun guardarEnLocalStorage() {
-        val cantidadesElementos = elementosSeleccionados.associate { it.nombre to it.cantidad }
-
-        BudgetManager.saveMesaData(
-            tipoMesa = BudgetManager.getMesaTipo(),
-            tramos = BudgetManager.getMesaTramos(),
-            extras = cantidadesElementos.keys.toList(),
-            precioTotal = BudgetManager.getMesaPrecioTotal()
-        )
-        BudgetManager.saveElementosData(cantidadesElementos)
+        val elementosConPrecio = elementosSeleccionados.associate { elemento ->
+            elemento.nombre to mapOf(
+                "cantidad" to elemento.cantidad,
+                "precio" to elemento.precio.toInt() // Asumiendo que precio es Double
+            )
+        }
+        BudgetManager.saveElementosData(elementosConPrecio)
     }
 
-    // Cargar elementos guardados previamente
+// Al cargar los datos guardados (en el LaunchedEffect)
     LaunchedEffect(Unit) {
-        val elementosGuardados = BudgetManager.getElementosNombres()
-        val cantidadesGuardadas = BudgetManager.getElementosData()
-
-        if (elementosGuardados.isNotEmpty()) {
-            val elementos = elementosGuardados.mapNotNull { nombreElemento ->
-                val limite = ElementosConstantesLimites.getItemWithLimitsForElementoGeneral(nombreElemento)
-                if (limite != null) {
-                    ElementoSeleccionado(
-                        nombre = nombreElemento,
-                        cantidad = cantidadesGuardadas[nombreElemento] ?: 1,
-                        limite = limite
-                    )
-                } else null
+        val elementosGuardados = BudgetManager.getElementosData()
+        val elementosCargados = elementosGuardados.mapNotNull { (nombre, datos) ->
+            val limite = ElementosConstantesLimites.getItemWithLimitsForElementoGeneral(nombre)
+            limite?.let {
+                ElementoSeleccionado(
+                    nombre = nombre,
+                    cantidad = datos["cantidad"] ?: 1, // Valor por defecto si no existe
+                    precio = (datos["precio"] ?: 0).toDouble(), // Valor por defecto si no existe
+                    limite = limite
+                )
             }
-            elementosSeleccionados = elementos
         }
+        elementosSeleccionados = elementosCargados
     }
     Box(
         modifier = Modifier

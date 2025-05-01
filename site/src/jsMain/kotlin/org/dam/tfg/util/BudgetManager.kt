@@ -56,11 +56,13 @@ object BudgetManager {
     }
 
     // Elementos
-    fun saveElementosData(elementos: Map<String, Int>) {
+    // Función modificada para guardar elementos con cantidad y precio
+    fun saveElementosData(elementos: Map<String, Map<String, Int>>) {
         localStorage["elementos_data"] = Json.encodeToString(elementos)
     }
 
-    fun getElementosData(): Map<String, Int> {
+    // Función modificada para obtener elementos con cantidad y precio
+    fun getElementosData(): Map<String, Map<String, Int>> {
         val elementosJson = localStorage["elementos_data"]
         return if (!elementosJson.isNullOrBlank()) {
             try {
@@ -73,9 +75,11 @@ object BudgetManager {
         }
     }
 
+    // Obtener solo los nombres de los elementos
     fun getElementosNombres(): List<String> {
         return getElementosData().keys.toList()
     }
+
 
     // Métodos para cubetas
     fun saveCubetasData(cubetas: List<Cubeta>) {
