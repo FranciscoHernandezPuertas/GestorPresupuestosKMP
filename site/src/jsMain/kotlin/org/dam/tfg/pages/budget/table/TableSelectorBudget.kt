@@ -11,6 +11,7 @@ import com.varabyte.kobweb.core.Page
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
 import org.dam.tfg.components.LoadingIndicator
@@ -166,35 +167,42 @@ private suspend fun calcularPresupuesto(
     onError: (String) -> Unit
 ) {
     try {
-        // Estructura para enviar al backend
+        // Cargar fórmulas necesarias
+        val userType = localStorage.getItem("userType") ?: "user"
+        val formulas = getAllFormulas(userType)
+            .associateBy { it.name }
+
+        // Realizar cálculos localmente para optimizar
+        val (precioTotal, desglose) = BudgetManager.calcularPresupuesto(formulas)
+
+        // Validar resultado en el backend (opcional)
         val mesaData = Mesa(
             tipo = BudgetManager.getMesaTipo(),
             tramos = tramos,
             elementosGenerales = elementosGenerales,
             cubetas = cubetas,
             modulos = modulos,
-            precioTotal = 0.0, // Este valor se calculará en el servidor
+            precioTotal = precioTotal,
             error = ""
         )
 
-        // Llamada segura al backend para calcular el presupuesto
-        // Esta es una implementación simulada - deberás crear este endpoint
+        // Llamada al backend para validar los cálculos
         val result = window.api.tryPost(
-            apiPath = "budget/calculate",
-            body = kotlinx.serialization.json.Json.encodeToString(Mesa.serializer(), mesaData).encodeToByteArray()
+            apiPath = "budget/validate",
+            body = Json.encodeToString(Mesa.serializer(), mesaData).encodeToByteArray()
         )
 
-        result?.decodeToString()?.let { jsonResponse ->
-            try {
-                val response = kotlinx.serialization.json.Json.decodeFromString(BudgetResponse.serializer(), jsonResponse)
-                onResult(response.precioTotal, response.desglose)
-            } catch (e: Exception) {
-                onError("Error al procesar la respuesta del servidor: ${e.message}")
-            }
-        } ?: onError("No se recibió respuesta del servidor")
+        // Procesar respuesta o usar cálculo local si no hay respuesta
+        if (result != null) {
+            val responseStr = result.decodeToString()
+            val response = Json.decodeFromString(BudgetResponse.serializer(), responseStr)
+            onResult(response.precioTotal, response.desglose)
+        } else {
+            onResult(precioTotal, desglose)
+        }
 
     } catch (e: Exception) {
-        onError("Error: ${e.message}")
+        onError("Error al calcular presupuesto: ${e.message}")
     }
 }
 
