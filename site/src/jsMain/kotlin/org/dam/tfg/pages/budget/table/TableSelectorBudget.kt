@@ -175,6 +175,7 @@ private suspend fun calcularPresupuesto(
         // Realizar cálculos localmente para optimizar
         val (precioTotal, desglose) = BudgetManager.calcularPresupuesto(formulas)
 
+
         // Validar resultado en el backend (opcional)
         val mesaData = Mesa(
             tipo = BudgetManager.getMesaTipo(),
@@ -187,6 +188,7 @@ private suspend fun calcularPresupuesto(
         )
 
         // Llamada al backend para validar los cálculos
+
         val result = window.api.tryPost(
             apiPath = "budget/validate",
             body = Json.encodeToString(Mesa.serializer(), mesaData).encodeToByteArray()

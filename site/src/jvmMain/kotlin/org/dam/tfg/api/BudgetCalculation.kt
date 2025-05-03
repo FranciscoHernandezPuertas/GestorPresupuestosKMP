@@ -109,10 +109,12 @@ private fun calcularPrecioTramo(
         formulaTramo.formula
     }
 
+
     // Crear variables para la evaluación de la fórmula
     val variables = mutableMapOf<String, Double>()
     variables["largo"] = tramo.largo
     variables["ancho"] = tramo.ancho
+    variables["areaTramo"] = tramo.largo * tramo.ancho  // Añadir esta línea
     variables["superficie"] = tramo.largo * tramo.ancho
 
     // Añadir los precios de materiales a las variables

@@ -654,7 +654,7 @@ fun FormulasTab() {
     var formulaInput by remember { mutableStateOf("") }
     var variablesInput by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var nuevaVariableNombre by remember { mutableStateOf("") }
-    var nuevaVariableDescripcion by remember { mutableStateOf("") }
+    var nuevaVariableValor by remember { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
     val breakpoint = rememberBreakpoint()
@@ -836,16 +836,35 @@ fun FormulasTab() {
                             .fontWeight(FontWeight.Bold)
                     )
 
-                    variablesInput.forEachIndexed { index, (nombre, descripcion) ->
+                    variablesInput.forEachIndexed { index, (nombre, valor) -> // Cambiar descripcion a valor
                         Row(
                             modifier = Modifier.margin(bottom = 8.px).fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             SpanText(
-                                text = "$nombre: $descripcion",
-                                modifier = Modifier.fillMaxWidth(80.percent)
+                                text = "$nombre: $valor", // Cambiar descripcion a valor
+                                modifier = Modifier.fillMaxWidth(60.percent)
                             )
 
+                            // Botón de Editar
+                            Button(
+                                onClick = {
+                                    // Cargar los valores actuales en los campos de nueva variable
+                                    nuevaVariableNombre = nombre
+                                    nuevaVariableValor = valor
+                                    // Eliminar la variable actual de la lista
+                                    variablesInput = variablesInput.toMutableList().also { it.removeAt(index) }
+                                },
+                                modifier = Modifier
+                                    .margin(right = 8.px)
+                                    .borderRadius(4.px)
+                                    .backgroundColor(Theme.Secondary.rgb)
+                                    .color(Colors.White)
+                            ) {
+                                SpanText("Editar")
+                            }
+
+                            // Botón de Eliminar
                             Button(
                                 onClick = {
                                     variablesInput = variablesInput.toMutableList().also { it.removeAt(index) }
@@ -882,10 +901,10 @@ fun FormulasTab() {
                     )
 
                     TextInput(
-                        text = nuevaVariableDescripcion,
-                        onTextChange = { nuevaVariableDescripcion = it },
+                        text = nuevaVariableValor,
+                        onTextChange = { nuevaVariableValor = it },
                         modifier = Modifier.margin(right = 8.px).width(40.percent),
-                        placeholder = "Descripción"
+                        placeholder = "Valor"
                     )
 
                     Button(
@@ -893,9 +912,9 @@ fun FormulasTab() {
                             .backgroundColor(Theme.Primary.rgb).color(Colors.White),
                         onClick = {
                             if (nuevaVariableNombre.isNotEmpty()) {
-                                variablesInput = variablesInput + (nuevaVariableNombre to nuevaVariableDescripcion)
+                                variablesInput = variablesInput + (nuevaVariableNombre to nuevaVariableValor)
                                 nuevaVariableNombre = ""
-                                nuevaVariableDescripcion = ""
+                                nuevaVariableValor = ""
                             }
                         }
                     ) {

@@ -21,10 +21,3 @@ data class ElementoSeleccionado(
     val precio: Double = 0.0,
     val limite: ItemWithLimits
 )
-
-@Serializable
-data class ElementoDetail(
-    val nombre: String,
-    val cantidad: Int = 0,
-    val precio: Double = 0.0
-)
