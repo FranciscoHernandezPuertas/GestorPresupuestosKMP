@@ -110,7 +110,9 @@ object BudgetManager {
     }
 
     fun getElementosNombres(): List<String> {
-        return elementosSeleccionados.keys.toList()
+        // Obtener directamente de los datos almacenados
+        val elementosData = getElementosData()
+        return elementosData.keys.toList()
     }
 
     fun getElementosData(): Map<String, Map<String, Int>> {
@@ -220,11 +222,12 @@ object BudgetManager {
         val tramos = getMesaTramos()
         val cubetas = getCubetas()
         val modulos = getModulos()
-        val elementos = getElementosNombres().map { nombre ->
+        val elementosData = getElementosData()
+        val elementos = elementosData.map { (nombre, datos) ->
             ElementoSeleccionado(
                 nombre = nombre,
-                cantidad = getElementoCantidad(nombre),
-                precio = getElementoCantidad(nombre) * 10.0,  // Precio base provisional
+                cantidad = datos["cantidad"] ?: 0,
+                precio = (datos["precio"] ?: 0).toDouble(),
                 limite = org.dam.tfg.models.ItemWithLimits(name = nombre)
             )
         }
@@ -361,19 +364,39 @@ object BudgetManager {
             }
         }
 
-        // Calcular precios para elementos generales
+        // Añadir logs para depuración
+        console.log("Elementos a calcular: ${elementos.size} - ${elementos.map { it.nombre }}")
+
         // Calcular precios para elementos generales
         elementos.forEach { elemento ->
-            val formulaElementos = formulas["Elementos"]
+            // Dentro de calcularPresupuesto en BudgetManager.kt
+            // Imprimir todas las fórmulas disponibles para depuración
+            console.log("Fórmulas disponibles: ${formulas.keys.joinToString()}")
+
+            val formulaElementos = formulas["Elementos"] 
+                ?: formulas.entries.find { it.key.equals("Elementos", ignoreCase = true) }?.value
+                
+            if (formulaElementos != null) {
+                console.log("Fórmula de elementos encontrada: ${formulaElementos.name}")
+                console.log("Variables disponibles: ${formulaElementos.variables.keys.joinToString()}")
+            } else {
+                console.log("No se encontró la fórmula para Elementos")
+            }
 
             if (formulaElementos != null) {
-                // Construir el nombre de la variable según el formato "tipo" + nombre del elemento sin espacios
-                val nombreVariable = "tipo" + elemento.nombre.replace(" ", "")
+                // Construir el nombre correctamente preservando mayúsculas
+                val palabras = elemento.nombre.split(" ")
+                val nombreNormalizado = palabras.mapIndexed { index, palabra ->
+                    if (index == 0) palabra else palabra.replaceFirstChar { it.uppercase() }
+                }.joinToString("")
+
+                val nombreVariable = "tipo$nombreNormalizado"
 
                 console.log("Elemento: ${elemento.nombre}, variable buscada: $nombreVariable")
 
-                // Verificar si existe la variable en la fórmula
+                // Verificar si existe la variable en la fórmula (case sensitive)
                 val valorTipo = formulaElementos.variables[nombreVariable]?.toDoubleOrNull() ?: 0.0
+                console.log("Valor encontrado para $nombreVariable: $valorTipo")
 
                 // Añadir esta variable específica al mapa de variables para la evaluación
                 val elementoVariables = variables.toMutableMap()
@@ -388,17 +411,18 @@ object BudgetManager {
                 desglose["elemento_${elemento.nombre}"] = precioElemento
                 precioTotal += precioElemento
             } else {
+                console.log("No se encontró fórmula para Elementos")
                 // Si no hay fórmula, usar el precio predeterminado
                 desglose["elemento_${elemento.nombre}"] = elemento.precio * elemento.cantidad
                 precioTotal += elemento.precio * elemento.cantidad
             }
         }
 
-
-
-
-
-// Asegurarnos de que el precio total incluye todos los componentes
+        // Cálculo del precio total correcto sumando todos los componentes
+        precioTotal = 0.0  // Reiniciar para asegurar
+        desglose.forEach { (_, valor) ->
+            precioTotal += valor  // Sumar cada componente del desglose
+        }
         console.log("Precio total calculado: $precioTotal (Desglose: ${desglose.values.sum()})")
         saveMesaPrecioTotal(precioTotal)
         return Pair(precioTotal, desglose)
@@ -430,15 +454,4 @@ object BudgetManager {
         }
     }
 
-    // Precarga los materiales para tenerlos disponibles cuando se necesiten
-    fun precargarMateriales() {
-        GlobalScope.launch {
-            try {
-                val materials = getAllMaterials()
-                console.log("Materiales precargados: ${materials.keys.joinToString()}")
-            } catch (e: Exception) {
-                console.error("Error al precargar materiales: ${e.message}")
-            }
-        }
-    }
 }

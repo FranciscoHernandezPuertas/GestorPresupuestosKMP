@@ -34,7 +34,7 @@ suspend fun calculateBudget(context: ApiContext) {
         val materiales = mongoDB.getAllMaterials()
 
         // Calcular el presupuesto
-        val resultado = calculateFullBudget(mesa, formulas, materiales)
+        val resultado = calculateFullBudget(mesa, formulas, materiales, context)
 
         // Devolver el resultado
         context.res.setBodyText(Json.encodeToString(resultado))
@@ -57,16 +57,25 @@ data class BudgetResult(
 private suspend fun calculateFullBudget(
     mesa: Mesa,
     formulas: List<Formula>,
-    materiales: List<Material>
+    materiales: List<Material>,
+    context: ApiContext
 ): BudgetResult {
     val desglose = mutableMapOf<String, Double>()
     var precioTotal = 0.0
+
+    // Añadir logs para depuración
+    context.logger.info("Calculando presupuesto para mesa tipo: ${mesa.tipo}")
+    context.logger.info("Número de tramos: ${mesa.tramos.size}")
+    context.logger.info("Número de cubetas: ${mesa.cubetas.size}")
+    context.logger.info("Número de módulos: ${mesa.modulos.size}")
+    context.logger.info("Número de elementos generales: ${mesa.elementosGenerales.size}")
 
     // Calcular precio de tramos
     mesa.tramos.forEachIndexed { index, tramo ->
         val precioTramo = calcularPrecioTramo(tramo, formulas, materiales)
         desglose["tramo_$index"] = precioTramo
         precioTotal += precioTramo
+        context.logger.info("Precio tramo $index: $precioTramo")
     }
 
     // Calcular precio de cubetas
@@ -74,6 +83,7 @@ private suspend fun calculateFullBudget(
         val precioCubeta = calcularPrecioCubeta(cubeta, formulas, materiales)
         desglose["cubeta_$index"] = precioCubeta
         precioTotal += precioCubeta
+        context.logger.info("Precio cubeta $index: $precioCubeta")
     }
 
     // Calcular precio de módulos
@@ -81,6 +91,7 @@ private suspend fun calculateFullBudget(
         val precioModulo = calcularPrecioModulo(modulo, formulas, materiales)
         desglose["modulo_$index"] = precioModulo
         precioTotal += precioModulo
+        context.logger.info("Precio módulo $index: $precioModulo")
     }
 
     // Calcular precio de elementos generales
@@ -88,8 +99,10 @@ private suspend fun calculateFullBudget(
         val precioElemento = elemento.precio * elemento.cantidad
         desglose["elemento_${elemento.nombre}"] = precioElemento
         precioTotal += precioElemento
+        context.logger.info("Precio elemento ${elemento.nombre}: $precioElemento")
     }
 
+    context.logger.info("Precio total calculado: $precioTotal")
     return BudgetResult(precioTotal, desglose)
 }
 
