@@ -130,28 +130,46 @@ fun TableSelectorBudget() {
             presupuestoCalculado && error == null
         },
         saveData = {
-            // Guardar datos del presupuesto final
+            // Actualizar objetos con sus precios calculados
+            val tramosConPrecio = tramos.mapIndexed { index, tramo ->
+                tramo.copy(precio = presupuestoDesglosado["tramo_$index"] ?: tramo.precio)
+            }
+
+            val cubetasConPrecio = cubetas.mapIndexed { index, cubeta ->
+                cubeta.copy(precio = presupuestoDesglosado["cubeta_$index"] ?: cubeta.precio)
+            }
+
+            val modulosConPrecio = modulos.mapIndexed { index, modulo ->
+                modulo.copy(precio = presupuestoDesglosado["modulo_$index"] ?: modulo.precio)
+            }
+
+            // Guardar elementos con precios
+            val elementosConPrecio = elementosGenerales.associate { elemento ->
+                elemento.nombre to mapOf(
+                    "cantidad" to elemento.cantidad,
+                    "precio" to (presupuestoDesglosado["elemento_${elemento.nombre}"] ?: elemento.precio).toInt()
+                )
+            }
+
+            // Guardar en localStorage
+            BudgetManager.saveMesaTramos(tramosConPrecio)
+            BudgetManager.saveCubetas(cubetasConPrecio)
+            BudgetManager.saveModulos(modulosConPrecio)
+            BudgetManager.saveElementosData(elementosConPrecio)
+
+            // Guardar precio total
             BudgetManager.saveMesaPrecioTotal(precioTotal)
 
-            // Crear el objeto Mesa completo para guardar
+            // Crear el objeto Mesa para el PDF con los valores actualizados
             val mesa = Mesa(
                 tipo = BudgetManager.getMesaTipo(),
-                tramos = tramos,
+                tramos = tramosConPrecio,
                 elementosGenerales = elementosGenerales,
-                cubetas = cubetas,
-                modulos = modulos,
+                cubetas = cubetasConPrecio,
+                modulos = modulosConPrecio,
                 precioTotal = precioTotal,
                 error = ""
             )
-
-            // Guardar para usar en la generación del PDF
-            coroutineScope.launch {
-                // No guardamos la mesa en localStorage, para mantener la seguridad
-                // Solo guardamos los elementos necesarios para la visualización
-
-                // Esta parte se realizaría en la página de generación del PDF
-                // addMesa(mesa)
-            }
         },
         continueButtonText = { "Aceptar y generar PDF" }
     )
@@ -217,8 +235,6 @@ private fun PresupuestoDesglosado(
     presupuestoDesglosado: Map<String, Double>,
     precioTotal: Double
 ) {
-    // Implementar la visualización del presupuesto desglosado
-    // Solo mostrar resultados finales, no fórmulas ni cálculos
     Column(modifier = Modifier.fillMaxWidth().padding(16.px)) {
         // Sección de tramos
         Section("Tramos") {

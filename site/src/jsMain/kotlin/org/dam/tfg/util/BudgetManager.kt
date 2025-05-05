@@ -419,11 +419,13 @@ object BudgetManager {
         }
 
         // Cálculo del precio total correcto sumando todos los componentes
+        // Asegurar que el precio total es correcto
         precioTotal = 0.0  // Reiniciar para asegurar
-        desglose.forEach { (_, valor) ->
+        desglose.forEach { (clave, valor) ->
+            console.log("Sumando componente $clave: $valor al precio total")
             precioTotal += valor  // Sumar cada componente del desglose
         }
-        console.log("Precio total calculado: $precioTotal (Desglose: ${desglose.values.sum()})")
+        console.log("Precio total calculado: $precioTotal")
         saveMesaPrecioTotal(precioTotal)
         return Pair(precioTotal, desglose)
     }
