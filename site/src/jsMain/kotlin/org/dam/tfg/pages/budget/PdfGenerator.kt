@@ -51,6 +51,9 @@ fun PdfGenerator() {
 
     LaunchedEffect(Unit) {
         try {
+            // Obtener la fecha actual
+            val fechaActual = getCurrentDateTime()
+
             // Crear objeto Mesa con todos los datos guardados y sus precios correctos
             val mesaData = Mesa(
                 tipo = BudgetManager.getMesaTipo(),
@@ -66,6 +69,7 @@ fun PdfGenerator() {
                 cubetas = BudgetManager.getCubetas(),
                 modulos = BudgetManager.getModulos(),
                 precioTotal = BudgetManager.getMesaPrecioTotal(),
+                fechaCreacion = fechaActual, // Añadir la fecha actual
                 error = ""
             )
 
@@ -81,8 +85,8 @@ fun PdfGenerator() {
                     id = generateUUID(),
                     userId = userId,
                     action = "Generación de presupuesto",
-                    timestamp = getCurrentDateTime(),
-                    details = "Mesa tipo: ${mesaData.tipo}, Precio: ${mesaData.precioTotal}€"
+                    timestamp = fechaActual, // Usar la misma fecha para consistencia
+                    details = "Mesa tipo: ${mesaData.tipo}, Precio: ${mesaData.precioTotal}€, Fecha: $fechaActual"
                 )
                 addHistory(historyEntry)
 
@@ -207,6 +211,7 @@ private fun generateAndDownloadPdf(mesa: Mesa, username: String) {
     val logoPath = Res.Image.logo
     val mesaTipo = mesa.tipo
     val mesaPrecioTotal = mesa.precioTotal.toString()
+    val fechaCreacion = mesa.fechaCreacion ?: getCurrentDateTime() // Usar la fecha guardada o generar una nueva
 
     // Serializar colecciones a JSON
     val tramosJson = Json.encodeToString(mesa.tramos)
@@ -230,6 +235,7 @@ private fun generateAndDownloadPdf(mesa: Mesa, username: String) {
                 username: "${username}",
                 mesaTipo: "${mesaTipo}",
                 mesaPrecioTotal: ${mesaPrecioTotal},
+                fechaCreacion: "${fechaCreacion}",
                 tramos: ${tramosJson},
                 cubetas: ${cubetasJson},
                 modulos: ${modulosJson},
@@ -249,7 +255,7 @@ private fun generateAndDownloadPdf(mesa: Mesa, username: String) {
                 
                 // Añadir logo
                 try {
-                    doc.addImage(window._pdfData.logoPath, 'PNG', 15, 10, 50, 25);
+                    doc.addImage(window._pdfData.logoPath, 'SVG', 15, 10, 50, 25);
                 } catch(e) {
                     console.error('Error al cargar el logo:', e);
                 }
@@ -260,11 +266,11 @@ private fun generateAndDownloadPdf(mesa: Mesa, username: String) {
                 doc.text('PRESUPUESTO', 105, 20, null, null, 'center');
                 
                 // Información del cliente y fecha
-                const fechaActual = new Date().toLocaleDateString('es-ES');
+                const fechaFormateada = new Date(window._pdfData.fechaCreacion).toLocaleDateString('es-ES');
                 doc.setFontSize(10);
                 doc.setTextColor(0, 0, 0);
                 doc.text('Cliente: ' + window._pdfData.username, 140, 35);
-                doc.text('Fecha: ' + fechaActual, 140, 40);
+                doc.text('Fecha: ' + fechaFormateada, 140, 40);
                 doc.text('Ref: PR-' + Math.floor(Math.random()*10000), 140, 45);
                 
                 // Línea separadora

@@ -13,8 +13,11 @@ actual class Mesa(
     actual val cubetas: List<Cubeta>,
     actual val modulos: List<Modulo>,
     actual val precioTotal: Double,
+    actual val fechaCreacion: String?,
     actual var error: String
 ) {
+
+
     actual fun isValid(): Boolean {
         if (tramos.isEmpty()) {
             error = "Una mesa debe tener al menos un tramo"

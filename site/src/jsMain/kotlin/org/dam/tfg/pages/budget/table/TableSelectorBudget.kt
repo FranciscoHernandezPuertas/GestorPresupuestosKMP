@@ -168,6 +168,7 @@ fun TableSelectorBudget() {
                 cubetas = cubetasConPrecio,
                 modulos = modulosConPrecio,
                 precioTotal = precioTotal,
+                fechaCreacion = null,
                 error = ""
             )
         },
@@ -202,6 +203,7 @@ private suspend fun calcularPresupuesto(
             cubetas = cubetas,
             modulos = modulos,
             precioTotal = precioTotal,
+            fechaCreacion = null,
             error = ""
         )
 

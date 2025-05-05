@@ -10,6 +10,7 @@ expect class Mesa {
     val cubetas: List<Cubeta>
     val modulos: List<Modulo>
     val precioTotal: Double
+    val fechaCreacion: String?
     var error: String
 
     fun isValid(): Boolean

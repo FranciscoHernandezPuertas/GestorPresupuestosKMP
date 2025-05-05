@@ -29,6 +29,7 @@ class BudgetRepositoryJs : BudgetRepository {
                     modulos = emptyList(),
                     elementosGenerales = emptyList(),
                     precioTotal = 0.0,
+                    fechaCreacion = null,
                     error = ""
                 )
             }
@@ -40,6 +41,7 @@ class BudgetRepositoryJs : BudgetRepository {
                 modulos = emptyList(),
                 elementosGenerales = emptyList(),
                 precioTotal = 0.0,
+                fechaCreacion = null,
                 error = ""
             )
         }

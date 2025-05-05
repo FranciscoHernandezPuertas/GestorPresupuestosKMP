@@ -14,6 +14,7 @@ actual class Mesa(
     actual val cubetas: List<Cubeta>,
     actual val modulos: List<Modulo>,
     actual val precioTotal: Double,
+    actual val fechaCreacion: String?,
     actual var error: String
 ) {
 
