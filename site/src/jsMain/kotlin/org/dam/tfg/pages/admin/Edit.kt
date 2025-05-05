@@ -29,12 +29,14 @@ import com.varabyte.kobweb.silk.style.toModifier
 import kotlinx.browser.localStorage
 import kotlinx.coroutines.launch
 import org.dam.tfg.models.Formula
+import org.dam.tfg.models.History
 import org.dam.tfg.models.Material
 import org.dam.tfg.models.Theme
 import org.dam.tfg.models.User
 import org.dam.tfg.styles.RadioButtonStyle
 import org.dam.tfg.util.Constants.FONT_FAMILY
 import org.dam.tfg.util.addFormula
+import org.dam.tfg.util.addHistory
 import org.dam.tfg.util.addMaterial
 import org.dam.tfg.util.addUser
 import org.dam.tfg.util.deleteFormula
@@ -52,6 +54,8 @@ import org.jetbrains.compose.web.attributes.name
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.*
 import org.w3c.dom.get
+import kotlin.js.Date
+import androidx.compose.runtime.*
 
 @Page
 @Composable
@@ -284,6 +288,11 @@ fun MaterialesTab() {
                                         )
                                     }
 
+                                    logAction(
+                                        if (isAdding) "Añadir Material" else "Editar Material",
+                                        "Material: ${material.name} - Precio: ${material.price}€"
+                                    )
+
                                     if (editingMaterial != null) {
                                         updateMaterial(material)
                                     } else {
@@ -384,6 +393,10 @@ fun MaterialesTab() {
                                     } else {
                                         addMaterial(material)
                                     }
+                                    logAction(
+                                        if (isAdding) "Añadir Material" else "Editar Material",
+                                        "Material: ${material.name} - Precio: ${material.price}€"
+                                    )
                                     materiales = getAllMaterials()
                                     isAdding = false
                                     editingMaterial = null
@@ -445,6 +458,10 @@ fun MaterialesTab() {
                                     try {
                                         materialToDelete?.id?.let { id ->
                                             deleteMaterial(id)
+                                            logAction(
+                                                "Eliminar Material",
+                                                "Material: ${materialToDelete!!.name}"
+                                            )
                                             materiales = getAllMaterials()
                                         }
                                         showConfirmDelete = false
@@ -967,6 +984,10 @@ fun FormulasTab() {
                                         if (success) {
                                             // Actualiza la lista solo si fue exitoso
                                             formulas = getAllFormulas(userType)
+                                            logAction(
+                                                if (isAdding) "Añadir Fórmula" else "Editar Fórmula",
+                                                "Fórmula: ${formula.name} - Expresión: ${formula.formula}"
+                                            )
                                             editingFormula = null
                                         } else {
                                             error = "No se pudo actualizar la fórmula"
@@ -1041,6 +1062,10 @@ fun FormulasTab() {
                                     scope.launch {
                                         try {
                                             deleteFormula(formula.id)
+                                            logAction(
+                                                "Eliminar Fórmula",
+                                                "Fórmula: ${formulaToDelete!!.name}"
+                                            )
                                             formulas = formulas.filter { it.id != formula.id }
                                             showConfirmDelete = false
                                             formulaToDelete = null
@@ -1394,6 +1419,11 @@ fun UsuariosTab() {
                                         )
                                     }
 
+                                    logAction(
+                                        if (isAdding) "Añadir Usuario" else "Editar Usuario",
+                                        "Usuario: ${user.username} - Tipo: ${user.type}"
+                                    )
+
                                     if (editingUser != null) {
                                         updateUser(user)
                                     } else {
@@ -1649,6 +1679,11 @@ fun UsuariosTab() {
                                         )
                                     }
 
+                                    logAction(
+                                        if (isAdding) "Añadir Usuario" else "Editar Usuario",
+                                        "Usuario: ${user.username} - Tipo: ${user.type}"
+                                    )
+
                                     if (editingUser != null) {
                                         updateUser(user)
                                     } else {
@@ -1715,6 +1750,10 @@ fun UsuariosTab() {
                                     try {
                                         userToDelete?.id?.let { id ->
                                             deleteUser(id)
+                                            logAction(
+                                                "Eliminar Usuario",
+                                                "Usuario: ${userToDelete!!.username}"
+                                            )
                                             usuarios = getAllUsers()
                                             showConfirmDelete = false
                                             userToDelete = null
@@ -1938,4 +1977,30 @@ private fun Modifier.keyboardActions(onEnter: () -> Unit, onEscape: () -> Unit):
             }
         }
     )
+}
+
+// Función auxiliar para crear y guardar registros de historial
+private suspend fun logAction(action: String, details: String) {
+    try {
+        val userId = localStorage["username"] ?: "unknown"
+        val history = History(
+            id = generateUUID(),
+            userId = userId,
+            action = action,
+            timestamp = Date().toISOString(), // Función de JavaScript para obtener fecha ISO
+            details = details
+        )
+
+        addHistory(history)
+    } catch (e: Exception) {
+        console.error("Error al registrar historial: ${e.message}")
+    }
+}
+
+// Extensión para Date para obtener formato ISO
+private fun Date.toISOString(): String {
+    return js("new Date().toISOString()") as String
+}
+private fun generateUUID(): String {
+    return js("crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); })") as String
 }

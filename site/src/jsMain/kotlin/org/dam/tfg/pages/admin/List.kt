@@ -19,13 +19,13 @@ import com.varabyte.kobweb.compose.css.Transition
 import com.varabyte.kobweb.compose.ui.modifiers.transition
 import com.varabyte.kobweb.compose.ui.toAttrs
 import com.varabyte.kobweb.core.Page
-import com.varabyte.kobweb.core.rememberPageContext
+
 import com.varabyte.kobweb.silk.components.forms.TextInput
 import com.varabyte.kobweb.silk.components.icons.fa.FaChevronDown
 import com.varabyte.kobweb.silk.components.icons.fa.FaChevronUp
 import com.varabyte.kobweb.silk.components.icons.fa.FaMagnifyingGlass
 import com.varabyte.kobweb.silk.components.icons.fa.FaPenToSquare
-import com.varabyte.kobweb.silk.components.icons.fa.FaSearchengin
+import com.varabyte.kobweb.silk.components.icons.fa.FaPlus
 import com.varabyte.kobweb.silk.components.icons.fa.FaTrash
 import com.varabyte.kobweb.silk.components.text.SpanText
 import com.varabyte.kobweb.silk.style.breakpoint.Breakpoint
@@ -36,8 +36,14 @@ import kotlinx.coroutines.launch
 import org.dam.tfg.components.AdminPageLayout
 import org.dam.tfg.components.ConfirmationDialog
 import org.dam.tfg.components.LoadingIndicator
+import org.dam.tfg.models.ItemWithLimits
 import org.dam.tfg.models.Theme
+import org.dam.tfg.models.table.Cubeta
+import org.dam.tfg.models.table.ElementoSeleccionado
 import org.dam.tfg.models.table.Mesa
+import org.dam.tfg.models.table.Modulo
+import org.dam.tfg.models.table.TipoTramo
+import org.dam.tfg.models.table.Tramo
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.resources.WebResourceProvider
 import org.dam.tfg.util.Constants.FONT_FAMILY
@@ -50,7 +56,10 @@ import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.H1
 import org.jetbrains.compose.web.dom.H3
 import org.jetbrains.compose.web.dom.Img
+import org.jetbrains.compose.web.dom.NumberInput
+import org.jetbrains.compose.web.dom.Option
 import org.jetbrains.compose.web.dom.P
+import org.jetbrains.compose.web.dom.Select
 import org.jetbrains.compose.web.dom.Text
 import kotlin.js.Date
 
@@ -61,6 +70,17 @@ fun AdminListPage() {
         AdminListScreenContent()
     }
 }
+
+// Función auxiliar para formatear precios
+fun formatPrice(price: Double): String {
+    return try {
+        val formatter = js("new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })")
+        formatter.format(price)
+    } catch (e: Exception) {
+        e.printStackTrace().toString()
+    }
+}
+
 
 @Composable
 fun AdminListScreenContent() {
@@ -114,17 +134,16 @@ fun AdminListScreenContent() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Título
-                H1(
-                    attrs = Modifier
+                SpanText(
+                    text = "Panel de Administración",
+                    modifier = Modifier
                         .fontFamily(FONT_FAMILY)
-                        .fontSize(28.px)
-                        .color(Theme.Primary.rgb)
-                        .textAlign(TextAlign.Center)
+                        .fontSize(24.px)
+                        .fontWeight(FontWeight.Bold)
+                        .color(Theme.Secondary.rgb)
                         .margin(bottom = 20.px)
-                        .toAttrs()
-                ) {
-                    Text("Gestión de Presupuestos")
-                }
+                        .textAlign(TextAlign.Center)
+                )
 
                 // Barra de búsqueda
                 SearchBar(
@@ -142,20 +161,18 @@ fun AdminListScreenContent() {
                             coroutineScope.launch {
                                 // Actualizar fecha al momento actual
                                 val currentDate = Date().toISOString()
-                                val mesaToUpdate = updatedMesa.let { mesa ->
-                                    Mesa(
-                                        id = mesa.id,
-                                        username = mesa.username,
-                                        tipo = mesa.tipo,
-                                        fechaCreacion = currentDate,
-                                        tramos = mesa.tramos,
-                                        cubetas = mesa.cubetas,
-                                        modulos = mesa.modulos,
-                                        elementosGenerales = mesa.elementosGenerales,
-                                        error = "",
-                                        precioTotal = mesa.precioTotal
-                                    )
-                                }
+                                val mesaToUpdate = Mesa(
+                                    id = updatedMesa.id,
+                                    username = updatedMesa.username,
+                                    tipo = updatedMesa.tipo,
+                                    fechaCreacion = currentDate,
+                                    tramos = updatedMesa.tramos,
+                                    cubetas = updatedMesa.cubetas,
+                                    modulos = updatedMesa.modulos,
+                                    elementosGenerales = updatedMesa.elementosGenerales,
+                                    error = updatedMesa.error,
+                                    precioTotal = updatedMesa.precioTotal
+                                )
 
                                 val success = updateMesa(mesaToUpdate)
                                 if (success) {
@@ -434,6 +451,27 @@ fun BudgetCard(
                     .fillMaxWidth()
                     .padding(all = 16.px)
             ) {
+                // Precio total destacado
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 16.px)
+                        .padding(all = 12.px)
+                        .backgroundColor(rgba(245, 245, 250, 0.8))
+                        .borderRadius(4.px)
+                        .border(1.px, color = Theme.Primary.rgb),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SpanText(
+                        text = "Coste Total: ${formatPrice(mesa.precioTotal)}€",
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(20.px)
+                            .fontWeight(FontWeight.Bold)
+                            .color(Theme.Primary.rgb)
+                    )
+                }
+
                 // Tramos
                 if (mesa.tramos.isNotEmpty()) {
                     H3(
@@ -788,9 +826,45 @@ fun BudgetEditForm(
     onSave: (Mesa) -> Unit,
     onCancel: () -> Unit
 ) {
-    var editedMesa by remember { mutableStateOf(mesa) }
-    var username by remember { mutableStateOf(mesa.username) }
     val breakpoint = rememberBreakpoint()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Estados para los campos editables
+    var username by remember { mutableStateOf(mesa.username) }
+    var tipo by remember { mutableStateOf(mesa.tipo) }
+
+    // Estados para las listas
+    var tramos by remember { mutableStateOf(mesa.tramos) }
+    var cubetas by remember { mutableStateOf(mesa.cubetas) }
+    var modulos by remember { mutableStateOf(mesa.modulos) }
+    var elementosGenerales by remember { mutableStateOf(mesa.elementosGenerales) }
+
+    // Estado para el precio total calculado
+    var precioTotal by remember { mutableStateOf(mesa.precioTotal) }
+
+    // Función para recalcular el precio total
+    fun calcularPrecioTotal() {
+        var total = 0.0
+
+        // Sumar precios de tramos
+        total += tramos.sumOf { it.precio }
+
+        // Sumar precios de cubetas
+        total += cubetas.sumOf { it.precio }
+
+        // Sumar precios de módulos
+        total += modulos.sumOf { it.precio }
+
+        // Sumar precios de elementos generales
+        total += elementosGenerales.sumOf { it.precio }
+
+        precioTotal = total
+    }
+
+    // Recalcular precio total cuando cambian los componentes
+    LaunchedEffect(tramos, cubetas, modulos, elementosGenerales) {
+        calcularPrecioTotal()
+    }
 
     Column(
         modifier = Modifier
@@ -799,7 +873,12 @@ fun BudgetEditForm(
             .border(1.px, color = Theme.LightGray.rgb)
             .borderRadius(8.px)
             .backgroundColor(Colors.White)
-            .boxShadow(offsetX = 0.px, offsetY = 2.px, blurRadius = 4.px, color = Theme.LightGray.rgb)
+            .boxShadow(
+                offsetX = 0.px,
+                offsetY = 2.px,
+                blurRadius = 4.px,
+                color = Theme.LightGray.rgb
+            )
     ) {
         // Título del formulario
         H3(
@@ -815,121 +894,1208 @@ fun BudgetEditForm(
             Text("Editar Presupuesto")
         }
 
-        // Datos básicos
-        Column(
+        // Sección de datos básicos
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 20.px)
+                .margin(bottom = 20.px)
+                .padding(all = 16.px)
+                .backgroundColor(rgba(245, 245, 250, 0.8))
+                .borderRadius(4.px)
         ) {
-            // Campo de usuario
-            SpanText(
-                text = "Usuario",
-                modifier = Modifier
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(16.px)
-                    .fontWeight(FontWeight.Bold)
-                    .margin(bottom = 8.px)
-            )
+            Column(modifier = Modifier.fillMaxWidth()) {
+                H3(
+                    attrs = Modifier
+                        .fontFamily(FONT_FAMILY)
+                        .fontSize(18.px)
+                        .color(Theme.Primary.rgb)
+                        .margin(bottom = 12.px)
+                        .toAttrs()
+                ) {
+                    Text("Datos Básicos")
+                }
 
-            TextInput(
-                text = username,
-                onTextChange = { username = it },
+                // Campo de usuario
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 12.px),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SpanText(
+                        text = "Usuario:",
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .fontWeight(FontWeight.Bold)
+                            .margin(right = 8.px)
+                            .width(100.px)
+                    )
+
+                    TextInput(
+                        text = username,
+                        onTextChange = { username = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.px)
+                            .padding(leftRight = 12.px)
+                            .border(1.px, color = Theme.LightGray.rgb)
+                            .borderRadius(4.px)
+                            .fontFamily(FONT_FAMILY)
+                    )
+                }
+
+                // Campo de tipo
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 12.px),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SpanText(
+                        text = "Tipo:",
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .fontWeight(FontWeight.Bold)
+                            .margin(right = 8.px)
+                            .width(100.px)
+                    )
+
+                    TextInput(
+                        text = tipo,
+                        onTextChange = { tipo = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.px)
+                            .padding(leftRight = 12.px)
+                            .border(1.px, color = Theme.LightGray.rgb)
+                            .borderRadius(4.px)
+                            .fontFamily(FONT_FAMILY)
+                    )
+                }
+
+                // Precio total (solo lectura)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .margin(bottom = 12.px),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SpanText(
+                        text = "Precio Total:",
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .fontWeight(FontWeight.Bold)
+                            .margin(right = 8.px)
+                            .width(100.px)
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.px)
+                            .padding(leftRight = 12.px)
+                            .border(1.px, color = Theme.Primary.rgb)
+                            .borderRadius(4.px)
+                            .backgroundColor(rgba(245, 245, 250, 0.8)),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        SpanText(
+                            text = "${formatPrice(precioTotal)}€",
+                            modifier = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(16.px)
+                                .fontWeight(FontWeight.Bold)
+                                .color(Theme.Primary.rgb)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Sección de Tramos
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .margin(bottom = 20.px)
+                .padding(all = 16.px)
+                .backgroundColor(rgba(245, 245, 250, 0.8))
+                .borderRadius(4.px)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    H3(
+                        attrs = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(18.px)
+                            .color(Theme.Primary.rgb)
+                            .margin(bottom = 12.px)
+                            .toAttrs()
+                    ) {
+                        Text("Tramos")
+                    }
+
+                    // Botón para añadir tramo
+                    Box(
+                        modifier = Modifier
+                            .backgroundColor(Theme.Primary.rgb)
+                            .borderRadius(4.px)
+                            .padding(all = 8.px)
+                            .cursor(Cursor.Pointer)
+                            .onClick {
+                                // Añadir un nuevo tramo con valores por defecto
+                                val nuevoTramo = Tramo(
+                                    numero = tramos.size + 1,
+                                    largo = 200.0,
+                                    ancho = 200.0,
+                                    precio = 0.0,
+                                    tipo = TipoTramo.CENTRAL,
+                                    error = ""
+                                )
+                                tramos = tramos + nuevoTramo
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        FaPlus(
+                            modifier = Modifier.color(Colors.White)
+                        )
+                    }
+                }
+
+                // Lista de tramos
+                tramos.forEachIndexed { index, tramo ->
+                    var tramoActual by remember { mutableStateOf(tramo) }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .margin(bottom = 12.px)
+                            .border(1.px, color = Theme.LightGray.rgb)
+                            .borderRadius(4.px)
+                            .padding(all = 12.px)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Título del tramo
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                SpanText(
+                                    text = "Tramo ${tramoActual.numero}",
+                                    modifier = Modifier
+                                        .fontFamily(FONT_FAMILY)
+                                        .fontSize(16.px)
+                                        .fontWeight(FontWeight.Bold)
+                                        .color(Theme.Secondary.rgb)
+                                )
+
+                                // Botón para eliminar tramo
+                                Box(
+                                    modifier = Modifier
+                                        .backgroundColor(Colors.Red)
+                                        .borderRadius(4.px)
+                                        .padding(all = 6.px)
+                                        .cursor(Cursor.Pointer)
+                                        .onClick {
+                                            tramos = tramos.filterIndexed { i, _ -> i != index }
+                                            // Renumerar los tramos
+                                            tramos = tramos.mapIndexed { i, t ->
+                                                t.copy(numero = i + 1)
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    FaTrash(
+                                        modifier = Modifier
+                                            .color(Colors.White)
+                                            .fontSize(12.px)
+                                    )
+                                }
+                            }
+
+                            // Campos del tramo
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .margin(top = 8.px),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                // Tipo
+                                Column(
+                                    modifier = Modifier.weight(1f).margin(right = 8.px)
+                                ) {
+                                    SpanText(
+                                        text = "Tipo:",
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(14.px)
+                                            .margin(bottom = 4.px)
+                                    )
+
+                                    Select(
+                                        attrs = Modifier
+                                            .fillMaxWidth()
+                                            .toAttrs {
+                                                onChange {
+                                                    val selectedValue = it.target.value
+                                                    val tipoTramo = when (selectedValue) {
+                                                        "MURAL" -> TipoTramo.MURAL
+                                                        else -> TipoTramo.CENTRAL
+                                                    }
+                                                    tramoActual = tramoActual.copy(tipo = tipoTramo)
+                                                    tramos = tramos.toMutableList().also { list ->
+                                                        list[index] = tramoActual
+                                                    }
+                                                }
+                                            }
+                                    ) {
+                                        Option("MURAL") { Text("Mural") }
+                                        Option("CENTRAL") { Text("Central") }
+                                    }
+                                }
+
+                                // Largo
+                                Column(
+                                    modifier = Modifier.weight(1f).margin(right = 8.px)
+                                ) {
+                                    SpanText(
+                                        text = "Largo (cm):",
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(14.px)
+                                            .margin(bottom = 4.px)
+                                    )
+
+                                    NumberInput(
+                                        value = tramoActual.largo,
+                                        attrs = Modifier
+                                            .fillMaxWidth()
+                                            .toAttrs {
+                                                onChange { event ->
+                                                    val newValue =
+                                                        event.target.value.toDoubleOrNull()
+                                                            ?: tramoActual.largo
+                                                    tramoActual = tramoActual.copy(largo = newValue)
+                                                    tramos = tramos.toMutableList().also { list ->
+                                                        list[index] = tramoActual
+                                                    }
+                                                }
+                                            }
+                                    )
+                                }
+
+                                // Ancho
+                                Column(
+                                    modifier = Modifier.weight(1f).margin(right = 8.px)
+                                ) {
+                                    SpanText(
+                                        text = "Ancho (cm):",
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(14.px)
+                                            .margin(bottom = 4.px)
+                                    )
+
+                                    NumberInput(
+                                        attrs = Modifier
+                                            .fillMaxWidth()
+                                            .toAttrs {
+                                                value(tramoActual.ancho.toString())
+                                                onChange {
+                                                    val newValue =
+                                                        it.target.value.toDoubleOrNull() ?: 0.0
+                                                    tramoActual = tramoActual.copy(ancho = newValue)
+                                                    tramos = tramos.toMutableList().also { list ->
+                                                        list[index] = tramoActual
+                                                    }
+                                                }
+                                            }
+                                    )
+
+                                    // Precio
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        SpanText(
+                                            text = "Precio (€):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(tramoActual.precio.toString())
+                                                    onChange {
+                                                        val newValue =
+                                                            it.target.value.toDoubleOrNull() ?: 0.0
+                                                        tramoActual =
+                                                            tramoActual.copy(precio = newValue)
+                                                        tramos =
+                                                            tramos.toMutableList().also { list ->
+                                                                list[index] = tramoActual
+                                                            }
+                                                    }
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Sección de Cubetas
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.px)
-                    .margin(bottom = 16.px)
-                    .padding(leftRight = 12.px)
-                    .border(1.px, color = Theme.LightGray.rgb)
+                    .margin(bottom = 20.px)
+                    .padding(all = 16.px)
+                    .backgroundColor(rgba(245, 245, 250, 0.8))
                     .borderRadius(4.px)
-                    .fontFamily(FONT_FAMILY)
-            )
-        }
-
-        // Nota informativa
-        P(
-            attrs = Modifier
-                .fontFamily(FONT_FAMILY)
-                .fontSize(14.px)
-                .color(Theme.Secondary.rgb)
-                .padding(8.px)
-                .backgroundColor(Theme.Primary.rgb)
-                .borderRadius(4.px)
-                .margin(bottom = 20.px)
-                .toAttrs()
-        ) {
-            Text("Al guardar, se actualizará la fecha del presupuesto a la fecha actual.")
-        }
-
-        // Botones de acción
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = if (breakpoint < Breakpoint.MD) Arrangement.SpaceBetween else Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Botón Cancelar
-            Box(
-                modifier = Modifier
-                    .backgroundColor(Theme.LightGray.rgb)
-                    .borderRadius(4.px)
-                    .padding(topBottom = 12.px, leftRight = if (breakpoint < Breakpoint.MD) 16.px else 20.px)
-                    .cursor(Cursor.Pointer)
-                    .onClick { onCancel() }
-                    .let { if (breakpoint >= Breakpoint.MD) it.margin(right = 16.px) else it },
-                contentAlignment = Alignment.Center
             ) {
-                SpanText(
-                    text = "Cancelar",
-                    modifier = Modifier
-                        .fontFamily(FONT_FAMILY)
-                        .fontSize(16.px)
-                        .color(Theme.Secondary.rgb)
-                )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        H3(
+                            attrs = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(18.px)
+                                .color(Theme.Primary.rgb)
+                                .margin(bottom = 12.px)
+                                .toAttrs()
+                        ) {
+                            Text("Cubetas")
+                        }
+
+                        // Botón para añadir cubeta
+                        Box(
+                            modifier = Modifier
+                                .backgroundColor(Theme.Primary.rgb)
+                                .borderRadius(4.px)
+                                .padding(all = 8.px)
+                                .cursor(Cursor.Pointer)
+                                .onClick {
+                                    // Añadir una nueva cubeta con valores por defecto
+                                    val nuevaCubeta = Cubeta(
+                                        tipo = "Cuadrada",
+                                        numero = cubetas.size + 1,
+                                        largo = 400.0,
+                                        fondo = 400.0,
+                                        alto = 300.0,
+                                        precio = 0.0,
+                                        error = "",
+                                        minQuantity = 0
+                                    )
+                                    cubetas = cubetas + nuevaCubeta
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            FaPlus(
+                                modifier = Modifier.color(Colors.White)
+                            )
+                        }
+                    }
+
+                    // Lista de cubetas
+                    cubetas.forEachIndexed { index, cubeta ->
+                        var cubetaActual by remember { mutableStateOf(cubeta) }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .margin(bottom = 12.px)
+                                .border(1.px, color = Theme.LightGray.rgb)
+                                .borderRadius(4.px)
+                                .padding(all = 12.px)
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Título de la cubeta
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    SpanText(
+                                        text = "Cubeta ${cubetaActual.numero}",
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(16.px)
+                                            .fontWeight(FontWeight.Bold)
+                                            .color(Theme.Secondary.rgb)
+                                    )
+
+                                    // Botón para eliminar cubeta
+                                    Box(
+                                        modifier = Modifier
+                                            .backgroundColor(Colors.Red)
+                                            .borderRadius(4.px)
+                                            .padding(all = 6.px)
+                                            .cursor(Cursor.Pointer)
+                                            .onClick {
+                                                cubetas =
+                                                    cubetas.filterIndexed { i, _ -> i != index }
+                                                // Renumerar las cubetas
+                                                cubetas = cubetas.mapIndexed { i, c ->
+                                                    c.copy(numero = i + 1)
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        FaTrash(
+                                            modifier = Modifier
+                                                .color(Colors.White)
+                                                .fontSize(12.px)
+                                        )
+                                    }
+                                }
+
+                                // Campos de la cubeta
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .margin(top = 8.px),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Tipo
+                                    Column(
+                                        modifier = Modifier.weight(2f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Tipo:",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        TextInput(
+                                            text = cubetaActual.tipo,
+                                            onTextChange = {
+                                                cubetaActual = cubetaActual.copy(tipo = it)
+                                                cubetas = cubetas.toMutableList().also { list ->
+                                                    list[index] = cubetaActual
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+
+                                    // Largo
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Largo (mm):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(cubetaActual.largo.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: cubetaActual.largo
+                                                        cubetaActual = cubetaActual.copy(largo = newValue)
+                                                        cubetas = cubetas.toMutableList().also { list ->
+                                                            list[index] = cubetaActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Fondo
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Fondo (mm):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(cubetaActual.fondo.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: cubetaActual.fondo
+                                                        cubetaActual = cubetaActual.copy(fondo = newValue)
+                                                        cubetas = cubetas.toMutableList().also { list ->
+                                                            list[index] = cubetaActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Alto
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Alto (mm):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value((cubetaActual.alto ?: 0.0).toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: cubetaActual.alto ?: 0.0
+                                                        cubetaActual = cubetaActual.copy(alto = newValue)
+                                                        cubetas = cubetas.toMutableList().also { list ->
+                                                            list[index] = cubetaActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Precio
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        SpanText(
+                                            text = "Precio (€):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(cubetaActual.precio.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: cubetaActual.precio
+                                                        cubetaActual = cubetaActual.copy(precio = newValue)
+                                                        cubetas = cubetas.toMutableList().also { list ->
+                                                            list[index] = cubetaActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
-            // Botón Guardar
+            // Sección de Módulos
             Box(
                 modifier = Modifier
+                    .fillMaxWidth()
+                    .margin(bottom = 20.px)
+                    .padding(all = 16.px)
+                    .backgroundColor(rgba(245, 245, 250, 0.8))
+                    .borderRadius(4.px)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        H3(
+                            attrs = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(18.px)
+                                .color(Theme.Primary.rgb)
+                                .margin(bottom = 12.px)
+                                .toAttrs()
+                        ) {
+                            Text("Módulos")
+                        }
+
+                        // Botón para añadir módulo
+                        Box(
+                            modifier = Modifier
+                                .backgroundColor(Theme.Primary.rgb)
+                                .borderRadius(4.px)
+                                .padding(all = 8.px)
+                                .cursor(Cursor.Pointer)
+                                .onClick {
+                                    // Añadir un nuevo módulo con valores por defecto
+                                    val nuevoModulo = Modulo(
+                                        nombre = "Nuevo módulo",
+                                        largo = 30.0,
+                                        fondo = 30.0,
+                                        alto = 30.0,
+                                        cantidad = 1,
+                                        precio = 0.0,
+                                        limite = ItemWithLimits(
+                                            id = "",
+                                            name = "Nuevo módulo",
+                                            minQuantity = 0,
+                                            maxQuantity = 10,
+                                            initialQuantity = 0
+                                        )
+                                    )
+                                    modulos = modulos + nuevoModulo
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            FaPlus(
+                                modifier = Modifier.color(Colors.White)
+                            )
+                        }
+                    }
+
+                    // Lista de módulos
+                    modulos.forEachIndexed { index, modulo ->
+                        var moduloActual by remember { mutableStateOf(modulo) }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .margin(bottom = 12.px)
+                                .border(1.px, color = Theme.LightGray.rgb)
+                                .borderRadius(4.px)
+                                .padding(all = 12.px)
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Título del módulo
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    SpanText(
+                                        text = moduloActual.nombre,
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(16.px)
+                                            .fontWeight(FontWeight.Bold)
+                                            .color(Theme.Secondary.rgb)
+                                    )
+
+                                    // Botón para eliminar módulo
+                                    Box(
+                                        modifier = Modifier
+                                            .backgroundColor(Colors.Red)
+                                            .borderRadius(4.px)
+                                            .padding(all = 6.px)
+                                            .cursor(Cursor.Pointer)
+                                            .onClick {
+                                                modulos =
+                                                    modulos.filterIndexed { i, _ -> i != index }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        FaTrash(
+                                            modifier = Modifier
+                                                .color(Colors.White)
+                                                .fontSize(12.px)
+                                        )
+                                    }
+                                }
+
+                                // Nombre del módulo
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .margin(top = 8.px),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    SpanText(
+                                        text = "Nombre:",
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(14.px)
+                                            .margin(right = 8.px)
+                                            .width(80.px)
+                                    )
+
+                                    TextInput(
+                                        text = moduloActual.nombre,
+                                        onTextChange = {
+                                            moduloActual = moduloActual.copy(
+                                                nombre = it,
+                                                limite = moduloActual.limite.copy(name = it)
+                                            )
+                                            modulos = modulos.toMutableList().also { list ->
+                                                list[index] = moduloActual
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
+                                // Campos del módulo
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .margin(top = 8.px),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Largo
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Largo (mm):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(moduloActual.largo.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: moduloActual.largo
+                                                        moduloActual = moduloActual.copy(largo = newValue)
+                                                        modulos = modulos.toMutableList().also { list ->
+                                                            list[index] = moduloActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Fondo
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Fondo (mm):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(moduloActual.fondo.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: moduloActual.fondo
+                                                        moduloActual = moduloActual.copy(fondo = newValue)
+                                                        modulos = modulos.toMutableList().also { list ->
+                                                            list[index] = moduloActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Alto
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Alto (mm):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(moduloActual.alto.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: moduloActual.alto
+                                                        moduloActual = moduloActual.copy(alto = newValue)
+                                                        modulos = modulos.toMutableList().also { list ->
+                                                            list[index] = moduloActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Cantidad
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Cantidad:",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(moduloActual.cantidad.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toIntOrNull() ?: moduloActual.cantidad
+                                                        moduloActual = moduloActual.copy(cantidad = newValue)
+                                                        modulos = modulos.toMutableList().also { list ->
+                                                            list[index] = moduloActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Precio
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        SpanText(
+                                            text = "Precio (€):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(moduloActual.precio.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: moduloActual.precio
+                                                        moduloActual = moduloActual.copy(precio = newValue)
+                                                        modulos = modulos.toMutableList().also { list ->
+                                                            list[index] = moduloActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Sección de Elementos Generales
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .margin(bottom = 20.px)
+                    .padding(all = 16.px)
+                    .backgroundColor(rgba(245, 245, 250, 0.8))
+                    .borderRadius(4.px)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        H3(
+                            attrs = Modifier
+                                .fontFamily(FONT_FAMILY)
+                                .fontSize(18.px)
+                                .color(Theme.Primary.rgb)
+                                .margin(bottom = 12.px)
+                                .toAttrs()
+                        ) {
+                            Text("Elementos Generales")
+                        }
+
+                        // Botón para añadir elemento general
+                        Box(
+                            modifier = Modifier
+                                .backgroundColor(Theme.Primary.rgb)
+                                .borderRadius(4.px)
+                                .padding(all = 8.px)
+                                .cursor(Cursor.Pointer)
+                                .onClick {
+                                    // Añadir un nuevo elemento general con valores por defecto
+                                    val nuevoElemento = ElementoSeleccionado(
+                                        nombre = "Nuevo elemento",
+                                        cantidad = 1,
+                                        precio = 0.0,
+                                        limite = ItemWithLimits(
+                                            id = "",
+                                            name = "Nuevo elemento",
+                                            minQuantity = 0,
+                                            maxQuantity = Int.MAX_VALUE,
+                                            initialQuantity = 0
+                                        )
+                                    )
+                                    elementosGenerales = elementosGenerales + nuevoElemento
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            FaPlus(
+                                modifier = Modifier.color(Colors.White)
+                            )
+                        }
+                    }
+
+                    // Lista de elementos generales
+                    elementosGenerales.forEachIndexed { index, elemento ->
+                        var elementoActual by remember { mutableStateOf(elemento) }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .margin(bottom = 12.px)
+                                .border(1.px, color = Theme.LightGray.rgb)
+                                .borderRadius(4.px)
+                                .padding(all = 12.px)
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                // Título del elemento
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    SpanText(
+                                        text = elementoActual.nombre,
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(16.px)
+                                            .fontWeight(FontWeight.Bold)
+                                            .color(Theme.Secondary.rgb)
+                                    )
+
+                                    // Botón para eliminar elemento
+                                    Box(
+                                        modifier = Modifier
+                                            .backgroundColor(Colors.Red)
+                                            .borderRadius(4.px)
+                                            .padding(all = 6.px)
+                                            .cursor(Cursor.Pointer)
+                                            .onClick {
+                                                elementosGenerales =
+                                                    elementosGenerales.filterIndexed { i, _ -> i != index }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        FaTrash(
+                                            modifier = Modifier
+                                                .color(Colors.White)
+                                                .fontSize(12.px)
+                                        )
+                                    }
+                                }
+
+                                // Nombre del elemento
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .margin(top = 8.px),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    SpanText(
+                                        text = "Nombre:",
+                                        modifier = Modifier
+                                            .fontFamily(FONT_FAMILY)
+                                            .fontSize(14.px)
+                                            .margin(right = 8.px)
+                                            .width(80.px)
+                                    )
+
+                                    TextInput(
+                                        text = elementoActual.nombre,
+                                        onTextChange = {
+                                            elementoActual = elementoActual.copy(
+                                                nombre = it,
+                                                limite = elementoActual.limite.copy(name = it)
+                                            )
+                                            elementosGenerales =
+                                                elementosGenerales.toMutableList().also { list ->
+                                                    list[index] = elementoActual
+                                                }
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
+                                // Campos del elemento
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .margin(top = 8.px),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Cantidad
+                                    Column(
+                                        modifier = Modifier.weight(1f).margin(right = 8.px)
+                                    ) {
+                                        SpanText(
+                                            text = "Cantidad:",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(elementoActual.cantidad.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toIntOrNull() ?: elementoActual.cantidad
+                                                        elementoActual = elementoActual.copy(cantidad = newValue)
+                                                        elementosGenerales = elementosGenerales.toMutableList().also { list ->
+                                                            list[index] = elementoActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    // Precio
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        SpanText(
+                                            text = "Precio (€):",
+                                            modifier = Modifier
+                                                .fontFamily(FONT_FAMILY)
+                                                .fontSize(14.px)
+                                                .margin(bottom = 4.px)
+                                        )
+
+                                        NumberInput(
+                                            attrs = Modifier
+                                                .fillMaxWidth()
+                                                .toAttrs {
+                                                    value(elementoActual.precio.toString())
+                                                    onChange { event ->
+                                                        val newValue = event.target.value.toDoubleOrNull() ?: elementoActual.precio
+                                                        elementoActual = elementoActual.copy(precio = newValue)
+                                                        elementosGenerales = elementosGenerales.toMutableList().also { list ->
+                                                            list[index] = elementoActual
+                                                        }
+                                                    }
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Nota informativa
+            P(
+                attrs = Modifier
+                    .fontFamily(FONT_FAMILY)
+                    .fontSize(14.px)
+                    .color(Theme.Secondary.rgb)
+                    .padding(8.px)
                     .backgroundColor(Theme.Primary.rgb)
                     .borderRadius(4.px)
-                    .padding(topBottom = 12.px, leftRight = if (breakpoint < Breakpoint.MD) 16.px else 20.px)
-                    .cursor(Cursor.Pointer)
-                    .onClick {
-                        // Actualizar el nombre de usuario y guardar
-                        val mesaActualizada = Mesa(
-                            id = editedMesa.id,
-                            username = username,  // Actualizamos el username
-                            tipo = editedMesa.tipo,
-                            fechaCreacion = editedMesa.fechaCreacion,
-                            tramos = editedMesa.tramos,
-                            cubetas = editedMesa.cubetas,
-                            modulos = editedMesa.modulos,
-                            elementosGenerales = editedMesa.elementosGenerales,
-                            error = editedMesa.error ?: "",
-                            precioTotal = editedMesa.precioTotal
-                        )
-                        onSave(mesaActualizada)
-                    },
-                contentAlignment = Alignment.Center
+                    .margin(bottom = 20.px)
+                    .toAttrs()
             ) {
-                SpanText(
-                    text = "Guardar",
+                Text("Al guardar, se actualizará la fecha del presupuesto a la fecha actual.")
+            }
+
+            // Botones de acción
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = if (breakpoint < Breakpoint.MD) Arrangement.SpaceBetween else Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Botón Cancelar
+                Box(
                     modifier = Modifier
-                        .fontFamily(FONT_FAMILY)
-                        .fontSize(16.px)
-                        .color(Colors.White)
-                )
+                        .backgroundColor(Theme.LightGray.rgb)
+                        .borderRadius(4.px)
+                        .padding(
+                            topBottom = 12.px,
+                            leftRight = if (breakpoint < Breakpoint.MD) 16.px else 20.px
+                        )
+                        .cursor(Cursor.Pointer)
+                        .onClick { onCancel() }
+                        .let { if (breakpoint >= Breakpoint.MD) it.margin(right = 16.px) else it },
+                    contentAlignment = Alignment.Center
+                ) {
+                    SpanText(
+                        text = "Cancelar",
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .color(Theme.Secondary.rgb)
+                    )
+                }
+
+                // Botón Guardar
+                Box(
+                    modifier = Modifier
+                        .backgroundColor(Theme.Primary.rgb)
+                        .borderRadius(4.px)
+                        .padding(
+                            topBottom = 12.px,
+                            leftRight = if (breakpoint < Breakpoint.MD) 16.px else 20.px
+                        )
+                        .cursor(Cursor.Pointer)
+                        .onClick {
+                            // Crear la mesa actualizada con todos los campos
+                            val mesaActualizada = Mesa(
+                                id = mesa.id,
+                                username = username,
+                                tipo = tipo,
+                                fechaCreacion = mesa.fechaCreacion,
+                                tramos = tramos,
+                                cubetas = cubetas,
+                                modulos = modulos,
+                                elementosGenerales = elementosGenerales,
+                                error = "",
+                                precioTotal = precioTotal
+                            )
+                            onSave(mesaActualizada)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    SpanText(
+                        text = "Guardar",
+                        modifier = Modifier
+                            .fontFamily(FONT_FAMILY)
+                            .fontSize(16.px)
+                            .color(Colors.White)
+                    )
+                }
             }
         }
     }
-}
 
-// Función auxiliar para formatear precios
-fun formatPrice(price: Double): String {
-    return try {
-        val formatter = js("new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })")
-        formatter.format(price)
-    } catch (e: Exception) {
-        e.printStackTrace().toString()
-    }
 }

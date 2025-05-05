@@ -384,18 +384,32 @@ object BudgetManager {
             }
 
             if (formulaElementos != null) {
-                // Construir el nombre correctamente preservando mayúsculas
-                val palabras = elemento.nombre.split(" ")
+                // Construir el nombre correctamente preservando mayúsculas y eliminando caracteres especiales
+                val nombreLimpio = elemento.nombre
+                    .replace(Regex("lavam\\.", RegexOption.IGNORE_CASE), "lavamanos") // Paso 1: Expandir abreviatura
+                    .replace(".", "")  // Eliminar puntos
+                    .replace(",", "")  // Eliminar comas
+                    .replace("-", "")  // Eliminar guiones
+                    .replace("_", "")  // Eliminar guiones bajos
+                    .trim()            // Eliminar espacios al inicio y final
+
+                val palabras = nombreLimpio.split(" ")
                 val nombreNormalizado = palabras.mapIndexed { index, palabra ->
                     if (index == 0) palabra else palabra.replaceFirstChar { it.uppercase() }
                 }.joinToString("")
 
                 val nombreVariable = "tipo$nombreNormalizado"
 
+                console.log("Elemento: ${elemento.nombre}, variable normalizada: $nombreNormalizado")
                 console.log("Elemento: ${elemento.nombre}, variable buscada: $nombreVariable")
 
-                // Verificar si existe la variable en la fórmula (case sensitive)
-                val valorTipo = formulaElementos.variables[nombreVariable]?.toDoubleOrNull() ?: 0.0
+                // Buscar la variable correspondiente (case sensitive)
+                val valorTipo = formulaElementos.variables[nombreVariable]?.toDoubleOrNull() ?:
+                // Intentar buscar de forma case-insensitive si no encontramos exacta
+                formulaElementos.variables.entries.find {
+                    it.key.equals(nombreVariable, ignoreCase = true)
+                }?.value?.toDoubleOrNull() ?: 0.0
+
                 console.log("Valor encontrado para $nombreVariable: $valorTipo")
 
                 // Añadir esta variable específica al mapa de variables para la evaluación
