@@ -25,24 +25,26 @@ class BudgetRepositoryJs : BudgetRepository {
                 Mesa(
                     tipo = "",
                     tramos = emptyList(),
+                    elementosGenerales = emptyList(),
                     cubetas = emptyList(),
                     modulos = emptyList(),
-                    elementosGenerales = emptyList(),
                     precioTotal = 0.0,
                     fechaCreacion = null,
-                    error = ""
+                    error = "",
+                    username = ""
                 )
             }
         } else {
             Mesa(
                 tipo = "",
                 tramos = emptyList(),
+                elementosGenerales = emptyList(),
                 cubetas = emptyList(),
                 modulos = emptyList(),
-                elementosGenerales = emptyList(),
                 precioTotal = 0.0,
                 fechaCreacion = null,
-                error = ""
+                error = "",
+                username = ""
             )
         }
     }

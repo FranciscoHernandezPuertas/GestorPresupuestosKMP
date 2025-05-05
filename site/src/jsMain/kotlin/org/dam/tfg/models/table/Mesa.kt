@@ -14,7 +14,8 @@ actual class Mesa(
     actual val modulos: List<Modulo>,
     actual val precioTotal: Double,
     actual val fechaCreacion: String?,
-    actual var error: String
+    actual val username: String,
+    actual var error: String,
 ) {
 
 

@@ -200,7 +200,7 @@ private fun MesaResumen(tipoMesa: String, tramos: List<Tramo>, resourceProvider:
                             .margin(left = 15.px)
                     ) {
                         SpanText(
-                            text = "Tramo ${tramo.numero}: Largo: ${tramo.largo} mm, Ancho: ${tramo.ancho} mm, Tipo: ${tramo.tipo}",
+                            text = "Tramo ${tramo.numero}: Largo: ${tramo.largo} mm, Ancho: ${tramo.ancho} mm, Tipo: ${tramo.tipo.displayName}",
                             modifier = Modifier
                                 .fontFamily(FONT_FAMILY)
                                 .fontSize(14.px)

@@ -11,6 +11,7 @@ expect class Mesa {
     val modulos: List<Modulo>
     val precioTotal: Double
     val fechaCreacion: String?
+    val username: String
     var error: String
 
     fun isValid(): Boolean

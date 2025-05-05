@@ -15,13 +15,14 @@ import kotlinx.serialization.json.Json
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.LoadingIndicator
 import org.dam.tfg.models.History
+import org.dam.tfg.models.ItemWithLimits
+import org.dam.tfg.models.table.ElementoSeleccionado
 import org.dam.tfg.models.table.Mesa
 import org.dam.tfg.navigation.Screen
 import org.dam.tfg.util.*
 import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.dom.*
 import org.w3c.dom.HTMLScriptElement
-import kotlin.js.json
 
 @Page
 @Composable
@@ -53,23 +54,25 @@ fun PdfGenerator() {
         try {
             // Obtener la fecha actual
             val fechaActual = getCurrentDateTime()
+            val username = window.localStorage.getItem("username") ?: "Usuario"
 
             // Crear objeto Mesa con todos los datos guardados y sus precios correctos
             val mesaData = Mesa(
                 tipo = BudgetManager.getMesaTipo(),
                 tramos = BudgetManager.getMesaTramos(),
                 elementosGenerales = BudgetManager.getElementosData().map { (nombre, datos) ->
-                    org.dam.tfg.models.table.ElementoSeleccionado(
+                    ElementoSeleccionado(
                         nombre = nombre,
                         cantidad = datos["cantidad"] ?: 0,
                         precio = (datos["precio"] ?: 0).toDouble(),
-                        limite = org.dam.tfg.models.ItemWithLimits(name = nombre)
+                        limite = ItemWithLimits(name = nombre)
                     )
                 },
                 cubetas = BudgetManager.getCubetas(),
                 modulos = BudgetManager.getModulos(),
                 precioTotal = BudgetManager.getMesaPrecioTotal(),
                 fechaCreacion = fechaActual, // Añadir la fecha actual
+                username = username,
                 error = ""
             )
 

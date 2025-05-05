@@ -1,9 +1,11 @@
 package org.dam.tfg.models
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 actual class History(
+    @SerialName("_id")
     actual val id: String,
     actual val userId: String,
     actual val action: String,

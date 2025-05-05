@@ -10,7 +10,6 @@ import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.core.Page
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
@@ -169,7 +168,8 @@ fun TableSelectorBudget() {
                 modulos = modulosConPrecio,
                 precioTotal = precioTotal,
                 fechaCreacion = null,
-                error = ""
+                error = "",
+                username = ""
             )
         },
         continueButtonText = { "Aceptar y generar PDF" }
@@ -204,7 +204,8 @@ private suspend fun calcularPresupuesto(
             modulos = modulos,
             precioTotal = precioTotal,
             fechaCreacion = null,
-            error = ""
+            error = "",
+            username = ""
         )
 
         // Llamada al backend para validar los cálculos
@@ -243,7 +244,7 @@ private fun PresupuestoDesglosado(
             tramos.forEachIndexed { index, tramo ->
                 val precioTramo = presupuestoDesglosado["tramo_$index"] ?: tramo.precio
                 DesgloseLine(
-                    descripcion = "Tramo ${index + 1} (${tramo.largo}x${tramo.ancho})",
+                    descripcion = "Tramo ${index + 1} (${tramo.largo}x${tramo.ancho}) - Tipo: ${tramo.tipo.displayName}",
                     precio = precioTramo
                 )
             }
@@ -255,7 +256,7 @@ private fun PresupuestoDesglosado(
                 cubetas.forEachIndexed { index, cubeta ->
                     val precioCubeta = presupuestoDesglosado["cubeta_$index"] ?: cubeta.precio
                     DesgloseLine(
-                        descripcion = "Cubeta ${index + 1} (${cubeta.largo}x${cubeta.fondo}x${cubeta.alto ?: 0})",
+                        descripcion = "${cubeta.tipo} (${cubeta.numero})",
                         precio = precioCubeta
                     )
                 }
