@@ -296,6 +296,21 @@ private fun PresupuestoDesglosado(
             precio = precioTotal,
             isTotal = true
         )
+        
+        Box(modifier = Modifier.fillMaxWidth().padding(top = 16.px)) {
+            P(
+                attrs = {
+                    style {
+                        property("font-style", "italic")
+                        property("font-size", "14px")
+                        property("color", "#555555")
+                    }
+                }
+            ) { 
+                Text("* Los precios indicados no incluyen IVA ni otros impuestos aplicables. Pueden existir costes adicionales no contemplados en este presupuesto.")
+            }
+        }
+        
     }
 }
 

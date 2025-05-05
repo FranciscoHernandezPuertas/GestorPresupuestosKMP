@@ -41,16 +41,7 @@ fun AdminListScreenContent() {
                 .padding(left = if(breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px),
             contentAlignment = Alignment.TopCenter
         ) {
-            SpanText(
-                text = "Aquí iría un listado de los presupuestos generados por los usuarios, guardados en la base de datos MongoDB, ordenados por fecha.",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(left = 20.px, right = 20.px, top = 20.px, bottom = 20.px)
-                    .color(Theme.Red.rgb)
-                    .fontFamily(FONT_FAMILY)
-                    .fontSize(40.px),
-
-            )
+            
         }
     }
 }

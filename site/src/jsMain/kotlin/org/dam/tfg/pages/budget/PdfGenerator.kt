@@ -184,6 +184,20 @@ fun PdfGenerator() {
             ) {
                 Text("Volver a intentar")
             }
+
+            Button(
+                attrs = {
+                    onClick { context.router.navigateTo(Screen.Home.route) }
+                    style {
+                        property("padding", "10px")
+                        property("background-color", "#0078d4")
+                        property("color", "white")
+                        property("border-radius", "5px")
+                    }
+                }
+            ) {
+                Text("Volver al inicio")
+            }
         }
     }
 }
@@ -395,6 +409,15 @@ private fun generateAndDownloadPdf(mesa: Mesa, username: String) {
                     doc.line(15, y, 195, y);
                     y += 10;
                     
+                    // Nota sobre impuestos excluidos
+                    y += 15;
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'italic');
+                    doc.setTextColor(100, 100, 100);
+                    doc.text('* Los precios indicados no incluyen IVA ni otros impuestos aplicables.', 15, y);
+                    y += 5;
+                    doc.text('  Pueden existir costes adicionales no contemplados en este presupuesto.', 15, y);
+
                     doc.setFontSize(14);
                     doc.setFont(undefined, 'bold');
                     doc.text('PRECIO TOTAL:', 15, y);
