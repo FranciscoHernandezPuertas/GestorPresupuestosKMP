@@ -4,6 +4,7 @@ import org.dam.tfg.resources.ResourceProvider
 
 class WebResourceProvider : ResourceProvider {
     override fun getImagePath(imageKey: String): String {
+        console.log("imageKey: $imageKey")
         return when (imageKey) {
             "CUBETA" -> "/form/table/elements/cubeta.svg"
             "PETO_LATERAL" -> "/form/table/elements/petoLateral.svg"

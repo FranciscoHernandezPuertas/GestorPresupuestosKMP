@@ -543,6 +543,9 @@ fun BudgetCard(
                                 .replace(" ", "_")
                                 .replace("Ó", "O")
                                 .replace("Á", "A")
+                                .replace("LAVAM.", "LAVAMANOS")
+                                .replace("\\(.*\\)".toRegex(), "")
+                                .replace("[^A-Za-z0-9_]".toRegex(), "")
                         )
 
                         DetailCard(
@@ -578,6 +581,9 @@ fun BudgetCard(
                                 .replace(" ", "_")
                                 .replace("Ó", "O")
                                 .replace("Á", "A")
+                                .replace("LAVAM.", "LAVAMANOS")
+                                .replace("\\(.*\\)".toRegex(), "")
+                                .replace("[^A-Za-z0-9_]".toRegex(), "")
                         )
 
                         DetailCard(
@@ -600,7 +606,7 @@ fun BudgetCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Botón Editar
-                    Box(
+                   /* Box(
                         modifier = Modifier
                             .backgroundColor(Theme.Primary.rgb)
                             .borderRadius(4.px)
@@ -627,7 +633,7 @@ fun BudgetCard(
                                 )
                             }
                         }
-                    }
+                    } */
 
                     // Botón Eliminar
                     Box(
