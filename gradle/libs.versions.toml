@@ -9,6 +9,14 @@ foundation-layout-android = "1.7.8"
 ktor = "2.3.2"
 java-jwt = "4.2.1"
 exp4j = "0.4.8"
+agp = "8.9.2"
+core-ktx = "1.16.0"
+junit = "4.13.2"
+junit-version = "1.2.1"
+espresso-core = "3.6.1"
+lifecycle-runtime-ktx = "2.8.7"
+activity-compose = "1.10.1"
+compose-bom = "2025.04.01"
 
 [libraries]
 # MongoDB Official Driver
@@ -32,6 +40,20 @@ foundation-layout-android = { group = "androidx.compose.foundation", name = "fou
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 java-jwt = { module = "com.auth0:java-jwt", version.ref = "java-jwt" }
 exp4j = { module = "net.objecthunter:exp4j", version.ref = "exp4j" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit-version" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle-runtime-ktx" }
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
+ui = { group = "androidx.compose.ui", name = "ui" }
+ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+material3 = { group = "androidx.compose.material3", name = "material3" }
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
@@ -42,3 +64,5 @@ kobwebx-markdown = { id = "com.varabyte.kobwebx.markdown", version.ref = "kobweb
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
