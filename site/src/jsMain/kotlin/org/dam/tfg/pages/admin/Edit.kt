@@ -84,7 +84,7 @@ fun AdminEditScreenContent() {
             ) {
                 // Título
                 SpanText(
-                    text = "Panel de Administración",
+                    text = "Panel de Edición",
                     modifier = Modifier
                         .fontFamily(FONT_FAMILY)
                         .fontSize(24.px)

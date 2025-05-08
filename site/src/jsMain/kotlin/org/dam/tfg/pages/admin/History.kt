@@ -142,25 +142,26 @@ fun AdminHistoryContent() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .margin(topBottom = if (isMobile) 20.px else 50.px)
-                .padding(left = if(breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px),
+                .padding(left = if (breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px)
+                .padding(top = 20.px),
             contentAlignment = Alignment.TopCenter
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .maxWidth(1200.px)
-                    .padding(if (isMobile) 8.px else 16.px)
+                    .fillMaxWidth(if (breakpoint >= Breakpoint.MD) 80.percent else 95.percent)
+                    .maxWidth(1200.px),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Título de la página
+                // Título
                 SpanText(
-                    "Historial del Sistema",
+                    text = "Historial del Sistema",
                     modifier = Modifier
-                        .fillMaxWidth()
                         .fontFamily(FONT_FAMILY)
-                        .fontSize(if (isMobile) 20.px else 24.px)
+                        .fontSize(24.px)
                         .fontWeight(FontWeight.Bold)
-                        .margin(bottom = if (isMobile) 16.px else 24.px)
+                        .color(Theme.Secondary.rgb)
+                        .margin(bottom = 20.px)
+                        .textAlign(TextAlign.Center)
                 )
 
                 // Barra de búsqueda

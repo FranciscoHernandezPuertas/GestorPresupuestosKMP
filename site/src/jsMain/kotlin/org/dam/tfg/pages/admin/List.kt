@@ -122,20 +122,19 @@ fun AdminListScreenContent() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .margin(topBottom = 50.px)
-                .padding(left = if(breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px),
+                .padding(left = if (breakpoint > Breakpoint.MD) SIDE_PANEL_WIDTH.px else 0.px)
+                .padding(top = 20.px),
             contentAlignment = Alignment.TopCenter
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .maxWidth(1000.px)
-                    .padding(all = 20.px),
+                    .fillMaxWidth(if (breakpoint >= Breakpoint.MD) 80.percent else 95.percent)
+                    .maxWidth(1200.px),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Título
                 SpanText(
-                    text = "Panel de Administración",
+                    text = "Panel de Listado de Presupuestos",
                     modifier = Modifier
                         .fontFamily(FONT_FAMILY)
                         .fontSize(24.px)
