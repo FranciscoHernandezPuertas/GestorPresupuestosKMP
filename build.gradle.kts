@@ -3,9 +3,10 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.kobweb.library) apply false
     alias(libs.plugins.kotlinx.serialization) apply false
-    alias(libs.plugins.ksp) apply false // Añadir esta línea si no está
+    alias(libs.plugins.ksp) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.mongodb.realm) apply false
 }
 
 subprojects {
