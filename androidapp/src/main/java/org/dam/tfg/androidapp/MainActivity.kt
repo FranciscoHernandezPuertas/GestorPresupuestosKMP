@@ -3,24 +3,32 @@ package org.dam.tfg.androidapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.dam.tfg.androidapp.ui.theme.AppTheme
-
+import org.dam.tfg.androidapp.navigation.AppNavigation
+import org.dam.tfg.androidapp.data.DataStore
+import org.dam.tfg.androidapp.util.SessionManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            AppTheme {
 
+        // Initialize session manager
+        val sessionManager = SessionManager(this)
+
+        // Initialize data store
+        val dataStore = DataStore()
+
+        setContent {
+            MaterialTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    AppNavigation(sessionManager, dataStore)
+                }
             }
         }
     }

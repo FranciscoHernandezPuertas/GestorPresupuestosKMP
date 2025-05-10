@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.mongodb.realm)
+    //alias(libs.plugins.mongodb.realm)
     alias(libs.plugins.kotlinx.serialization)
 }
 
@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "org.dam.tfg.androidapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -60,4 +60,8 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.kotlinx.serialization.converter)
+    implementation(libs.navigation.runtime.android)
+    implementation(libs.bson.kotlinx)
+    implementation(libs.java.jwt)
+    implementation(libs.exp4j)
 }
