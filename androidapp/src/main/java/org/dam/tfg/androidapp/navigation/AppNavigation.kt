@@ -1,126 +1,221 @@
 package org.dam.tfg.androidapp.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import org.dam.tfg.androidapp.data.DataStore
-import org.dam.tfg.androidapp.screens.EditScreen
-import org.dam.tfg.androidapp.screens.HistoryScreen
-import org.dam.tfg.androidapp.screens.HomeScreen
-import org.dam.tfg.androidapp.screens.ListScreen
-import org.dam.tfg.androidapp.screens.LoginScreen
-import org.dam.tfg.androidapp.screens.edit.EditFormulasScreen
-import org.dam.tfg.androidapp.screens.edit.EditMaterialsScreen
-import org.dam.tfg.androidapp.screens.edit.EditUsersScreen
-import org.dam.tfg.androidapp.util.Constants.ROUTE_EDIT
-import org.dam.tfg.androidapp.util.Constants.ROUTE_EDIT_FORMULAS
-import org.dam.tfg.androidapp.util.Constants.ROUTE_EDIT_MATERIALS
-import org.dam.tfg.androidapp.util.Constants.ROUTE_EDIT_USERS
-import org.dam.tfg.androidapp.util.Constants.ROUTE_HISTORY
-import org.dam.tfg.androidapp.util.Constants.ROUTE_HOME
-import org.dam.tfg.androidapp.util.Constants.ROUTE_LIST
-import org.dam.tfg.androidapp.util.Constants.ROUTE_LOGIN
-import org.dam.tfg.androidapp.util.Constants.ROUTE_LOGOUT
-import org.dam.tfg.androidapp.util.SessionManager
+import androidx.navigation.navArgument
+import org.dam.tfg.androidapp.models.User
+import org.dam.tfg.androidapp.screens.*
+
+sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Home : Screen("home")
+    object Materials : Screen("materials")
+    object Formulas : Screen("formulas")
+    object Users : Screen("users")
+    object Budgets : Screen("budgets")
+    object History : Screen("history")
+    
+    // Edit screens
+    object EditMaterial : Screen("edit_material/{materialId}") {
+        fun createRoute(materialId: String) = "edit_material/$materialId"
+    }
+    
+    object EditFormula : Screen("edit_formula/{formulaId}") {
+        fun createRoute(formulaId: String) = "edit_formula/$formulaId"
+    }
+    
+    object EditUser : Screen("edit_user/{userId}") {
+        fun createRoute(userId: String) = "edit_user/$userId"
+    }
+}
 
 @Composable
 fun AppNavigation(
-    sessionManager: SessionManager,
-    dataStore: DataStore
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = Screen.Login.route
 ) {
-    val navController = rememberNavController()
-    var isLoggedIn by remember { mutableStateOf(sessionManager.isLoggedIn()) }
-
-    // Check if user is logged in
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            navController.navigate(ROUTE_HOME) {
-                popUpTo(ROUTE_LOGIN) { inclusive = true }
+    val actions = remember(navController) { NavigationActions(navController) }
+    
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onLoginSuccess = { user ->
+                    actions.navigateToHome(user)
+                }
+            )
+        }
+        
+        composable(Screen.Home.route) {
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                HomeScreen(
+                    user = it,
+                    onNavigateToMaterials = actions.navigateToMaterials,
+                    onNavigateToFormulas = actions.navigateToFormulas,
+                    onNavigateToUsers = actions.navigateToUsers,
+                    onNavigateToBudgets = actions.navigateToBudgets,
+                    onNavigateToHistory = actions.navigateToHistory,
+                    onLogout = actions.navigateToLogin
+                )
             }
-        } else {
-            navController.navigate(ROUTE_LOGIN) {
-                popUpTo(navController.graph.id) { inclusive = true }
+        }
+        
+        composable(Screen.Materials.route) {
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                MaterialsScreen(
+                    user = it,
+                    onNavigateBack = actions.navigateUp,
+                    onNavigateToEditMaterial = actions.navigateToEditMaterial
+                )
+            }
+        }
+        
+        composable(
+            route = Screen.EditMaterial.route,
+            arguments = listOf(navArgument("materialId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val materialId = backStackEntry.arguments?.getString("materialId") ?: ""
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                EditMaterialScreen(
+                    materialId = materialId,
+                    user = it,
+                    onNavigateBack = actions.navigateUp
+                )
+            }
+        }
+        
+        composable(Screen.Formulas.route) {
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                FormulasScreen(
+                    user = it,
+                    onNavigateBack = actions.navigateUp,
+                    onNavigateToEditFormula = actions.navigateToEditFormula
+                )
+            }
+        }
+        
+        composable(
+            route = Screen.EditFormula.route,
+            arguments = listOf(navArgument("formulaId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val formulaId = backStackEntry.arguments?.getString("formulaId") ?: ""
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                EditFormulaScreen(
+                    formulaId = formulaId,
+                    user = it,
+                    onNavigateBack = actions.navigateUp
+                )
+            }
+        }
+        
+        composable(Screen.Users.route) {
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                UsersScreen(
+                    user = it,
+                    onNavigateBack = actions.navigateUp,
+                    onNavigateToEditUser = actions.navigateToEditUser
+                )
+            }
+        }
+        
+        composable(
+            route = Screen.EditUser.route,
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                EditUserScreen(
+                    userId = userId,
+                    user = it,
+                    onNavigateBack = actions.navigateUp
+                )
+            }
+        }
+        
+        composable(Screen.Budgets.route) {
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                BudgetsScreen(
+                    user = it,
+                    onNavigateBack = actions.navigateUp
+                )
+            }
+        }
+        
+        composable(Screen.History.route) {
+            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
+            user?.let {
+                HistoryScreen(
+                    user = it,
+                    onNavigateBack = actions.navigateUp
+                )
             }
         }
     }
+}
 
-    NavHost(
-        navController = navController,
-        startDestination = if (isLoggedIn) ROUTE_HOME else ROUTE_LOGIN
-    ) {
-        composable(ROUTE_LOGIN) {
-            LoginScreen(
-                onLoginSuccess = {
-                    isLoggedIn = true
-                },
-                sessionManager = sessionManager,
-                dataStore = dataStore
-            )
+class NavigationActions(private val navController: NavHostController) {
+    
+    val navigateUp: () -> Unit = {
+        navController.navigateUp()
+    }
+    
+    val navigateToLogin: () -> Unit = {
+        navController.navigate(Screen.Login.route) {
+            popUpTo(0) { inclusive = true }
         }
-
-        composable(ROUTE_HOME) {
-            HomeScreen(
-                navController = navController,
-                sessionManager = sessionManager,
-                dataStore = dataStore
-            )
+    }
+    
+    val navigateToHome: (User) -> Unit = { user ->
+        navController.currentBackStackEntry?.savedStateHandle?.set("user", user)
+        navController.navigate(Screen.Home.route) {
+            popUpTo(Screen.Login.route) { inclusive = true }
         }
-
-        composable(ROUTE_EDIT) {
-            EditScreen(
-                navController = navController,
-                sessionManager = sessionManager
-            )
-        }
-
-        composable(ROUTE_EDIT_MATERIALS) {
-            EditMaterialsScreen(
-                navController = navController,
-                dataStore = dataStore
-            )
-        }
-
-        composable(ROUTE_EDIT_FORMULAS) {
-            EditFormulasScreen(
-                navController = navController,
-                dataStore = dataStore,
-                sessionManager = sessionManager
-            )
-        }
-
-        composable(ROUTE_EDIT_USERS) {
-            EditUsersScreen(
-                navController = navController,
-                dataStore = dataStore,
-                sessionManager = sessionManager
-            )
-        }
-
-        composable(ROUTE_LIST) {
-            ListScreen(
-                navController = navController,
-                dataStore = dataStore
-            )
-        }
-
-        composable(ROUTE_HISTORY) {
-            HistoryScreen(
-                navController = navController,
-                dataStore = dataStore
-            )
-        }
-
-        composable(ROUTE_LOGOUT) {
-            LaunchedEffect(Unit) {
-                sessionManager.clearSession()
-                isLoggedIn = false
-            }
-        }
+    }
+    
+    val navigateToMaterials: () -> Unit = {
+        navController.navigate(Screen.Materials.route)
+    }
+    
+    val navigateToFormulas: () -> Unit = {
+        navController.navigate(Screen.Formulas.route)
+    }
+    
+    val navigateToUsers: () -> Unit = {
+        navController.navigate(Screen.Users.route)
+    }
+    
+    val navigateToBudgets: () -> Unit = {
+        navController.navigate(Screen.Budgets.route)
+    }
+    
+    val navigateToHistory: () -> Unit = {
+        navController.navigate(Screen.History.route)
+    }
+    
+    val navigateToEditMaterial: (String) -> Unit = { materialId ->
+        navController.navigate(Screen.EditMaterial.createRoute(materialId))
+    }
+    
+    val navigateToEditFormula: (String) -> Unit = { formulaId ->
+        navController.navigate(Screen.EditFormula.createRoute(formulaId))
+    }
+    
+    val navigateToEditUser: (String) -> Unit = { userId ->
+        navController.navigate(Screen.EditUser.createRoute(userId))
     }
 }

@@ -1,32 +1,15 @@
 package org.dam.tfg.androidapp.models
 
-import kotlinx.serialization.SerialName
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import org.bson.types.ObjectId
 
+@Parcelize
 @Serializable
 data class User(
-    @SerialName("_id")
-    val id: String = "",
-    val username: String = "",
-    val password: String = "",
-    val type: String = "user"
-)
-
-@Serializable
-data class UserWithoutPassword(
-    @SerialName("_id")
-    val id: String = "",
-    val username: String = "",
-    val type: String = "user"
-)
-
-@Serializable
-data class AuthResponse(
-    val user: UserWithoutPassword,
-    val token: String
-)
-
-@Serializable
-data class ErrorResponse(
-    val message: String
-)
+    val _id: String = ObjectId().toString(),
+    val username: String,
+    val password: String, // SHA-256 hash
+    val type: String
+) : Parcelable

@@ -1,12 +1,11 @@
 package org.dam.tfg.androidapp.models
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.bson.types.ObjectId
 
 @Serializable
 data class Material(
-    @SerialName("_id")
-    val id: String = "",
-    val name: String = "",
-    val price: Double = 0.0
+    val _id: String = ObjectId().toString(),
+    val name: String,
+    val price: Double
 )

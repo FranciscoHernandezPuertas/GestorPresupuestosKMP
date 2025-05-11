@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     //alias(libs.plugins.mongodb.realm)
     alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.parcelize)
 }
 
 android {
@@ -33,6 +34,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    packaging {
+        resources {
+            // Añade la ruta a la lista de exclusiones
+            excludes.add("META-INF/native-image/native-image.properties")
+            // o para el folder:
+            excludes.add("META-INF/native-image/**")
+        }
+    }
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -51,6 +60,7 @@ dependencies {
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
+    implementation(libs.mongodb.driver.kotlin.coroutine)
 
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.coroutines)

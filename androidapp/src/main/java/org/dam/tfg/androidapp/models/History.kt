@@ -1,14 +1,13 @@
 package org.dam.tfg.androidapp.models
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.util.Date
 
 @Serializable
 data class History(
-    @SerialName("_id")
-    val id: String = "",
-    val userId: String = "",
-    val action: String = "",
-    val timestamp: String = "",
-    val details: String = ""
+    val _id: String,
+    val userId: String,
+    val action: String,
+    val timestamp: String,
+    val details: String
 )

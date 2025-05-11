@@ -13,43 +13,42 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 import org.dam.tfg.androidapp.data.MongoDBService
-import org.dam.tfg.androidapp.models.History
+import org.dam.tfg.androidapp.models.Budget
 import org.dam.tfg.androidapp.models.User
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(
+fun BudgetsScreen(
     user: User,
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
-    var historyList by remember { mutableStateOf<List<History>>(emptyList()) }
+
+    var budgets by remember { mutableStateOf<List<Budget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+
     // Search filters
     var searchUsername by remember { mutableStateOf("") }
-    var searchAction by remember { mutableStateOf("") }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
-    
-    // Load history on first composition
+
+    // Load budgets on first composition
     LaunchedEffect(Unit) {
-        loadAllHistory(mongoDBService) { newHistory, error ->
-            historyList = newHistory
+        loadAllBudgets(mongoDBService) { newBudgets, error ->
+            budgets = newBudgets
             errorMessage = error
             isLoading = false
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial") },
+                title = { Text("Presupuestos") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -79,32 +78,17 @@ fun HistoryScreen(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        OutlinedTextField(
-                            value = searchUsername,
-                            onValueChange = { searchUsername = it },
-                            label = { Text("Usuario") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp),
-                            singleLine = true
-                        )
-                        
-                        OutlinedTextField(
-                            value = searchAction,
-                            onValueChange = { searchAction = it },
-                            label = { Text("Acción") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp),
-                            singleLine = true
-                        )
-                    }
-                    
+
+                    OutlinedTextField(
+                        value = searchUsername,
+                        onValueChange = { searchUsername = it },
+                        label = { Text("Usuario") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        singleLine = true
+                    )
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -118,7 +102,7 @@ fun HistoryScreen(
                                 .padding(end = 8.dp),
                             singleLine = true
                         )
-                        
+
                         OutlinedTextField(
                             value = endDate,
                             onValueChange = { endDate = it },
@@ -129,36 +113,29 @@ fun HistoryScreen(
                             singleLine = true
                         )
                     }
-                    
+
                     Button(
                         onClick = {
                             isLoading = true
                             coroutineScope.launch {
                                 when {
                                     searchUsername.isNotBlank() -> {
-                                        loadHistoryByUsername(mongoDBService, searchUsername) { newHistory, error ->
-                                            historyList = newHistory
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
-                                    searchAction.isNotBlank() -> {
-                                        loadHistoryByAction(mongoDBService, searchAction) { newHistory, error ->
-                                            historyList = newHistory
+                                        loadBudgetsByUsername(mongoDBService, searchUsername) { newBudgets, error ->
+                                            budgets = newBudgets
                                             errorMessage = error
                                             isLoading = false
                                         }
                                     }
                                     startDate.isNotBlank() && endDate.isNotBlank() -> {
-                                        loadHistoryByDateRange(mongoDBService, startDate, endDate) { newHistory, error ->
-                                            historyList = newHistory
+                                        loadBudgetsByDateRange(mongoDBService, startDate, endDate) { newBudgets, error ->
+                                            budgets = newBudgets
                                             errorMessage = error
                                             isLoading = false
                                         }
                                     }
                                     else -> {
-                                        loadAllHistory(mongoDBService) { newHistory, error ->
-                                            historyList = newHistory
+                                        loadAllBudgets(mongoDBService) { newBudgets, error ->
+                                            budgets = newBudgets
                                             errorMessage = error
                                             isLoading = false
                                         }
@@ -174,8 +151,8 @@ fun HistoryScreen(
                     }
                 }
             }
-            
-            // History list
+
+            // Budgets list
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -196,13 +173,13 @@ fun HistoryScreen(
                             text = "Error: $errorMessage",
                             color = MaterialTheme.colorScheme.error
                         )
-                        
+
                         Button(
                             onClick = {
                                 isLoading = true
                                 coroutineScope.launch {
-                                    loadAllHistory(mongoDBService) { newHistory, error ->
-                                        historyList = newHistory
+                                    loadAllBudgets(mongoDBService) { newBudgets, error ->
+                                        budgets = newBudgets
                                         errorMessage = error
                                         isLoading = false
                                     }
@@ -213,9 +190,9 @@ fun HistoryScreen(
                             Text("Reintentar")
                         }
                     }
-                } else if (historyList.isEmpty()) {
+                } else if (budgets.isEmpty()) {
                     Text(
-                        text = "No hay registros de historial disponibles",
+                        text = "No hay presupuestos disponibles",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -223,8 +200,8 @@ fun HistoryScreen(
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(historyList) { historyItem ->
-                            HistoryItem(history = historyItem)
+                        items(budgets) { budget ->
+                            BudgetItem(budget = budget)
                         }
                     }
                 }
@@ -234,7 +211,7 @@ fun HistoryScreen(
 }
 
 @Composable
-fun HistoryItem(history: History) {
+fun BudgetItem(budget: Budget) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -250,37 +227,73 @@ fun HistoryItem(history: History) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = history.action,
+                    text = "Mesa tipo: ${budget.tipo}",
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 Text(
-                    text = "Usuario: ${history.userId}",
+                    text = "Usuario: ${budget.username}",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Precio total: ${formatPrice(budget.precioTotal)}€",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Text(
+                    text = "Fecha: ${formatDate(budget.fechaCreacion)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Summary of components
             Text(
-                text = "Fecha: ${formatDate(history.timestamp)}",
-                style = MaterialTheme.typography.bodyMedium
+                text = "Resumen:",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
-                text = "Detalles: ${history.details}",
+                text = "- ${budget.tramos.size} tramos",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = "- ${budget.elementosGenerales.size} elementos generales",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = "- ${budget.cubetas.size} cubetas",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = "- ${budget.modulos.size} módulos",
                 style = MaterialTheme.typography.bodySmall
             )
         }
     }
 }
 
+private fun formatPrice(price: Long): String {
+    return String.format("%,d", price)
+}
+
 private fun formatDate(dateString: String): String {
     try {
-        val inputFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US)
-        val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val date = inputFormat.parse(dateString)
         return date?.let { outputFormat.format(it) } ?: dateString
     } catch (e: Exception) {
@@ -288,53 +301,40 @@ private fun formatDate(dateString: String): String {
     }
 }
 
-private suspend fun loadAllHistory(
+private suspend fun loadAllBudgets(
     mongoDBService: MongoDBService,
-    onResult: (List<History>, String?) -> Unit
+    onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
-        val history = mongoDBService.getAllHistory()
-        onResult(history, null)
+        val budgets = mongoDBService.getAllBudgets()
+        onResult(budgets, null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }
 }
 
-private suspend fun loadHistoryByUsername(
+private suspend fun loadBudgetsByUsername(
     mongoDBService: MongoDBService,
     username: String,
-    onResult: (List<History>, String?) -> Unit
+    onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
-        val history = mongoDBService.getHistoryByUsername(username)
-        onResult(history, null)
+        val budgets = mongoDBService.getBudgetsByUsername(username)
+        onResult(budgets, null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }
 }
 
-private suspend fun loadHistoryByAction(
-    mongoDBService: MongoDBService,
-    action: String,
-    onResult: (List<History>, String?) -> Unit
-) {
-    try {
-        val history = mongoDBService.getHistoryByAction(action)
-        onResult(history, null)
-    } catch (e: Exception) {
-        onResult(emptyList(), e.message)
-    }
-}
-
-private suspend fun loadHistoryByDateRange(
+private suspend fun loadBudgetsByDateRange(
     mongoDBService: MongoDBService,
     startDate: String,
     endDate: String,
-    onResult: (List<History>, String?) -> Unit
+    onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
-        val history = mongoDBService.getHistoryByDateRange(startDate, endDate)
-        onResult(history, null)
+        val budgets = mongoDBService.getBudgetsByDateRange(startDate, endDate)
+        onResult(budgets, null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }
