@@ -1,5 +1,6 @@
 package org.dam.tfg.androidapp.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,8 @@ import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 import org.dam.tfg.androidapp.data.MongoDBService
 import org.dam.tfg.androidapp.models.Material
 import org.dam.tfg.androidapp.models.User
+
+private const val TAG = "EditMaterialScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,15 +43,20 @@ fun EditMaterialScreen(
     LaunchedEffect(materialId) {
         if (materialId != "new") {
             try {
+                Log.d(TAG, "Cargando material con ID: $materialId")
                 val loadedMaterial = mongoDBService.getMaterialById(materialId)
+
                 if (loadedMaterial != null) {
+                    Log.d(TAG, "Material cargado: ${loadedMaterial.name}")
                     material = loadedMaterial
                     name = loadedMaterial.name
                     price = loadedMaterial.price.toString()
                 } else {
+                    Log.e(TAG, "Material no encontrado con ID: $materialId")
                     errorMessage = "Material no encontrado"
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Error al cargar el material: ${e.message}", e)
                 errorMessage = "Error al cargar el material: ${e.message}"
             } finally {
                 isLoading = false
@@ -147,6 +155,7 @@ fun EditMaterialScreen(
                                 successMessage = null
 
                                 try {
+                                    Log.d(TAG, "Guardando material: $name")
                                     val materialToSave = Material(
                                         _id = material?._id ?: "",
                                         name = name,
@@ -160,6 +169,7 @@ fun EditMaterialScreen(
                                     }
 
                                     if (success) {
+                                        Log.d(TAG, "Material guardado correctamente")
                                         successMessage = if (materialId == "new") {
                                             "Material creado correctamente"
                                         } else {
@@ -172,9 +182,11 @@ fun EditMaterialScreen(
                                             price = ""
                                         }
                                     } else {
+                                        Log.e(TAG, "No se pudo guardar el material")
                                         errorMessage = "No se pudo guardar el material"
                                     }
                                 } catch (e: Exception) {
+                                    Log.e(TAG, "Error al guardar el material: ${e.message}", e)
                                     errorMessage = "Error: ${e.message}"
                                 } finally {
                                     isSaving = false
