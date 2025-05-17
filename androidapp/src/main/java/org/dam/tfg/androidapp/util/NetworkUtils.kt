@@ -44,10 +44,10 @@ object NetworkUtils {
     fun getMongoDBServerAddress(isEmulator: Boolean): String {
         val address = if (isEmulator) {
             // 10.0.2.2 es la dirección IP que el emulador de Android usa para acceder a la máquina host
-            "mongodb://10.0.2.2:27017/?connectTimeoutMS=30000&socketTimeoutMS=30000"
+            "mongodb://10.0.2.2:27017/?connectTimeoutMS=30000&socketTimeoutMS=30000&serverSelectionTimeoutMS=30000"
         } else {
             // Usar la IP real de tu servidor MongoDB
-            "mongodb://192.168.1.50:27017/?connectTimeoutMS=30000&socketTimeoutMS=30000"
+            "mongodb://192.168.1.50:27017/?connectTimeoutMS=30000&socketTimeoutMS=30000&serverSelectionTimeoutMS=30000"
         }
 
         Log.d(TAG, "Dirección del servidor MongoDB: $address")
@@ -74,11 +74,13 @@ object NetworkUtils {
             // Intentar una conexión de prueba con timeout
             withTimeout(30000) {
                 val testClient = MongoClient.create(settings)
-                val testDb = testClient.listDatabaseNames().toList()
-                testClient.close()
-
-                Log.d(TAG, "Conexión a MongoDB exitosa: $testDb")
-                true
+                try {
+                    val testDb = testClient.listDatabaseNames().toList()
+                    Log.d(TAG, "Conexión a MongoDB exitosa: $testDb")
+                    true
+                } finally {
+                    testClient.close()
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error al conectar con MongoDB: ${e.message}")

@@ -2,12 +2,14 @@ package org.dam.tfg.androidapp.data
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import org.dam.tfg.androidapp.util.NetworkUtils
 
 /**
  * Factory para crear instancias de MongoDBService con la configuración adecuada
  */
 object MongoDBServiceFactory {
+    private const val TAG = "MongoDBServiceFactory"
 
     /**
      * Crea una instancia de MongoDBService con la configuración adecuada para el entorno
@@ -25,6 +27,7 @@ object MongoDBServiceFactory {
 
         // Obtener la dirección del servidor MongoDB
         val serverAddress = NetworkUtils.getMongoDBServerAddress(isEmulator)
+        Log.d(TAG, "Creando servicio MongoDB con dirección: $serverAddress")
 
         // Crear y devolver el servicio
         return MongoDBService(serverAddress)

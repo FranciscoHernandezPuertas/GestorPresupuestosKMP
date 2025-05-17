@@ -15,6 +15,7 @@ import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_NAME
 import org.dam.tfg.androidapp.models.*
 import org.dam.tfg.androidapp.util.CryptoUtil
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 object MongoDBConstants {
     const val DATABASE_NAME = "gestor_db"
@@ -23,7 +24,20 @@ object MongoDBConstants {
 
 class MongoDBService(private val mongodbUri: String) {
     private val TAG = "MongoDBService"
-    private val client = MongoClient.create(mongodbUri)
+
+    // Configuración del cliente con opciones mejoradas
+    private val clientSettings = MongoClientSettings.builder()
+        .applyConnectionString(ConnectionString(mongodbUri))
+        .applyToSocketSettings { builder ->
+            builder.connectTimeout(30000, TimeUnit.MILLISECONDS)
+            builder.readTimeout(30000, TimeUnit.MILLISECONDS)
+        }
+        .applyToClusterSettings { builder ->
+            builder.serverSelectionTimeout(30000, TimeUnit.MILLISECONDS)
+        }
+        .build()
+
+    private val client = MongoClient.create(clientSettings)
     private val database = client.getDatabase("gestor_db")
 
     // Collections
@@ -57,7 +71,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             val documents = usersCollection.find().toList()
             documents.forEach { document ->
-                users.add(documentToUser(document))
+                try {
+                    users.add(documentToUser(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a User: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getAllUsers: ${e.message}", e)
@@ -69,20 +87,38 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Buscando usuario con ID: $id")
 
-            // Intentar primero como ObjectId
-            var document: Document? = null
-            try {
-                val objectId = ObjectId(id)
-                document = usersCollection.find(Filters.eq("_id", objectId)).firstOrNull()
-                Log.d(TAG, "Búsqueda por ObjectId: ${document != null}")
-            } catch (e: IllegalArgumentException) {
-                Log.d(TAG, "ID no es un ObjectId válido, buscando como String")
+            // Intentar buscar por ID exacto primero
+            var document = usersCollection.find(Filters.eq("_id", id)).firstOrNull()
+
+            // Si no se encuentra, intentar buscar como ObjectId
+            if (document == null) {
+                try {
+                    val objectId = ObjectId(id)
+                    document = usersCollection.find(Filters.eq("_id", objectId)).firstOrNull()
+                    Log.d(TAG, "Búsqueda por ObjectId: ${document != null}")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
             }
 
-            // Si no se encontró como ObjectId, intentar como String
+            // Si aún no se encuentra, intentar buscar en formato BSON/ObjectId
             if (document == null) {
-                document = usersCollection.find(Filters.eq("_id", id)).firstOrNull()
-                Log.d(TAG, "Búsqueda por String: ${document != null}")
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Intentar buscar todos y filtrar manualmente
+                try {
+                    val allDocs = usersCollection.find().toList()
+                    document = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == id
+                        } else {
+                            false
+                        }
+                    }
+                    Log.d(TAG, "Búsqueda manual por formato BSON/ObjectId: ${document != null}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en búsqueda manual: ${e.message}", e)
+                }
             }
 
             if (document != null) {
@@ -101,6 +137,7 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun createUser(user: User): Boolean = withContext(Dispatchers.IO) {
         val document = Document()
+            .append("_id", user._id.ifEmpty { UUID.randomUUID().toString() })
             .append("username", user.username)
             .append("password", user.password)
             .append("type", user.type)
@@ -119,13 +156,8 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Actualizando usuario con ID: ${user._id}")
 
-            // Intentar primero como ObjectId
-            var filter = try {
-                Filters.eq("_id", ObjectId(user._id))
-            } catch (e: IllegalArgumentException) {
-                // Si no se puede convertir a ObjectId, buscar como String
-                Filters.eq("_id", user._id)
-            }
+            // Intentar actualizar por ID exacto primero
+            var filter = Filters.eq("_id", user._id)
 
             val update = Document("\$set", Document()
                 .append("username", user.username)
@@ -133,8 +165,48 @@ class MongoDBService(private val mongodbUri: String) {
                 .append("type", user.type)
             )
 
-            val result = usersCollection.updateOne(filter, update)
-            Log.d(TAG, "Resultado de actualización: ${result.modifiedCount} documentos modificados")
+            var result = usersCollection.updateOne(filter, update)
+
+            // Si no se actualizó ningún documento, intentar con ObjectId
+            if (result.modifiedCount == 0L) {
+                try {
+                    val objectId = ObjectId(user._id)
+                    filter = Filters.eq("_id", objectId)
+                    result = usersCollection.updateOne(filter, update)
+                    Log.d(TAG, "Actualización por ObjectId: ${result.modifiedCount} documentos modificados")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
+            }
+
+            // Si aún no se actualizó ningún documento, intentar con formato BSON/ObjectId
+            if (result.modifiedCount == 0L) {
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Primero encontrar el documento manualmente
+                try {
+                    val allDocs = usersCollection.find().toList()
+                    val docToUpdate = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == user._id
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (docToUpdate != null) {
+                        // Si encontramos el documento, actualizarlo usando su _id
+                        val docId = docToUpdate.get("_id")
+                        filter = Filters.eq("_id", docId)
+                        result = usersCollection.updateOne(filter, update)
+                        Log.d(TAG, "Actualización manual por formato BSON/ObjectId: ${result.modifiedCount} documentos modificados")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en actualización manual: ${e.message}", e)
+                }
+            }
+
+            Log.d(TAG, "Resultado final de actualización: ${result.modifiedCount} documentos modificados")
 
             if (result.modifiedCount > 0) {
                 logAction(user.username, "Actualización de usuario", "Usuario: ${user.username}")
@@ -151,15 +223,49 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun deleteUser(id: String, username: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Intentar primero como ObjectId
-            var filter = try {
-                Filters.eq("_id", ObjectId(id))
-            } catch (e: IllegalArgumentException) {
-                // Si no se puede convertir a ObjectId, buscar como String
-                Filters.eq("_id", id)
+            // Intentar eliminar por ID exacto primero
+            var filter = Filters.eq("_id", id)
+            var result = usersCollection.deleteOne(filter)
+
+            // Si no se eliminó ningún documento, intentar con ObjectId
+            if (result.deletedCount == 0L) {
+                try {
+                    val objectId = ObjectId(id)
+                    filter = Filters.eq("_id", objectId)
+                    result = usersCollection.deleteOne(filter)
+                    Log.d(TAG, "Eliminación por ObjectId: ${result.deletedCount} documentos eliminados")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
             }
 
-            val result = usersCollection.deleteOne(filter)
+            // Si aún no se eliminó ningún documento, intentar con formato BSON/ObjectId
+            if (result.deletedCount == 0L) {
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Primero encontrar el documento manualmente
+                try {
+                    val allDocs = usersCollection.find().toList()
+                    val docToDelete = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == id
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (docToDelete != null) {
+                        // Si encontramos el documento, eliminarlo usando su _id
+                        val docId = docToDelete.get("_id")
+                        filter = Filters.eq("_id", docId)
+                        result = usersCollection.deleteOne(filter)
+                        Log.d(TAG, "Eliminación manual por formato BSON/ObjectId: ${result.deletedCount} documentos eliminados")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en eliminación manual: ${e.message}", e)
+                }
+            }
+
             if (result.deletedCount > 0) {
                 logAction(username, "Eliminación de usuario", "ID: $id")
                 return@withContext true
@@ -178,7 +284,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             val documents = materialsCollection.find().toList()
             documents.forEach { document ->
-                materials.add(documentToMaterial(document))
+                try {
+                    materials.add(documentToMaterial(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a Material: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getAllMaterials: ${e.message}", e)
@@ -190,20 +300,38 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Buscando material con ID: $id")
 
-            // Intentar primero como ObjectId
-            var document: Document? = null
-            try {
-                val objectId = ObjectId(id)
-                document = materialsCollection.find(Filters.eq("_id", objectId)).firstOrNull()
-                Log.d(TAG, "Búsqueda por ObjectId: ${document != null}")
-            } catch (e: IllegalArgumentException) {
-                Log.d(TAG, "ID no es un ObjectId válido, buscando como String")
+            // Intentar buscar por ID exacto primero
+            var document = materialsCollection.find(Filters.eq("_id", id)).firstOrNull()
+
+            // Si no se encuentra, intentar buscar como ObjectId
+            if (document == null) {
+                try {
+                    val objectId = ObjectId(id)
+                    document = materialsCollection.find(Filters.eq("_id", objectId)).firstOrNull()
+                    Log.d(TAG, "Búsqueda por ObjectId: ${document != null}")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
             }
 
-            // Si no se encontró como ObjectId, intentar como String
+            // Si aún no se encuentra, intentar buscar en formato BSON/ObjectId
             if (document == null) {
-                document = materialsCollection.find(Filters.eq("_id", id)).firstOrNull()
-                Log.d(TAG, "Búsqueda por String: ${document != null}")
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Intentar buscar todos y filtrar manualmente
+                try {
+                    val allDocs = materialsCollection.find().toList()
+                    document = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == id
+                        } else {
+                            false
+                        }
+                    }
+                    Log.d(TAG, "Búsqueda manual por formato BSON/ObjectId: ${document != null}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en búsqueda manual: ${e.message}", e)
+                }
             }
 
             if (document != null) {
@@ -222,6 +350,7 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun createMaterial(material: Material, username: String): Boolean = withContext(Dispatchers.IO) {
         val document = Document()
+            .append("_id", material._id.ifEmpty { UUID.randomUUID().toString() })
             .append("name", material.name)
             .append("price", material.price)
 
@@ -239,21 +368,56 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Actualizando material con ID: ${material._id}")
 
-            // Intentar primero como ObjectId
-            var filter = try {
-                Filters.eq("_id", ObjectId(material._id))
-            } catch (e: IllegalArgumentException) {
-                // Si no se puede convertir a ObjectId, buscar como String
-                Filters.eq("_id", material._id)
-            }
+            // Intentar actualizar por ID exacto primero
+            var filter = Filters.eq("_id", material._id)
 
             val update = Document("\$set", Document()
                 .append("name", material.name)
                 .append("price", material.price)
             )
 
-            val result = materialsCollection.updateOne(filter, update)
-            Log.d(TAG, "Resultado de actualización: ${result.modifiedCount} documentos modificados")
+            var result = materialsCollection.updateOne(filter, update)
+
+            // Si no se actualizó ningún documento, intentar con ObjectId
+            if (result.modifiedCount == 0L) {
+                try {
+                    val objectId = ObjectId(material._id)
+                    filter = Filters.eq("_id", objectId)
+                    result = materialsCollection.updateOne(filter, update)
+                    Log.d(TAG, "Actualización por ObjectId: ${result.modifiedCount} documentos modificados")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
+            }
+
+            // Si aún no se actualizó ningún documento, intentar con formato BSON/ObjectId
+            if (result.modifiedCount == 0L) {
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Primero encontrar el documento manualmente
+                try {
+                    val allDocs = materialsCollection.find().toList()
+                    val docToUpdate = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == material._id
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (docToUpdate != null) {
+                        // Si encontramos el documento, actualizarlo usando su _id
+                        val docId = docToUpdate.get("_id")
+                        filter = Filters.eq("_id", docId)
+                        result = materialsCollection.updateOne(filter, update)
+                        Log.d(TAG, "Actualización manual por formato BSON/ObjectId: ${result.modifiedCount} documentos modificados")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en actualización manual: ${e.message}", e)
+                }
+            }
+
+            Log.d(TAG, "Resultado final de actualización: ${result.modifiedCount} documentos modificados")
 
             if (result.modifiedCount > 0) {
                 logAction(username, "Actualización de material", "Material: ${material.name}, Precio: ${material.price}")
@@ -270,15 +434,49 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun deleteMaterial(id: String, username: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Intentar primero como ObjectId
-            var filter = try {
-                Filters.eq("_id", ObjectId(id))
-            } catch (e: IllegalArgumentException) {
-                // Si no se puede convertir a ObjectId, buscar como String
-                Filters.eq("_id", id)
+            // Intentar eliminar por ID exacto primero
+            var filter = Filters.eq("_id", id)
+            var result = materialsCollection.deleteOne(filter)
+
+            // Si no se eliminó ningún documento, intentar con ObjectId
+            if (result.deletedCount == 0L) {
+                try {
+                    val objectId = ObjectId(id)
+                    filter = Filters.eq("_id", objectId)
+                    result = materialsCollection.deleteOne(filter)
+                    Log.d(TAG, "Eliminación por ObjectId: ${result.deletedCount} documentos eliminados")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
             }
 
-            val result = materialsCollection.deleteOne(filter)
+            // Si aún no se eliminó ningún documento, intentar con formato BSON/ObjectId
+            if (result.deletedCount == 0L) {
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Primero encontrar el documento manualmente
+                try {
+                    val allDocs = materialsCollection.find().toList()
+                    val docToDelete = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == id
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (docToDelete != null) {
+                        // Si encontramos el documento, eliminarlo usando su _id
+                        val docId = docToDelete.get("_id")
+                        filter = Filters.eq("_id", docId)
+                        result = materialsCollection.deleteOne(filter)
+                        Log.d(TAG, "Eliminación manual por formato BSON/ObjectId: ${result.deletedCount} documentos eliminados")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en eliminación manual: ${e.message}", e)
+                }
+            }
+
             if (result.deletedCount > 0) {
                 logAction(username, "Eliminación de material", "ID: $id")
                 return@withContext true
@@ -297,7 +495,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             val documents = formulasCollection.find().toList()
             documents.forEach { document ->
-                formulas.add(documentToFormula(document))
+                try {
+                    formulas.add(documentToFormula(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a Formula: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getAllFormulas: ${e.message}", e)
@@ -309,20 +511,38 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Buscando fórmula con ID: $id")
 
-            // Intentar primero como ObjectId
-            var document: Document? = null
-            try {
-                val objectId = ObjectId(id)
-                document = formulasCollection.find(Filters.eq("_id", objectId)).firstOrNull()
-                Log.d(TAG, "Búsqueda por ObjectId: ${document != null}")
-            } catch (e: IllegalArgumentException) {
-                Log.d(TAG, "ID no es un ObjectId válido, buscando como String")
+            // Intentar buscar por ID exacto primero
+            var document = formulasCollection.find(Filters.eq("_id", id)).firstOrNull()
+
+            // Si no se encuentra, intentar buscar como ObjectId
+            if (document == null) {
+                try {
+                    val objectId = ObjectId(id)
+                    document = formulasCollection.find(Filters.eq("_id", objectId)).firstOrNull()
+                    Log.d(TAG, "Búsqueda por ObjectId: ${document != null}")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
             }
 
-            // Si no se encontró como ObjectId, intentar como String
+            // Si aún no se encuentra, intentar buscar en formato BSON/ObjectId
             if (document == null) {
-                document = formulasCollection.find(Filters.eq("_id", id)).firstOrNull()
-                Log.d(TAG, "Búsqueda por String: ${document != null}")
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Intentar buscar todos y filtrar manualmente
+                try {
+                    val allDocs = formulasCollection.find().toList()
+                    document = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == id
+                        } else {
+                            false
+                        }
+                    }
+                    Log.d(TAG, "Búsqueda manual por formato BSON/ObjectId: ${document != null}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en búsqueda manual: ${e.message}", e)
+                }
             }
 
             if (document != null) {
@@ -340,10 +560,8 @@ class MongoDBService(private val mongodbUri: String) {
     }
 
     suspend fun createFormula(formula: Formula, username: String, jwtSecret: String): Boolean = withContext(Dispatchers.IO) {
-        // No necesitamos usar jwtSecret ya que FormulaEncryption maneja la encriptación
-        // La fórmula ya debe venir encriptada desde EditFormulaScreen
-
         val document = Document()
+            .append("_id", formula._id.ifEmpty { UUID.randomUUID().toString() })
             .append("name", formula.name)
             .append("formula", formula.formula)
             .append("formulaEncrypted", formula.formulaEncrypted)
@@ -363,13 +581,8 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Actualizando fórmula con ID: ${formula._id}")
 
-            // Intentar primero como ObjectId
-            var filter = try {
-                Filters.eq("_id", ObjectId(formula._id))
-            } catch (e: IllegalArgumentException) {
-                // Si no se puede convertir a ObjectId, buscar como String
-                Filters.eq("_id", formula._id)
-            }
+            // Intentar actualizar por ID exacto primero
+            var filter = Filters.eq("_id", formula._id)
 
             val update = Document("\$set", Document()
                 .append("name", formula.name)
@@ -378,8 +591,48 @@ class MongoDBService(private val mongodbUri: String) {
                 .append("variables", Document(formula.variables))
             )
 
-            val result = formulasCollection.updateOne(filter, update)
-            Log.d(TAG, "Resultado de actualización: ${result.modifiedCount} documentos modificados")
+            var result = formulasCollection.updateOne(filter, update)
+
+            // Si no se actualizó ningún documento, intentar con ObjectId
+            if (result.modifiedCount == 0L) {
+                try {
+                    val objectId = ObjectId(formula._id)
+                    filter = Filters.eq("_id", objectId)
+                    result = formulasCollection.updateOne(filter, update)
+                    Log.d(TAG, "Actualización por ObjectId: ${result.modifiedCount} documentos modificados")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
+            }
+
+            // Si aún no se actualizó ningún documento, intentar con formato BSON/ObjectId
+            if (result.modifiedCount == 0L) {
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Primero encontrar el documento manualmente
+                try {
+                    val allDocs = formulasCollection.find().toList()
+                    val docToUpdate = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == formula._id
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (docToUpdate != null) {
+                        // Si encontramos el documento, actualizarlo usando su _id
+                        val docId = docToUpdate.get("_id")
+                        filter = Filters.eq("_id", docId)
+                        result = formulasCollection.updateOne(filter, update)
+                        Log.d(TAG, "Actualización manual por formato BSON/ObjectId: ${result.modifiedCount} documentos modificados")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en actualización manual: ${e.message}", e)
+                }
+            }
+
+            Log.d(TAG, "Resultado final de actualización: ${result.modifiedCount} documentos modificados")
 
             if (result.modifiedCount > 0) {
                 logAction(username, "Actualización de fórmula", "Fórmula: ${formula.name}")
@@ -396,15 +649,49 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun deleteFormula(id: String, username: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Intentar primero como ObjectId
-            var filter = try {
-                Filters.eq("_id", ObjectId(id))
-            } catch (e: IllegalArgumentException) {
-                // Si no se puede convertir a ObjectId, buscar como String
-                Filters.eq("_id", id)
+            // Intentar eliminar por ID exacto primero
+            var filter = Filters.eq("_id", id)
+            var result = formulasCollection.deleteOne(filter)
+
+            // Si no se eliminó ningún documento, intentar con ObjectId
+            if (result.deletedCount == 0L) {
+                try {
+                    val objectId = ObjectId(id)
+                    filter = Filters.eq("_id", objectId)
+                    result = formulasCollection.deleteOne(filter)
+                    Log.d(TAG, "Eliminación por ObjectId: ${result.deletedCount} documentos eliminados")
+                } catch (e: IllegalArgumentException) {
+                    Log.d(TAG, "ID no es un ObjectId válido")
+                }
             }
 
-            val result = formulasCollection.deleteOne(filter)
+            // Si aún no se eliminó ningún documento, intentar con formato BSON/ObjectId
+            if (result.deletedCount == 0L) {
+                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
+                // Primero encontrar el documento manualmente
+                try {
+                    val allDocs = formulasCollection.find().toList()
+                    val docToDelete = allDocs.find { doc ->
+                        val idValue = doc.get("_id")
+                        if (idValue is Document && idValue.containsKey("\$oid")) {
+                            idValue.getString("\$oid") == id
+                        } else {
+                            false
+                        }
+                    }
+
+                    if (docToDelete != null) {
+                        // Si encontramos el documento, eliminarlo usando su _id
+                        val docId = docToDelete.get("_id")
+                        filter = Filters.eq("_id", docId)
+                        result = formulasCollection.deleteOne(filter)
+                        Log.d(TAG, "Eliminación manual por formato BSON/ObjectId: ${result.deletedCount} documentos eliminados")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en eliminación manual: ${e.message}", e)
+                }
+            }
+
             if (result.deletedCount > 0) {
                 logAction(username, "Eliminación de fórmula", "ID: $id")
                 return@withContext true
@@ -429,6 +716,7 @@ class MongoDBService(private val mongodbUri: String) {
                     Log.e(TAG, "Error al convertir documento a Budget: ${e.message}", e)
                 }
             }
+            Log.d(TAG, "Presupuestos cargados: ${budgets.size}")
         } catch (e: Exception) {
             Log.e(TAG, "Error en getAllBudgets: ${e.message}", e)
         }
@@ -479,7 +767,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             val documents = historyCollection.find().toList()
             documents.forEach { document ->
-                historyList.add(documentToHistory(document))
+                try {
+                    historyList.add(documentToHistory(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a History: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getAllHistory: ${e.message}", e)
@@ -492,7 +784,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             val documents = historyCollection.find(Filters.eq("userId", username)).toList()
             documents.forEach { document ->
-                historyList.add(documentToHistory(document))
+                try {
+                    historyList.add(documentToHistory(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a History: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getHistoryByUsername: ${e.message}", e)
@@ -505,7 +801,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             val documents = historyCollection.find(Filters.regex("action", action)).toList()
             documents.forEach { document ->
-                historyList.add(documentToHistory(document))
+                try {
+                    historyList.add(documentToHistory(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a History: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getHistoryByAction: ${e.message}", e)
@@ -522,7 +822,11 @@ class MongoDBService(private val mongodbUri: String) {
             )
             val documents = historyCollection.find(filter).toList()
             documents.forEach { document ->
-                historyList.add(documentToHistory(document))
+                try {
+                    historyList.add(documentToHistory(document))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al convertir documento a History: ${e.message}", e)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en getHistoryByDateRange: ${e.message}", e)
@@ -549,15 +853,8 @@ class MongoDBService(private val mongodbUri: String) {
     // Helper methods to convert Document to model objects
     private fun documentToUser(document: Document): User {
         try {
-            // Manejo seguro del _id que puede ser String u ObjectId
-            val id = when (val idValue = document.get("_id")) {
-                is ObjectId -> idValue.toString()
-                is String -> idValue
-                else -> {
-                    Log.w(TAG, "ID de usuario con formato inesperado: ${idValue?.javaClass?.name}")
-                    idValue.toString()
-                }
-            }
+            // Extraer el ID en formato simple
+            val id = extractId(document)
 
             return User(
                 _id = id,
@@ -573,15 +870,8 @@ class MongoDBService(private val mongodbUri: String) {
 
     private fun documentToMaterial(document: Document): Material {
         try {
-            // Manejo seguro del _id que puede ser String u ObjectId
-            val id = when (val idValue = document.get("_id")) {
-                is ObjectId -> idValue.toString()
-                is String -> idValue
-                else -> {
-                    Log.w(TAG, "ID de material con formato inesperado: ${idValue?.javaClass?.name}")
-                    idValue.toString()
-                }
-            }
+            // Extraer el ID en formato simple
+            val id = extractId(document)
 
             // Manejo seguro del precio que puede ser Double, Integer o Long
             val price = when (val priceValue = document.get("price")) {
@@ -607,21 +897,14 @@ class MongoDBService(private val mongodbUri: String) {
 
     private fun documentToFormula(document: Document): Formula {
         try {
+            // Extraer el ID en formato simple
+            val id = extractId(document)
+
             val variablesDoc = document.get("variables", Document::class.java) ?: Document()
             val variables = mutableMapOf<String, String>()
 
             variablesDoc.forEach { key, value ->
                 variables[key] = value.toString()
-            }
-
-            // Manejo seguro del _id que puede ser String u ObjectId
-            val id = when (val idValue = document.get("_id")) {
-                is ObjectId -> idValue.toString()
-                is String -> idValue
-                else -> {
-                    Log.w(TAG, "ID de fórmula con formato inesperado: ${idValue?.javaClass?.name}")
-                    idValue.toString()
-                }
             }
 
             return Formula(
@@ -639,8 +922,11 @@ class MongoDBService(private val mongodbUri: String) {
 
     private fun documentToHistory(document: Document): History {
         try {
+            // Extraer el ID en formato simple
+            val id = extractId(document)
+
             return History(
-                _id = document.getString("_id") ?: "",
+                _id = id,
                 userId = document.getString("userId") ?: "",
                 action = document.getString("action") ?: "",
                 timestamp = document.getString("timestamp") ?: "",
@@ -654,31 +940,46 @@ class MongoDBService(private val mongodbUri: String) {
 
     private fun documentToBudget(document: Document): Budget {
         try {
-            // Manejo seguro del _id que puede ser String u ObjectId
-            val id = when (val idValue = document.get("_id")) {
-                is ObjectId -> idValue.toString()
-                is String -> idValue
-                else -> {
-                    Log.w(TAG, "ID de presupuesto con formato inesperado: ${idValue?.javaClass?.name}")
-                    idValue.toString()
-                }
-            }
+            // Extraer el ID en formato simple
+            val id = extractId(document)
 
-            return Budget(
+            val budget = Budget(
                 _id = id,
                 tipo = document.getString("tipo") ?: "",
-                tramos = parseTramos(document.getList("tramos", Document::class.java)),
-                elementosGenerales = parseElementosGenerales(document.getList("elementosGenerales", Document::class.java)),
-                cubetas = parseCubetas(document.getList("cubetas", Document::class.java)),
-                modulos = parseModulos(document.getList("modulos", Document::class.java)),
-                precioTotal = document.getLong("precioTotal") ?: 0L,
+                tramos = parseTramos(document.get("tramos") as? List<Document>),
+                elementosGenerales = parseElementosGenerales(document.get("elementosGenerales") as? List<Document>),
+                cubetas = parseCubetas(document.get("cubetas") as? List<Document>),
+                modulos = parseModulos(document.get("modulos") as? List<Document>),
+                precioTotal = getLongValue(document, "precioTotal"),
                 fechaCreacion = document.getString("fechaCreacion") ?: "",
                 username = document.getString("username") ?: "",
                 error = document.getString("error") ?: ""
             )
+
+            return budget
         } catch (e: Exception) {
             Log.e(TAG, "Error al convertir documento a Budget: ${e.message}", e)
             throw e
+        }
+    }
+
+    // Función para extraer el ID en formato simple
+    private fun extractId(document: Document): String {
+        return when (val idValue = document.get("_id")) {
+            is String -> idValue
+            is ObjectId -> idValue.toString()
+            is Document -> {
+                // Si es un documento BSON con formato $oid
+                if (idValue.containsKey("\$oid")) {
+                    idValue.getString("\$oid") ?: UUID.randomUUID().toString()
+                } else {
+                    UUID.randomUUID().toString()
+                }
+            }
+            else -> {
+                Log.w(TAG, "ID con formato inesperado: ${idValue?.javaClass?.name}")
+                idValue?.toString() ?: UUID.randomUUID().toString()
+            }
         }
     }
 
@@ -716,7 +1017,7 @@ class MongoDBService(private val mongodbUri: String) {
                         nombre = doc.getString("nombre") ?: "",
                         cantidad = getIntValue(doc, "cantidad"),
                         precio = getLongValue(doc, "precio"),
-                        limite = parseLimite(doc.get("limite", Document::class.java))
+                        limite = parseLimite(doc.get("limite") as? Document)
                     )
                 )
             } catch (e: Exception) {
@@ -781,7 +1082,7 @@ class MongoDBService(private val mongodbUri: String) {
                         fondo = getIntValue(doc, "fondo"),
                         alto = getIntValue(doc, "alto"),
                         cantidad = getIntValue(doc, "cantidad"),
-                        limite = parseLimite(doc.get("limite", Document::class.java)),
+                        limite = parseLimite(doc.get("limite") as? Document),
                         precio = getLongValue(doc, "precio")
                     )
                 )
@@ -798,7 +1099,14 @@ class MongoDBService(private val mongodbUri: String) {
             is Int -> value
             is Double -> value.toInt()
             is Long -> value.toInt()
-            else -> 0
+            null -> 0
+            else -> {
+                try {
+                    value.toString().toIntOrNull() ?: 0
+                } catch (e: Exception) {
+                    0
+                }
+            }
         }
     }
 
@@ -807,25 +1115,14 @@ class MongoDBService(private val mongodbUri: String) {
             is Long -> value
             is Int -> value.toLong()
             is Double -> value.toLong()
-            else -> 0L
-        }
-    }
-
-    // Método de extensión para obtener una lista con manejo de nulos
-    private fun <T> Document.getList(key: String, clazz: Class<T>): List<T>? {
-        return try {
-            val value = this.get(key)
-            if (value == null) {
-                null
-            } else if (value is List<*>) {
-                @Suppress("UNCHECKED_CAST")
-                value as List<T>
-            } else {
-                null
+            null -> 0L
+            else -> {
+                try {
+                    value.toString().toLongOrNull() ?: 0L
+                } catch (e: Exception) {
+                    0L
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al obtener lista para clave $key: ${e.message}", e)
-            null
         }
     }
 }

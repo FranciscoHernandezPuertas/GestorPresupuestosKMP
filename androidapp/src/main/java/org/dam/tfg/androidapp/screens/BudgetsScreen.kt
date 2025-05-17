@@ -1,5 +1,6 @@
 package org.dam.tfg.androidapp.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,14 +10,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import org.dam.tfg.androidapp.models.Budget
 import org.dam.tfg.androidapp.models.User
 import java.text.SimpleDateFormat
 import java.util.*
+
+private const val TAG = "BudgetsScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +29,8 @@ fun BudgetsScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
+    val context = LocalContext.current
+    val mongoDBService = remember { MongoDBServiceFactory.createService(context) }
 
     var budgets by remember { mutableStateOf<List<Budget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -38,10 +43,12 @@ fun BudgetsScreen(
 
     // Load budgets on first composition
     LaunchedEffect(Unit) {
+        Log.d(TAG, "Cargando presupuestos...")
         loadAllBudgets(mongoDBService) { newBudgets, error ->
             budgets = newBudgets
             errorMessage = error
             isLoading = false
+            Log.d(TAG, "Presupuestos cargados: ${budgets.size}, Error: $error")
         }
     }
 
@@ -292,11 +299,31 @@ private fun formatPrice(price: Long): String {
 
 private fun formatDate(dateString: String): String {
     try {
-        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
-        val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        val date = inputFormat.parse(dateString)
-        return date?.let { outputFormat.format(it) } ?: dateString
+        // Intentar varios formatos de fecha
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd"
+        )
+
+        for (format in formats) {
+            try {
+                val inputFormat = SimpleDateFormat(format, Locale.getDefault())
+                inputFormat.timeZone = TimeZone.getTimeZone("UTC")
+                val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val date = inputFormat.parse(dateString)
+                if (date != null) {
+                    return outputFormat.format(date)
+                }
+            } catch (e: Exception) {
+                // Intentar con el siguiente formato
+            }
+        }
+
+        // Si ningún formato funciona, devolver la cadena original
+        return dateString
     } catch (e: Exception) {
+        Log.e(TAG, "Error al formatear fecha: $dateString", e)
         return dateString
     }
 }
@@ -306,9 +333,12 @@ private suspend fun loadAllBudgets(
     onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
+        Log.d(TAG, "Cargando todos los presupuestos...")
         val budgets = mongoDBService.getAllBudgets()
+        Log.d(TAG, "Presupuestos obtenidos: ${budgets.size}")
         onResult(budgets, null)
     } catch (e: Exception) {
+        Log.e(TAG, "Error al cargar presupuestos: ${e.message}", e)
         onResult(emptyList(), e.message)
     }
 }
@@ -322,6 +352,7 @@ private suspend fun loadBudgetsByUsername(
         val budgets = mongoDBService.getBudgetsByUsername(username)
         onResult(budgets, null)
     } catch (e: Exception) {
+        Log.e(TAG, "Error al cargar presupuestos por usuario: ${e.message}", e)
         onResult(emptyList(), e.message)
     }
 }
@@ -336,6 +367,7 @@ private suspend fun loadBudgetsByDateRange(
         val budgets = mongoDBService.getBudgetsByDateRange(startDate, endDate)
         onResult(budgets, null)
     } catch (e: Exception) {
+        Log.e(TAG, "Error al cargar presupuestos por rango de fechas: ${e.message}", e)
         onResult(emptyList(), e.message)
     }
 }
