@@ -8,29 +8,83 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.dam.tfg.androidapp.models.User
 import org.dam.tfg.androidapp.screens.*
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
-    object Home : Screen("home")
-    object Materials : Screen("materials")
-    object Formulas : Screen("formulas")
-    object Users : Screen("users")
-    object Budgets : Screen("budgets")
-    object History : Screen("history")
-    
+    object Home : Screen("home/{userJson}") {
+        fun createRoute(user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "home/$encodedUserJson"
+        }
+    }
+    object Materials : Screen("materials/{userJson}") {
+        fun createRoute(user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "materials/$encodedUserJson"
+        }
+    }
+    object Formulas : Screen("formulas/{userJson}") {
+        fun createRoute(user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "formulas/$encodedUserJson"
+        }
+    }
+    object Users : Screen("users/{userJson}") {
+        fun createRoute(user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "users/$encodedUserJson"
+        }
+    }
+    object Budgets : Screen("budgets/{userJson}") {
+        fun createRoute(user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "budgets/$encodedUserJson"
+        }
+    }
+    object History : Screen("history/{userJson}") {
+        fun createRoute(user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "history/$encodedUserJson"
+        }
+    }
+
     // Edit screens
-    object EditMaterial : Screen("edit_material/{materialId}") {
-        fun createRoute(materialId: String) = "edit_material/$materialId"
+    object EditMaterial : Screen("edit_material/{materialId}/{userJson}") {
+        fun createRoute(materialId: String, user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "edit_material/$materialId/$encodedUserJson"
+        }
     }
-    
-    object EditFormula : Screen("edit_formula/{formulaId}") {
-        fun createRoute(formulaId: String) = "edit_formula/$formulaId"
+
+    object EditFormula : Screen("edit_formula/{formulaId}/{userJson}") {
+        fun createRoute(formulaId: String, user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "edit_formula/$formulaId/$encodedUserJson"
+        }
     }
-    
-    object EditUser : Screen("edit_user/{userId}") {
-        fun createRoute(userId: String) = "edit_user/$userId"
+
+    object EditUser : Screen("edit_user/{userId}/{userJson}") {
+        fun createRoute(userId: String, user: User): String {
+            val userJson = Json.encodeToString(user)
+            val encodedUserJson = URLEncoder.encode(userJson, StandardCharsets.UTF_8.toString())
+            return "edit_user/$userId/$encodedUserJson"
+        }
     }
 }
 
@@ -40,7 +94,7 @@ fun AppNavigation(
     startDestination: String = Screen.Login.route
 ) {
     val actions = remember(navController) { NavigationActions(navController) }
-    
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -52,170 +106,205 @@ fun AppNavigation(
                 }
             )
         }
-        
-        composable(Screen.Home.route) {
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                HomeScreen(
-                    user = it,
-                    onNavigateToMaterials = actions.navigateToMaterials,
-                    onNavigateToFormulas = actions.navigateToFormulas,
-                    onNavigateToUsers = actions.navigateToUsers,
-                    onNavigateToBudgets = actions.navigateToBudgets,
-                    onNavigateToHistory = actions.navigateToHistory,
-                    onLogout = actions.navigateToLogin
-                )
-            }
+
+        composable(
+            route = Screen.Home.route,
+            arguments = listOf(navArgument("userJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            HomeScreen(
+                user = user,
+                onNavigateToMaterials = { actions.navigateToMaterials(user) },
+                onNavigateToFormulas = { actions.navigateToFormulas(user) },
+                onNavigateToUsers = { actions.navigateToUsers(user) },
+                onNavigateToBudgets = { actions.navigateToBudgets(user) },
+                onNavigateToHistory = { actions.navigateToHistory(user) },
+                onLogout = actions.navigateToLogin
+            )
         }
-        
-        composable(Screen.Materials.route) {
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                MaterialsScreen(
-                    user = it,
-                    onNavigateBack = actions.navigateUp,
-                    onNavigateToEditMaterial = actions.navigateToEditMaterial
-                )
-            }
+
+        composable(
+            route = Screen.Materials.route,
+            arguments = listOf(navArgument("userJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            MaterialsScreen(
+                user = user,
+                onNavigateBack = actions.navigateUp,
+                onNavigateToEditMaterial = { materialId -> actions.navigateToEditMaterial(materialId, user) }
+            )
         }
-        
+
         composable(
             route = Screen.EditMaterial.route,
-            arguments = listOf(navArgument("materialId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("materialId") { type = NavType.StringType },
+                navArgument("userJson") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val materialId = backStackEntry.arguments?.getString("materialId") ?: ""
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                EditMaterialScreen(
-                    materialId = materialId,
-                    user = it,
-                    onNavigateBack = actions.navigateUp
-                )
-            }
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            EditMaterialScreen(
+                materialId = materialId,
+                user = user,
+                onNavigateBack = actions.navigateUp
+            )
         }
-        
-        composable(Screen.Formulas.route) {
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                FormulasScreen(
-                    user = it,
-                    onNavigateBack = actions.navigateUp,
-                    onNavigateToEditFormula = actions.navigateToEditFormula
-                )
-            }
+
+        composable(
+            route = Screen.Formulas.route,
+            arguments = listOf(navArgument("userJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            FormulasScreen(
+                user = user,
+                onNavigateBack = actions.navigateUp,
+                onNavigateToEditFormula = { formulaId -> actions.navigateToEditFormula(formulaId, user) }
+            )
         }
-        
+
         composable(
             route = Screen.EditFormula.route,
-            arguments = listOf(navArgument("formulaId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("formulaId") { type = NavType.StringType },
+                navArgument("userJson") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val formulaId = backStackEntry.arguments?.getString("formulaId") ?: ""
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                EditFormulaScreen(
-                    formulaId = formulaId,
-                    user = it,
-                    onNavigateBack = actions.navigateUp
-                )
-            }
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            EditFormulaScreen(
+                formulaId = formulaId,
+                user = user,
+                onNavigateBack = actions.navigateUp
+            )
         }
-        
-        composable(Screen.Users.route) {
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                UsersScreen(
-                    user = it,
-                    onNavigateBack = actions.navigateUp,
-                    onNavigateToEditUser = actions.navigateToEditUser
-                )
-            }
+
+        composable(
+            route = Screen.Users.route,
+            arguments = listOf(navArgument("userJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            UsersScreen(
+                user = user,
+                onNavigateBack = actions.navigateUp,
+                onNavigateToEditUser = { userId -> actions.navigateToEditUser(userId, user) }
+            )
         }
-        
+
         composable(
             route = Screen.EditUser.route,
-            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("userJson") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId") ?: ""
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                EditUserScreen(
-                    userId = userId,
-                    user = it,
-                    onNavigateBack = actions.navigateUp
-                )
-            }
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            EditUserScreen(
+                userId = userId,
+                user = user,
+                onNavigateBack = actions.navigateUp
+            )
         }
-        
-        composable(Screen.Budgets.route) {
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                BudgetsScreen(
-                    user = it,
-                    onNavigateBack = actions.navigateUp
-                )
-            }
+
+        composable(
+            route = Screen.Budgets.route,
+            arguments = listOf(navArgument("userJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            BudgetsScreen(
+                user = user,
+                onNavigateBack = actions.navigateUp
+            )
         }
-        
-        composable(Screen.History.route) {
-            val user = navController.previousBackStackEntry?.savedStateHandle?.get<User>("user")
-            user?.let {
-                HistoryScreen(
-                    user = it,
-                    onNavigateBack = actions.navigateUp
-                )
-            }
+
+        composable(
+            route = Screen.History.route,
+            arguments = listOf(navArgument("userJson") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedUserJson = backStackEntry.arguments?.getString("userJson") ?: ""
+            val userJson = URLDecoder.decode(encodedUserJson, StandardCharsets.UTF_8.toString())
+            val user = Json.decodeFromString<User>(userJson)
+
+            HistoryScreen(
+                user = user,
+                onNavigateBack = actions.navigateUp
+            )
         }
     }
 }
 
 class NavigationActions(private val navController: NavHostController) {
-    
+
     val navigateUp: () -> Unit = {
         navController.navigateUp()
     }
-    
+
     val navigateToLogin: () -> Unit = {
         navController.navigate(Screen.Login.route) {
             popUpTo(0) { inclusive = true }
         }
     }
-    
+
     val navigateToHome: (User) -> Unit = { user ->
-        navController.currentBackStackEntry?.savedStateHandle?.set("user", user)
-        navController.navigate(Screen.Home.route) {
+        navController.navigate(Screen.Home.createRoute(user)) {
             popUpTo(Screen.Login.route) { inclusive = true }
         }
     }
-    
-    val navigateToMaterials: () -> Unit = {
-        navController.navigate(Screen.Materials.route)
+
+    val navigateToMaterials: (User) -> Unit = { user ->
+        navController.navigate(Screen.Materials.createRoute(user))
     }
-    
-    val navigateToFormulas: () -> Unit = {
-        navController.navigate(Screen.Formulas.route)
+
+    val navigateToFormulas: (User) -> Unit = { user ->
+        navController.navigate(Screen.Formulas.createRoute(user))
     }
-    
-    val navigateToUsers: () -> Unit = {
-        navController.navigate(Screen.Users.route)
+
+    val navigateToUsers: (User) -> Unit = { user ->
+        navController.navigate(Screen.Users.createRoute(user))
     }
-    
-    val navigateToBudgets: () -> Unit = {
-        navController.navigate(Screen.Budgets.route)
+
+    val navigateToBudgets: (User) -> Unit = { user ->
+        navController.navigate(Screen.Budgets.createRoute(user))
     }
-    
-    val navigateToHistory: () -> Unit = {
-        navController.navigate(Screen.History.route)
+
+    val navigateToHistory: (User) -> Unit = { user ->
+        navController.navigate(Screen.History.createRoute(user))
     }
-    
-    val navigateToEditMaterial: (String) -> Unit = { materialId ->
-        navController.navigate(Screen.EditMaterial.createRoute(materialId))
+
+    val navigateToEditMaterial: (String, User) -> Unit = { materialId, user ->
+        navController.navigate(Screen.EditMaterial.createRoute(materialId, user))
     }
-    
-    val navigateToEditFormula: (String) -> Unit = { formulaId ->
-        navController.navigate(Screen.EditFormula.createRoute(formulaId))
+
+    val navigateToEditFormula: (String, User) -> Unit = { formulaId, user ->
+        navController.navigate(Screen.EditFormula.createRoute(formulaId, user))
     }
-    
-    val navigateToEditUser: (String) -> Unit = { userId ->
-        navController.navigate(Screen.EditUser.createRoute(userId))
+
+    val navigateToEditUser: (String, User) -> Unit = { userId, user ->
+        navController.navigate(Screen.EditUser.createRoute(userId, user))
     }
 }

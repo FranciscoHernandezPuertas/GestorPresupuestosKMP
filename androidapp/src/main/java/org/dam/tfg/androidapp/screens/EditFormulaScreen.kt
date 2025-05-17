@@ -1,22 +1,26 @@
 package org.dam.tfg.androidapp.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import org.dam.tfg.androidapp.models.Formula
 import org.dam.tfg.androidapp.models.User
 import org.dam.tfg.androidapp.util.CryptoUtil
+import org.dam.tfg.androidapp.util.FormulaEncryption
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,23 +30,24 @@ fun EditFormulaScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+    val context = LocalContext.current
+    val mongoDBService = remember { MongoDBServiceFactory.createService(context) }
+
     var formula by remember { mutableStateOf<Formula?>(null) }
     var name by remember { mutableStateOf("") }
     var formulaText by remember { mutableStateOf("") }
     var variables by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var variableKey by remember { mutableStateOf("") }
     var variableValue by remember { mutableStateOf("") }
-    
+
     var isLoading by remember { mutableStateOf(formulaId != "new") }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
-    
+
     // JWT secret for formula encryption/decryption
     val jwtSecret = remember { user.username + user.password }
-    
+
     // Load formula if editing an existing one
     LaunchedEffect(formulaId) {
         if (formulaId != "new") {
@@ -51,19 +56,25 @@ fun EditFormulaScreen(
                 if (loadedFormula != null) {
                     formula = loadedFormula
                     name = loadedFormula.name
-                    
+
                     // Decrypt formula if needed
                     formulaText = if (loadedFormula.formulaEncrypted) {
-                        CryptoUtil.decryptFormula(loadedFormula.formula, jwtSecret) ?: "Error al descifrar"
+                        try {
+                            FormulaEncryption.decrypt(loadedFormula.formula)
+                        } catch (e: Exception) {
+                            Log.e("EditFormulaScreen", "Error al desencriptar fórmula: ${e.message}", e)
+                            "Error al desencriptar: ${e.message}"
+                        }
                     } else {
                         loadedFormula.formula
                     }
-                    
+
                     variables = loadedFormula.variables
                 } else {
                     errorMessage = "Fórmula no encontrada"
                 }
             } catch (e: Exception) {
+                Log.e("EditFormulaScreen", "Error al cargar la fórmula: ${e.message}", e)
                 errorMessage = "Error al cargar la fórmula: ${e.message}"
             } finally {
                 isLoading = false
@@ -72,12 +83,12 @@ fun EditFormulaScreen(
             isLoading = false
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
-                    Text(if (formulaId == "new") "Nueva Fórmula" else "Editar Fórmula") 
+                title = {
+                    Text(if (formulaId == "new") "Nueva Fórmula" else "Editar Fórmula")
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -113,7 +124,7 @@ fun EditFormulaScreen(
                         singleLine = true,
                         isError = name.isBlank() && errorMessage != null
                     )
-                    
+
                     OutlinedTextField(
                         value = formulaText,
                         onValueChange = { formulaText = it },
@@ -124,7 +135,7 @@ fun EditFormulaScreen(
                             .height(120.dp),
                         isError = formulaText.isBlank() && errorMessage != null
                     )
-                    
+
                     // Variables section
                     Card(
                         modifier = Modifier
@@ -141,7 +152,7 @@ fun EditFormulaScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            
+
                             // Display existing variables
                             if (variables.isNotEmpty()) {
                                 Column(
@@ -160,7 +171,7 @@ fun EditFormulaScreen(
                                                 text = "$key: $value",
                                                 modifier = Modifier.weight(1f)
                                             )
-                                            
+
                                             IconButton(
                                                 onClick = {
                                                     variables = variables.toMutableMap().apply {
@@ -178,7 +189,7 @@ fun EditFormulaScreen(
                                     }
                                 }
                             }
-                            
+
                             // Add new variable
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -193,7 +204,7 @@ fun EditFormulaScreen(
                                         .padding(end = 8.dp),
                                     singleLine = true
                                 )
-                                
+
                                 OutlinedTextField(
                                     value = variableValue,
                                     onValueChange = { variableValue = it },
@@ -204,7 +215,7 @@ fun EditFormulaScreen(
                                     singleLine = true
                                 )
                             }
-                            
+
                             Button(
                                 onClick = {
                                     if (variableKey.isNotBlank() && variableValue.isNotBlank()) {
@@ -224,7 +235,7 @@ fun EditFormulaScreen(
                             }
                         }
                     }
-                    
+
                     if (errorMessage != null) {
                         Text(
                             text = errorMessage!!,
@@ -232,7 +243,7 @@ fun EditFormulaScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    
+
                     if (successMessage != null) {
                         Text(
                             text = successMessage!!,
@@ -240,7 +251,7 @@ fun EditFormulaScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    
+
                     Button(
                         onClick = {
                             // Validate inputs
@@ -248,40 +259,47 @@ fun EditFormulaScreen(
                                 errorMessage = "El nombre no puede estar vacío"
                                 return@Button
                             }
-                            
+
                             if (formulaText.isBlank()) {
                                 errorMessage = "La fórmula no puede estar vacía"
                                 return@Button
                             }
-                            
+
                             // Save formula
                             coroutineScope.launch {
                                 isSaving = true
                                 errorMessage = null
                                 successMessage = null
-                                
+
                                 try {
+                                    // Encrypt formula
+                                    val encryptedFormula = if (formulaText.isNotBlank()) {
+                                        FormulaEncryption.encrypt(formulaText)
+                                    } else {
+                                        ""
+                                    }
+
                                     val formulaToSave = Formula(
                                         _id = formula?._id ?: "",
                                         name = name,
-                                        formula = formulaText,
-                                        formulaEncrypted = false, // Will be encrypted by the service
+                                        formula = encryptedFormula,
+                                        formulaEncrypted = true,
                                         variables = variables
                                     )
-                                    
+
                                     val success = if (formulaId == "new") {
-                                        mongoDBService.createFormula(formulaToSave, user.username, jwtSecret)
+                                        mongoDBService.createFormula(formulaToSave, user.username, "")
                                     } else {
-                                        mongoDBService.updateFormula(formulaToSave, user.username, jwtSecret)
+                                        mongoDBService.updateFormula(formulaToSave, user.username, "")
                                     }
-                                    
+
                                     if (success) {
                                         successMessage = if (formulaId == "new") {
                                             "Fórmula creada correctamente"
                                         } else {
                                             "Fórmula actualizada correctamente"
                                         }
-                                        
+
                                         // Clear form if creating a new formula
                                         if (formulaId == "new") {
                                             name = ""
@@ -294,6 +312,7 @@ fun EditFormulaScreen(
                                         errorMessage = "No se pudo guardar la fórmula"
                                     }
                                 } catch (e: Exception) {
+                                    Log.e("EditFormulaScreen", "Error al guardar la fórmula: ${e.message}", e)
                                     errorMessage = "Error: ${e.message}"
                                 } finally {
                                     isSaving = false

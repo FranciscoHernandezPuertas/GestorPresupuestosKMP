@@ -24,17 +24,18 @@ fun EditMaterialScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
+    // Crear una instancia directa de MongoDBService en lugar de usar el singleton
     val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+
     var material by remember { mutableStateOf<Material?>(null) }
     var name by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
-    
+
     var isLoading by remember { mutableStateOf(materialId != "new") }
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
-    
+
     // Load material if editing an existing one
     LaunchedEffect(materialId) {
         if (materialId != "new") {
@@ -56,12 +57,12 @@ fun EditMaterialScreen(
             isLoading = false
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
-                    Text(if (materialId == "new") "Nuevo Material" else "Editar Material") 
+                title = {
+                    Text(if (materialId == "new") "Nuevo Material" else "Editar Material")
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -96,7 +97,7 @@ fun EditMaterialScreen(
                         singleLine = true,
                         isError = name.isBlank() && errorMessage != null
                     )
-                    
+
                     OutlinedTextField(
                         value = price,
                         onValueChange = { price = it },
@@ -108,7 +109,7 @@ fun EditMaterialScreen(
                         singleLine = true,
                         isError = (price.isBlank() || price.toDoubleOrNull() == null) && errorMessage != null
                     )
-                    
+
                     if (errorMessage != null) {
                         Text(
                             text = errorMessage!!,
@@ -116,7 +117,7 @@ fun EditMaterialScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    
+
                     if (successMessage != null) {
                         Text(
                             text = successMessage!!,
@@ -124,7 +125,7 @@ fun EditMaterialScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                     }
-                    
+
                     Button(
                         onClick = {
                             // Validate inputs
@@ -132,39 +133,39 @@ fun EditMaterialScreen(
                                 errorMessage = "El nombre no puede estar vacío"
                                 return@Button
                             }
-                            
+
                             val priceValue = price.toDoubleOrNull()
                             if (priceValue == null) {
                                 errorMessage = "El precio debe ser un número válido"
                                 return@Button
                             }
-                            
+
                             // Save material
                             coroutineScope.launch {
                                 isSaving = true
                                 errorMessage = null
                                 successMessage = null
-                                
+
                                 try {
                                     val materialToSave = Material(
                                         _id = material?._id ?: "",
                                         name = name,
                                         price = priceValue
                                     )
-                                    
+
                                     val success = if (materialId == "new") {
                                         mongoDBService.createMaterial(materialToSave, user.username)
                                     } else {
                                         mongoDBService.updateMaterial(materialToSave, user.username)
                                     }
-                                    
+
                                     if (success) {
                                         successMessage = if (materialId == "new") {
                                             "Material creado correctamente"
                                         } else {
                                             "Material actualizado correctamente"
                                         }
-                                        
+
                                         // Clear form if creating a new material
                                         if (materialId == "new") {
                                             name = ""

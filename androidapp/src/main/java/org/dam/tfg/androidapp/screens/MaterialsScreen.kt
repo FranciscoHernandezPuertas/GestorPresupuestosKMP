@@ -24,13 +24,14 @@ fun MaterialsScreen(
     onNavigateToEditMaterial: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
+    // Crear una instancia directa de MongoDBService en lugar de usar el singleton
     val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+
     var materials by remember { mutableStateOf<List<Material>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showDeleteDialog by remember { mutableStateOf<Material?>(null) }
-    
+
     // Load materials on first composition
     LaunchedEffect(Unit) {
         loadMaterials(mongoDBService) { newMaterials, error ->
@@ -39,7 +40,7 @@ fun MaterialsScreen(
             isLoading = false
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -79,7 +80,7 @@ fun MaterialsScreen(
                         text = "Error: $errorMessage",
                         color = MaterialTheme.colorScheme.error
                     )
-                    
+
                     Button(
                         onClick = {
                             isLoading = true
@@ -107,7 +108,7 @@ fun MaterialsScreen(
                         text = "No hay materiales disponibles",
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    
+
                     Button(
                         onClick = { onNavigateToEditMaterial("new") },
                         modifier = Modifier.padding(top = 8.dp)
@@ -131,7 +132,7 @@ fun MaterialsScreen(
                 }
             }
         }
-        
+
         // Delete confirmation dialog
         if (showDeleteDialog != null) {
             AlertDialog(
@@ -143,7 +144,7 @@ fun MaterialsScreen(
                         onClick = {
                             val materialToDelete = showDeleteDialog
                             showDeleteDialog = null
-                            
+
                             if (materialToDelete != null) {
                                 isLoading = true
                                 coroutineScope.launch {
@@ -206,13 +207,13 @@ fun MaterialItem(
                     text = material.name,
                     style = MaterialTheme.typography.titleMedium
                 )
-                
+
                 Text(
                     text = "Precio: ${material.price}€",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            
+
             Row {
                 IconButton(onClick = onEdit) {
                     Icon(
@@ -221,7 +222,7 @@ fun MaterialItem(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                
+
                 IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,

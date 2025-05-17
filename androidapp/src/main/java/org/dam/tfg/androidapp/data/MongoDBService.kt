@@ -1,5 +1,6 @@
 package org.dam.tfg.androidapp.data
 
+import android.util.Log
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
 import com.mongodb.client.model.Filters
@@ -254,17 +255,13 @@ class MongoDBService(private val mongodbUri: String) {
     }
 
     suspend fun createFormula(formula: Formula, username: String, jwtSecret: String): Boolean = withContext(Dispatchers.IO) {
-        // Encrypt formula if needed
-        val encryptedFormula = if (!formula.formulaEncrypted) {
-            CryptoUtil.encryptFormula(formula.formula, jwtSecret)
-        } else {
-            formula.formula
-        }
+        // No necesitamos usar jwtSecret ya que FormulaEncryption maneja la encriptación
+        // La fórmula ya debe venir encriptada desde EditFormulaScreen
 
         val document = Document()
             .append("name", formula.name)
-            .append("formula", encryptedFormula)
-            .append("formulaEncrypted", true)
+            .append("formula", formula.formula)
+            .append("formulaEncrypted", formula.formulaEncrypted)
             .append("variables", Document(formula.variables))
 
         try {
@@ -272,18 +269,15 @@ class MongoDBService(private val mongodbUri: String) {
             logAction(username, "Creación de fórmula", "Fórmula: ${formula.name}")
             return@withContext true
         } catch (e: Exception) {
+            Log.e("MongoDBService", "Error al crear fórmula: ${e.message}", e)
             return@withContext false
         }
     }
 
     suspend fun updateFormula(formula: Formula, username: String, jwtSecret: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            // Encrypt formula if needed
-            val encryptedFormula = if (!formula.formulaEncrypted) {
-                CryptoUtil.encryptFormula(formula.formula, jwtSecret)
-            } else {
-                formula.formula
-            }
+            // No necesitamos usar jwtSecret ya que FormulaEncryption maneja la encriptación
+            // La fórmula ya debe venir encriptada desde EditFormulaScreen
 
             val filter = try {
                 Filters.eq("_id", ObjectId(formula._id))
@@ -294,8 +288,8 @@ class MongoDBService(private val mongodbUri: String) {
 
             val update = Document("\$set", Document()
                 .append("name", formula.name)
-                .append("formula", encryptedFormula)
-                .append("formulaEncrypted", true)
+                .append("formula", formula.formula)
+                .append("formulaEncrypted", formula.formulaEncrypted)
                 .append("variables", Document(formula.variables))
             )
 
@@ -303,8 +297,7 @@ class MongoDBService(private val mongodbUri: String) {
             logAction(username, "Actualización de fórmula", "Fórmula: ${formula.name}")
             return@withContext true
         } catch (e: Exception) {
-            println("Error en updateFormula: ${e.message}")
-            e.printStackTrace()
+            Log.e("MongoDBService", "Error al actualizar fórmula: ${e.message}", e)
             return@withContext false
         }
     }
@@ -438,10 +431,18 @@ class MongoDBService(private val mongodbUri: String) {
             else -> throw IllegalArgumentException("ID de material con formato inesperado: ${idValue?.javaClass?.name}")
         }
 
+        // Manejo seguro del precio que puede ser Double o Integer
+        val price = when (val priceValue = document.get("price")) {
+            is Double -> priceValue
+            is Int -> priceValue.toDouble()
+            is Long -> priceValue.toDouble()
+            else -> 0.0
+        }
+
         return Material(
             _id = id,
-            name = document.getString("name"),
-            price = document.getDouble("price")
+            name = document.getString("name") ?: "",
+            price = price
         )
     }
 
@@ -462,8 +463,8 @@ class MongoDBService(private val mongodbUri: String) {
 
         return Formula(
             _id = id,
-            name = document.getString("name"),
-            formula = document.getString("formula"),
+            name = document.getString("name") ?: "",
+            formula = document.getString("formula") ?: "",
             formulaEncrypted = document.getBoolean("formulaEncrypted", true),
             variables = variables
         )
@@ -489,78 +490,99 @@ class MongoDBService(private val mongodbUri: String) {
 
         return Budget(
             _id = id,
-            tipo = document.getString("tipo"),
-            tramos = parseTramos(document.getList("tramos", Document::class.java)),
-            elementosGenerales = parseElementosGenerales(document.getList("elementosGenerales", Document::class.java)),
-            cubetas = parseCubetas(document.getList("cubetas", Document::class.java)),
-            modulos = parseModulos(document.getList("modulos", Document::class.java)),
-            precioTotal = document.getLong("precioTotal"),
-            fechaCreacion = document.getString("fechaCreacion"),
-            username = document.getString("username"),
+            tipo = document.getString("tipo") ?: "",
+            tramos = parseTramos(document.getList("tramos", Document::class.java, emptyList())),
+            elementosGenerales = parseElementosGenerales(document.getList("elementosGenerales", Document::class.java, emptyList())),
+            cubetas = parseCubetas(document.getList("cubetas", Document::class.java, emptyList())),
+            modulos = parseModulos(document.getList("modulos", Document::class.java, emptyList())),
+            precioTotal = document.getLong("precioTotal") ?: 0L,
+            fechaCreacion = document.getString("fechaCreacion") ?: "",
+            username = document.getString("username") ?: "",
             error = document.getString("error") ?: ""
         )
     }
 
-    private fun parseTramos(documents: List<Document>): List<Tramo> {
-        return documents.map { doc ->
+    private fun parseTramos(documents: List<Document>?): List<Tramo> {
+        return documents?.map { doc ->
             Tramo(
-                numero = doc.getInteger("numero"),
-                largo = doc.getInteger("largo"),
-                ancho = doc.getInteger("ancho"),
-                precio = doc.getLong("precio"),
-                tipo = doc.getString("tipo"),
+                numero = doc.getInteger("numero") ?: 0,
+                largo = doc.getInteger("largo") ?: 0,
+                ancho = doc.getInteger("ancho") ?: 0,
+                precio = doc.getLong("precio") ?: 0L,
+                tipo = doc.getString("tipo") ?: "",
                 error = doc.getString("error") ?: ""
             )
-        }
+        } ?: emptyList()
     }
 
-    private fun parseElementosGenerales(documents: List<Document>): List<ElementoGeneral> {
-        return documents.map { doc ->
+    private fun parseElementosGenerales(documents: List<Document>?): List<ElementoGeneral> {
+        return documents?.map { doc ->
             ElementoGeneral(
-                nombre = doc.getString("nombre"),
-                cantidad = doc.getInteger("cantidad"),
-                precio = doc.getLong("precio"),
+                nombre = doc.getString("nombre") ?: "",
+                cantidad = doc.getInteger("cantidad") ?: 0,
+                precio = doc.getLong("precio") ?: 0L,
                 limite = parseLimite(doc.get("limite", Document::class.java))
             )
+        } ?: emptyList()
+    }
+
+    private fun parseLimite(document: Document?): Limite {
+        return if (document != null) {
+            Limite(
+                id = document.getString("id") ?: "",
+                name = document.getString("name") ?: "",
+                minQuantity = document.getInteger("minQuantity") ?: 0,
+                maxQuantity = document.getInteger("maxQuantity") ?: 0,
+                initialQuantity = document.getInteger("initialQuantity") ?: 0
+            )
+        } else {
+            Limite("", "", 0, 0, 0)
         }
     }
 
-    private fun parseLimite(document: Document): Limite {
-        return Limite(
-            id = document.getString("id") ?: "",
-            name = document.getString("name"),
-            minQuantity = document.getInteger("minQuantity"),
-            maxQuantity = document.getInteger("maxQuantity"),
-            initialQuantity = document.getInteger("initialQuantity")
-        )
-    }
-
-    private fun parseCubetas(documents: List<Document>): List<Cubeta> {
-        return documents.map { doc ->
+    private fun parseCubetas(documents: List<Document>?): List<Cubeta> {
+        return documents?.map { doc ->
             Cubeta(
-                tipo = doc.getString("tipo"),
-                numero = doc.getInteger("numero"),
-                largo = doc.getInteger("largo"),
-                fondo = doc.getInteger("fondo"),
-                alto = doc.getInteger("alto"),
-                precio = doc.getLong("precio"),
+                tipo = doc.getString("tipo") ?: "",
+                numero = doc.getInteger("numero") ?: 0,
+                largo = doc.getInteger("largo") ?: 0,
+                fondo = doc.getInteger("fondo") ?: 0,
+                alto = doc.getInteger("alto") ?: 0,
+                precio = doc.getLong("precio") ?: 0L,
                 error = doc.getString("error") ?: "",
-                minQuantity = doc.getInteger("minQuantity")
+                minQuantity = doc.getInteger("minQuantity") ?: 0
             )
-        }
+        } ?: emptyList()
     }
 
-    private fun parseModulos(documents: List<Document>): List<Modulo> {
-        return documents.map { doc ->
+    private fun parseModulos(documents: List<Document>?): List<Modulo> {
+        return documents?.map { doc ->
             Modulo(
-                nombre = doc.getString("nombre"),
-                largo = doc.getInteger("largo"),
-                fondo = doc.getInteger("fondo"),
-                alto = doc.getInteger("alto"),
-                cantidad = doc.getInteger("cantidad"),
+                nombre = doc.getString("nombre") ?: "",
+                largo = doc.getInteger("largo") ?: 0,
+                fondo = doc.getInteger("fondo") ?: 0,
+                alto = doc.getInteger("alto") ?: 0,
+                cantidad = doc.getInteger("cantidad") ?: 0,
                 limite = parseLimite(doc.get("limite", Document::class.java)),
-                precio = doc.getLong("precio")
+                precio = doc.getLong("precio") ?: 0L
             )
+        } ?: emptyList()
+    }
+
+    // Función de extensión para obtener una lista con manejo de nulos
+    private fun <T> Document.getList(key: String, clazz: Class<T>, defaultValue: List<T> = emptyList()): List<T> {
+        return try {
+            val value = this.get(key)
+            if (value == null) {
+                defaultValue
+            } else if (value is List<*>) {
+                @Suppress("UNCHECKED_CAST")
+                value as List<T>
+            } else {
+                defaultValue
+            }
+        } catch (e: Exception) {
+            defaultValue
         }
     }
 }
