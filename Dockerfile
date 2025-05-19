@@ -7,7 +7,7 @@ ARG KOBWEB_APP_ROOT="site"
 FROM eclipse-temurin:21 AS export
 
 # Kobweb CLI version and Node setup
-ENV KOBWEB_CLI_VERSION=0.9.18
+ARG KOBWEB_CLI_VERSION=0.9.18
 ARG KOBWEB_APP_ROOT
 ENV NODE_MAJOR=20
 
@@ -29,11 +29,11 @@ RUN apt-get update \
     && npm init -y \
     && npx playwright install --with-deps chromium
 
-# Install Kobweb CLI
+# Install Kobweb CLI to a fixed directory
 RUN wget https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip \
-    && unzip kobweb-${KOBWEB_CLI_VERSION}.zip \
+    && unzip kobweb-${KOBWEB_CLI_VERSION}.zip -d /kobweb-cli \
     && rm kobweb-${KOBWEB_CLI_VERSION}.zip
-ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
+ENV PATH="/kobweb-cli/bin:${PATH}"
 
 # Configure Gradle/Kotlin to use minimal memory & single worker
 WORKDIR /project/${KOBWEB_APP_ROOT}
@@ -43,12 +43,11 @@ RUN mkdir -p ~/.gradle \
     && echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties \
     && echo "kotlin.js.ir.incremental=false" >> ~/.gradle/gradle.properties
 
-# Build & export the Kobweb site (no --release flag)
+# Build & export the Kobweb site
 RUN kobweb export --notty
 
-# Ensure start script is executable (relative to WORKDIR)
-RUN chmod +x .kobweb/server/start.sh
-
+# Ensure start script is executable
+RUN chmod +x /project/${KOBWEB_APP_ROOT}/.kobweb/server/start.sh
 
 ###############################################################################
 # Stage 2: Runtime Image
