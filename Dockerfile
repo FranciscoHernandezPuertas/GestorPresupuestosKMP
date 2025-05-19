@@ -49,10 +49,13 @@ WORKDIR /project/${KOBWEB_APP_ROOT}
 # Decrease Gradle memory usage to avoid OOM situations in tight environments
 # (many free Cloud tiers only give you 512M of RAM). The following amount
 # should be enough to build and export our site.
-RUN mkdir ~/.gradle && \
+RUN mkdir -p ~/.gradle && \
     echo "org.gradle.jvmargs=-Xmx325m" >> ~/.gradle/gradle.properties
 
 RUN kobweb export --notty
+
+# Ensure the start script has execution permissions
+RUN chmod +x /project/${KOBWEB_APP_ROOT}/.kobweb/server/start.sh
 
 #-----------------------------------------------------------------------------
 # Create the final stage, which contains just enough bits to run the Kobweb
@@ -61,10 +64,19 @@ FROM java as run
 
 ARG KOBWEB_APP_ROOT
 
-COPY --from=export /project/${KOBWEB_APP_ROOT}/.kobweb .kobweb
+# Set a working directory for the final container
+WORKDIR /app
+
+# Copy the export result from the export stage
+COPY --from=export /project/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
 # Because many free tiers only give you 512M of RAM, let's limit the server's
 # memory usage to that. You can remove this ENV line if your server isn't so
 # restricted. That said, 512M should be plenty for most (all?) sites.
 ENV JAVA_TOOL_OPTIONS="-Xmx512m"
-ENTRYPOINT .kobweb/server/start.sh
+
+# Verify that the start script exists and is executable
+RUN ls -la .kobweb/server/ && chmod +x .kobweb/server/start.sh
+
+# Use full path to ensure the script is found
+ENTRYPOINT ["/app/.kobweb/server/start.sh"]
