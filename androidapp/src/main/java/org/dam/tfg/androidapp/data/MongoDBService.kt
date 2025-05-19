@@ -14,6 +14,7 @@ import org.bson.types.ObjectId
 import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_NAME
 import org.dam.tfg.androidapp.models.*
 import org.dam.tfg.androidapp.util.CryptoUtil
+import org.dam.tfg.androidapp.util.IdUtils
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -87,8 +88,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Buscando usuario con ID: $id")
 
+            // Normalizar el ID para asegurar la comparación correcta
+            val normalizedId = IdUtils.normalizeId(id)
+
             // Intentar buscar por ID exacto primero
-            var document = usersCollection.find(Filters.eq("_id", id)).firstOrNull()
+            var document = usersCollection.find(Filters.eq("_id", normalizedId)).firstOrNull()
 
             // Si no se encuentra, intentar buscar como ObjectId
             if (document == null) {
@@ -101,21 +105,18 @@ class MongoDBService(private val mongodbUri: String) {
                 }
             }
 
-            // Si aún no se encuentra, intentar buscar en formato BSON/ObjectId
+            // Si aún no se encuentra, buscar manualmente comparando IDs normalizados
             if (document == null) {
-                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
-                // Intentar buscar todos y filtrar manualmente
                 try {
                     val allDocs = usersCollection.find().toList()
                     document = allDocs.find { doc ->
-                        val idValue = doc.get("_id")
-                        if (idValue is Document && idValue.containsKey("\$oid")) {
-                            idValue.getString("\$oid") == id
-                        } else {
-                            false
-                        }
+                        val extractedId = extractId(doc)
+                        normalizedId == extractedId
                     }
-                    Log.d(TAG, "Búsqueda manual por formato BSON/ObjectId: ${document != null}")
+
+                    if (document != null) {
+                        Log.d(TAG, "Usuario encontrado por búsqueda manual de ID")
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error en búsqueda manual: ${e.message}", e)
                 }
@@ -137,7 +138,7 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun createUser(user: User): Boolean = withContext(Dispatchers.IO) {
         val document = Document()
-            .append("_id", user._id.ifEmpty { UUID.randomUUID().toString() })
+            .append("_id", user._id.ifEmpty { IdUtils.generateId() })
             .append("username", user.username)
             .append("password", user.password)
             .append("type", user.type)
@@ -186,12 +187,7 @@ class MongoDBService(private val mongodbUri: String) {
                 try {
                     val allDocs = usersCollection.find().toList()
                     val docToUpdate = allDocs.find { doc ->
-                        val idValue = doc.get("_id")
-                        if (idValue is Document && idValue.containsKey("\$oid")) {
-                            idValue.getString("\$oid") == user._id
-                        } else {
-                            false
-                        }
+                        extractId(doc) == user._id
                     }
 
                     if (docToUpdate != null) {
@@ -199,7 +195,7 @@ class MongoDBService(private val mongodbUri: String) {
                         val docId = docToUpdate.get("_id")
                         filter = Filters.eq("_id", docId)
                         result = usersCollection.updateOne(filter, update)
-                        Log.d(TAG, "Actualización manual por formato BSON/ObjectId: ${result.modifiedCount} documentos modificados")
+                        Log.d(TAG, "Actualización manual: ${result.modifiedCount} documentos modificados")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error en actualización manual: ${e.message}", e)
@@ -511,8 +507,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Buscando fórmula con ID: $id")
 
+            // Normalizar el ID para asegurar la comparación correcta
+            val normalizedId = IdUtils.normalizeId(id)
+
             // Intentar buscar por ID exacto primero
-            var document = formulasCollection.find(Filters.eq("_id", id)).firstOrNull()
+            var document = formulasCollection.find(Filters.eq("_id", normalizedId)).firstOrNull()
 
             // Si no se encuentra, intentar buscar como ObjectId
             if (document == null) {
@@ -525,21 +524,18 @@ class MongoDBService(private val mongodbUri: String) {
                 }
             }
 
-            // Si aún no se encuentra, intentar buscar en formato BSON/ObjectId
+            // Si aún no se encuentra, buscar manualmente comparando IDs normalizados
             if (document == null) {
-                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
-                // Intentar buscar todos y filtrar manualmente
                 try {
                     val allDocs = formulasCollection.find().toList()
                     document = allDocs.find { doc ->
-                        val idValue = doc.get("_id")
-                        if (idValue is Document && idValue.containsKey("\$oid")) {
-                            idValue.getString("\$oid") == id
-                        } else {
-                            false
-                        }
+                        val extractedId = extractId(doc)
+                        normalizedId == extractedId
                     }
-                    Log.d(TAG, "Búsqueda manual por formato BSON/ObjectId: ${document != null}")
+
+                    if (document != null) {
+                        Log.d(TAG, "Fórmula encontrada por búsqueda manual de ID")
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error en búsqueda manual: ${e.message}", e)
                 }
@@ -561,7 +557,7 @@ class MongoDBService(private val mongodbUri: String) {
 
     suspend fun createFormula(formula: Formula, username: String, jwtSecret: String): Boolean = withContext(Dispatchers.IO) {
         val document = Document()
-            .append("_id", formula._id.ifEmpty { UUID.randomUUID().toString() })
+            .append("_id", formula._id.ifEmpty { IdUtils.generateId() })
             .append("name", formula.name)
             .append("formula", formula.formula)
             .append("formulaEncrypted", formula.formulaEncrypted)
@@ -581,8 +577,11 @@ class MongoDBService(private val mongodbUri: String) {
         try {
             Log.d(TAG, "Actualizando fórmula con ID: ${formula._id}")
 
+            // Normalizar el ID
+            val normalizedId = IdUtils.normalizeId(formula._id)
+
             // Intentar actualizar por ID exacto primero
-            var filter = Filters.eq("_id", formula._id)
+            var filter = Filters.eq("_id", normalizedId)
 
             val update = Document("\$set", Document()
                 .append("name", formula.name)
@@ -605,19 +604,12 @@ class MongoDBService(private val mongodbUri: String) {
                 }
             }
 
-            // Si aún no se actualizó ningún documento, intentar con formato BSON/ObjectId
+            // Si aún no se actualizó ningún documento, buscar manualmente
             if (result.modifiedCount == 0L) {
-                // Para documentos con formato BSON/ObjectId, necesitamos otra estrategia
-                // Primero encontrar el documento manualmente
                 try {
                     val allDocs = formulasCollection.find().toList()
                     val docToUpdate = allDocs.find { doc ->
-                        val idValue = doc.get("_id")
-                        if (idValue is Document && idValue.containsKey("\$oid")) {
-                            idValue.getString("\$oid") == formula._id
-                        } else {
-                            false
-                        }
+                        extractId(doc) == normalizedId
                     }
 
                     if (docToUpdate != null) {
@@ -625,7 +617,7 @@ class MongoDBService(private val mongodbUri: String) {
                         val docId = docToUpdate.get("_id")
                         filter = Filters.eq("_id", docId)
                         result = formulasCollection.updateOne(filter, update)
-                        Log.d(TAG, "Actualización manual por formato BSON/ObjectId: ${result.modifiedCount} documentos modificados")
+                        Log.d(TAG, "Actualización manual: ${result.modifiedCount} documentos modificados")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error en actualización manual: ${e.message}", e)
@@ -837,7 +829,7 @@ class MongoDBService(private val mongodbUri: String) {
     // Logging actions
     private suspend fun logAction(userId: String, action: String, details: String) = withContext(Dispatchers.IO) {
         val document = Document()
-            .append("_id", UUID.randomUUID().toString())
+            .append("_id", IdUtils.generateId())
             .append("userId", userId)
             .append("action", action)
             .append("timestamp", Date().toString())
@@ -965,22 +957,25 @@ class MongoDBService(private val mongodbUri: String) {
 
     // Función para extraer el ID en formato simple
     private fun extractId(document: Document): String {
-        return when (val idValue = document.get("_id")) {
+        val rawId = when (val idValue = document.get("_id")) {
             is String -> idValue
             is ObjectId -> idValue.toString()
             is Document -> {
                 // Si es un documento BSON con formato $oid
                 if (idValue.containsKey("\$oid")) {
-                    idValue.getString("\$oid") ?: UUID.randomUUID().toString()
+                    idValue.getString("\$oid") ?: IdUtils.generateId()
                 } else {
-                    UUID.randomUUID().toString()
+                    IdUtils.generateId()
                 }
             }
             else -> {
                 Log.w(TAG, "ID con formato inesperado: ${idValue?.javaClass?.name}")
-                idValue?.toString() ?: UUID.randomUUID().toString()
+                idValue?.toString() ?: IdUtils.generateId()
             }
         }
+
+        // Normalizar el ID quitando guiones
+        return IdUtils.normalizeId(rawId)
     }
 
     private fun parseTramos(documents: List<Document>?): List<Tramo> {
@@ -1126,3 +1121,4 @@ class MongoDBService(private val mongodbUri: String) {
         }
     }
 }
+

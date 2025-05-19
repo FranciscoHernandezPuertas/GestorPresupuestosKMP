@@ -18,6 +18,8 @@ import org.dam.tfg.androidapp.data.MongoDBService
 import org.dam.tfg.androidapp.models.User
 import org.dam.tfg.androidapp.util.CryptoUtil
 import org.dam.tfg.androidapp.data.MongoDBServiceFactory
+import kotlinx.coroutines.withTimeout
+import org.dam.tfg.androidapp.util.IdUtils
 
 private const val TAG = "EditUserScreen"
 
@@ -48,16 +50,20 @@ fun EditUserScreen(
         if (userId != "new") {
             try {
                 Log.d(TAG, "Cargando usuario con ID: $userId")
-                val loadedUser = mongoDBService.getUserById(userId)
 
-                if (loadedUser != null) {
-                    Log.d(TAG, "Usuario cargado: ${loadedUser.username}")
-                    userToEdit = loadedUser
-                    username = loadedUser.username
-                    userType = loadedUser.type
-                } else {
-                    Log.e(TAG, "Usuario no encontrado con ID: $userId")
-                    errorMessage = "Usuario no encontrado"
+                // Añadir timeout para evitar bloqueos infinitos
+                withTimeout(15000) {
+                    val loadedUser = mongoDBService.getUserById(userId)
+
+                    if (loadedUser != null) {
+                        Log.d(TAG, "Usuario cargado: ${loadedUser.username} con ID: ${loadedUser._id}")
+                        userToEdit = loadedUser
+                        username = loadedUser.username
+                        userType = loadedUser.type
+                    } else {
+                        Log.e(TAG, "Usuario no encontrado con ID: $userId")
+                        errorMessage = "Usuario no encontrado. Verifique el ID."
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error al cargar el usuario: ${e.message}", e)
@@ -226,13 +232,17 @@ fun EditUserScreen(
                                         userToEdit?.password ?: ""
                                     }
 
+                                    // Usar un ID normalizado o generar uno nuevo
+                                    val userId = if (userToEdit?._id.isNullOrEmpty()) IdUtils.generateId() else userToEdit?._id!!
+
                                     val userToSave = User(
-                                        _id = userToEdit?._id ?: "",
+                                        _id = userId,
                                         username = username,
                                         password = hashedPassword,
                                         type = userType
                                     )
 
+                                    Log.d(TAG, "Guardando usuario con ID: ${userToSave._id}")
                                     val success = if (userId == "new") {
                                         mongoDBService.createUser(userToSave)
                                     } else {

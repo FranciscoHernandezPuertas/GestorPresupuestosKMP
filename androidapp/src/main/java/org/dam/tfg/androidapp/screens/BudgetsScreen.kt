@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import org.dam.tfg.androidapp.data.MongoDBService
 import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import org.dam.tfg.androidapp.models.Budget
@@ -328,32 +329,45 @@ private fun formatDate(dateString: String): String {
     }
 }
 
+// Modificar el método de carga de presupuestos para añadir mejor log y manejo de errores
 private suspend fun loadAllBudgets(
     mongoDBService: MongoDBService,
     onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
         Log.d(TAG, "Cargando todos los presupuestos...")
-        val budgets = mongoDBService.getAllBudgets()
-        Log.d(TAG, "Presupuestos obtenidos: ${budgets.size}")
-        onResult(budgets, null)
+        withTimeout(30000) { // Timeout de 30 segundos
+            val budgets = mongoDBService.getAllBudgets()
+            Log.d(TAG, "Presupuestos obtenidos: ${budgets.size}")
+
+            // Loguear algunos detalles para depuración
+            if (budgets.isNotEmpty()) {
+                Log.d(TAG, "Primer presupuesto: ID=${budgets[0]._id}, Tipo=${budgets[0].tipo}, Usuario=${budgets[0].username}")
+            }
+
+            onResult(budgets, null)
+        }
     } catch (e: Exception) {
         Log.e(TAG, "Error al cargar presupuestos: ${e.message}", e)
-        onResult(emptyList(), e.message)
+        onResult(emptyList(), "Error: ${e.message}")
     }
 }
 
+// Actualizar también los otros métodos de carga
 private suspend fun loadBudgetsByUsername(
     mongoDBService: MongoDBService,
     username: String,
     onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
-        val budgets = mongoDBService.getBudgetsByUsername(username)
-        onResult(budgets, null)
+        withTimeout(30000) {
+            val budgets = mongoDBService.getBudgetsByUsername(username)
+            Log.d(TAG, "Presupuestos por usuario '$username' obtenidos: ${budgets.size}")
+            onResult(budgets, null)
+        }
     } catch (e: Exception) {
         Log.e(TAG, "Error al cargar presupuestos por usuario: ${e.message}", e)
-        onResult(emptyList(), e.message)
+        onResult(emptyList(), "Error: ${e.message}")
     }
 }
 
@@ -364,10 +378,13 @@ private suspend fun loadBudgetsByDateRange(
     onResult: (List<Budget>, String?) -> Unit
 ) {
     try {
-        val budgets = mongoDBService.getBudgetsByDateRange(startDate, endDate)
-        onResult(budgets, null)
+        withTimeout(30000) {
+            val budgets = mongoDBService.getBudgetsByDateRange(startDate, endDate)
+            Log.d(TAG, "Presupuestos por rango de fechas obtenidos: ${budgets.size}")
+            onResult(budgets, null)
+        }
     } catch (e: Exception) {
         Log.e(TAG, "Error al cargar presupuestos por rango de fechas: ${e.message}", e)
-        onResult(emptyList(), e.message)
+        onResult(emptyList(), "Error: ${e.message}")
     }
 }

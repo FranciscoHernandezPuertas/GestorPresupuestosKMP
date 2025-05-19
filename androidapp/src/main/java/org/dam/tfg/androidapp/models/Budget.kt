@@ -2,10 +2,11 @@ package org.dam.tfg.androidapp.models
 
 import kotlinx.serialization.Serializable
 import org.bson.types.ObjectId
+import org.dam.tfg.androidapp.util.IdUtils
 
 @Serializable
 data class Budget(
-    val _id: String = ObjectId().toString(),
+    val _id: String = IdUtils.generateId(),
     val tipo: String,
     val tramos: List<Tramo>,
     val elementosGenerales: List<ElementoGeneral>,

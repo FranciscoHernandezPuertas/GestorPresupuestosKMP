@@ -14,11 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import org.dam.tfg.androidapp.data.MongoDBService
 import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import org.dam.tfg.androidapp.models.Formula
 import org.dam.tfg.androidapp.models.User
 import org.dam.tfg.androidapp.util.FormulaEncryption
+import org.dam.tfg.androidapp.util.IdUtils
 
 private const val TAG = "EditFormulaScreen"
 
@@ -50,32 +52,36 @@ fun EditFormulaScreen(
         if (formulaId != "new") {
             try {
                 Log.d(TAG, "Cargando fórmula con ID: $formulaId")
-                val loadedFormula = mongoDBService.getFormulaById(formulaId)
 
-                if (loadedFormula != null) {
-                    Log.d(TAG, "Fórmula cargada: ${loadedFormula.name}")
-                    formula = loadedFormula
-                    name = loadedFormula.name
+                // Añadir timeout para evitar bloqueos infinitos
+                withTimeout(15000) {
+                    val loadedFormula = mongoDBService.getFormulaById(formulaId)
 
-                    // Decrypt formula if needed
-                    if (loadedFormula.formulaEncrypted) {
-                        try {
-                            Log.d(TAG, "Intentando desencriptar fórmula")
-                            formulaText = FormulaEncryption.decrypt(loadedFormula.formula)
-                            Log.d(TAG, "Fórmula desencriptada correctamente")
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error al desencriptar fórmula: ${e.message}", e)
-                            formulaText = "Error al desencriptar: ${e.message}"
-                            errorMessage = "Error al desencriptar la fórmula: ${e.message}"
+                    if (loadedFormula != null) {
+                        Log.d(TAG, "Fórmula cargada: ${loadedFormula.name} con ID: ${loadedFormula._id}")
+                        formula = loadedFormula
+                        name = loadedFormula.name
+
+                        // Decrypt formula if needed
+                        if (loadedFormula.formulaEncrypted) {
+                            try {
+                                Log.d(TAG, "Intentando desencriptar fórmula")
+                                formulaText = FormulaEncryption.decrypt(loadedFormula.formula)
+                                Log.d(TAG, "Fórmula desencriptada correctamente")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error al desencriptar fórmula: ${e.message}", e)
+                                formulaText = "Error al desencriptar: ${e.message}"
+                                errorMessage = "Error al desencriptar la fórmula: ${e.message}"
+                            }
+                        } else {
+                            formulaText = loadedFormula.formula
                         }
-                    } else {
-                        formulaText = loadedFormula.formula
-                    }
 
-                    variables = loadedFormula.variables
-                } else {
-                    Log.e(TAG, "Fórmula no encontrada con ID: $formulaId")
-                    errorMessage = "Fórmula no encontrada"
+                        variables = loadedFormula.variables
+                    } else {
+                        Log.e(TAG, "Fórmula no encontrada con ID: $formulaId")
+                        errorMessage = "Fórmula no encontrada. Verifique el ID."
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error al cargar la fórmula: ${e.message}", e)
@@ -281,15 +287,18 @@ fun EditFormulaScreen(
                                     val encryptedFormula = FormulaEncryption.encrypt(formulaText)
                                     Log.d(TAG, "Fórmula encriptada correctamente")
 
+                                    // Usar un ID normalizado o generar uno nuevo
+                                    val formulaId = if (formula?._id.isNullOrEmpty()) IdUtils.generateId() else formula?._id!!
+
                                     val formulaToSave = Formula(
-                                        _id = formula?._id ?: "",
+                                        _id = formulaId,
                                         name = name,
                                         formula = encryptedFormula,
                                         formulaEncrypted = true,
                                         variables = variables
                                     )
 
-                                    Log.d(TAG, "Guardando fórmula: ${formulaToSave.name}")
+                                    Log.d(TAG, "Guardando fórmula: ${formulaToSave.name} con ID: ${formulaToSave._id}")
                                     val success = if (formulaId == "new") {
                                         mongoDBService.createFormula(formulaToSave, user.username, "")
                                     } else {
