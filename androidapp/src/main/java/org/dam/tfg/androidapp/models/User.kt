@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 import org.bson.types.ObjectId
 import org.dam.tfg.androidapp.util.IdUtils
 
+// Asegurar que User use IDs normalizados
 @Parcelize
 @Serializable
 data class User(

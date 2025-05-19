@@ -13,10 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 import org.dam.tfg.androidapp.data.MongoDBService
-import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import org.dam.tfg.androidapp.models.Formula
 import org.dam.tfg.androidapp.models.User
 import org.dam.tfg.androidapp.util.FormulaEncryption
@@ -33,7 +34,7 @@ fun EditFormulaScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val mongoDBService = remember { MongoDBServiceFactory.createService(context) }
+    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
 
     var formula by remember { mutableStateOf<Formula?>(null) }
     var name by remember { mutableStateOf("") }
@@ -52,45 +53,135 @@ fun EditFormulaScreen(
         if (formulaId != "new") {
             try {
                 Log.d(TAG, "Cargando fórmula con ID: $formulaId")
+                isLoading = true
+                errorMessage = null
 
-                // Añadir timeout para evitar bloqueos infinitos
-                withTimeout(15000) {
-                    val loadedFormula = mongoDBService.getFormulaById(formulaId)
+                try {
+                    // Usar un timeout más corto para evitar bloqueos prolongados
+                    withTimeout(10000) {
+                        val loadedFormula = mongoDBService.getFormulaById(formulaId)
 
-                    if (loadedFormula != null) {
-                        Log.d(TAG, "Fórmula cargada: ${loadedFormula.name} con ID: ${loadedFormula._id}")
-                        formula = loadedFormula
-                        name = loadedFormula.name
+                        if (loadedFormula != null) {
+                            Log.d(TAG, "Fórmula cargada: ${loadedFormula.name} con ID: ${loadedFormula._id}")
+                            formula = loadedFormula
+                            name = loadedFormula.name
 
-                        // Decrypt formula if needed
-                        if (loadedFormula.formulaEncrypted) {
-                            try {
-                                Log.d(TAG, "Intentando desencriptar fórmula")
-                                formulaText = FormulaEncryption.decrypt(loadedFormula.formula)
-                                Log.d(TAG, "Fórmula desencriptada correctamente")
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error al desencriptar fórmula: ${e.message}", e)
-                                formulaText = "Error al desencriptar: ${e.message}"
-                                errorMessage = "Error al desencriptar la fórmula: ${e.message}"
+                            // Decrypt formula if needed
+                            if (loadedFormula.formulaEncrypted) {
+                                try {
+                                    Log.d(TAG, "Intentando desencriptar fórmula")
+                                    formulaText = FormulaEncryption.decrypt(loadedFormula.formula)
+                                    Log.d(TAG, "Fórmula desencriptada correctamente")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error al desencriptar fórmula: ${e.message}", e)
+                                    formulaText = "Error al desencriptar: ${e.message}"
+                                    errorMessage = "Error al desencriptar la fórmula: ${e.message?.take(100)}"
+                                }
+                            } else {
+                                formulaText = loadedFormula.formula
                             }
-                        } else {
-                            formulaText = loadedFormula.formula
-                        }
 
-                        variables = loadedFormula.variables
-                    } else {
-                        Log.e(TAG, "Fórmula no encontrada con ID: $formulaId")
-                        errorMessage = "Fórmula no encontrada. Verifique el ID."
+                            variables = loadedFormula.variables
+                        } else {
+                            Log.e(TAG, "Fórmula no encontrada con ID: $formulaId")
+                            errorMessage = "Fórmula no encontrada. Verifique el ID."
+                        }
                     }
+                } catch (e: TimeoutCancellationException) {
+                    Log.e(TAG, "Timeout al cargar la fórmula: ${e.message}", e)
+                    errorMessage = "Tiempo de espera agotado al cargar la fórmula. Intente nuevamente."
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al cargar la fórmula: ${e.message}", e)
+                    errorMessage = "Error al cargar la fórmula: ${e.message?.take(100)}"
+                } finally {
+                    isLoading = false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al cargar la fórmula: ${e.message}", e)
-                errorMessage = "Error al cargar la fórmula: ${e.message}"
-            } finally {
+                Log.e(TAG, "Error general: ${e.message}", e)
+                errorMessage = "Error general: ${e.message?.take(100)}"
                 isLoading = false
             }
         } else {
             isLoading = false
+        }
+    }
+
+    // Función para guardar fórmula con mejor manejo de errores
+    fun saveFormula() {
+        // Validate inputs
+        if (name.isBlank()) {
+            errorMessage = "El nombre no puede estar vacío"
+            return
+        }
+
+        if (formulaText.isBlank()) {
+            errorMessage = "La fórmula no puede estar vacía"
+            return
+        }
+
+        // Save formula
+        coroutineScope.launch {
+            isSaving = true
+            errorMessage = null
+            successMessage = null
+
+            try {
+                Log.d(TAG, "Encriptando fórmula para guardar")
+                // Encrypt formula
+                val encryptedFormula = FormulaEncryption.encrypt(formulaText)
+                Log.d(TAG, "Fórmula encriptada correctamente")
+
+                // Usar un ID normalizado o generar uno nuevo
+                val formulaId = if (formula?._id.isNullOrEmpty()) IdUtils.generateId() else formula?._id!!
+
+                val formulaToSave = Formula(
+                    _id = IdUtils.normalizeId(formulaId), // Asegurar que el ID esté normalizado
+                    name = name,
+                    formula = encryptedFormula,
+                    formulaEncrypted = true,
+                    variables = variables
+                )
+
+                Log.d(TAG, "Guardando fórmula: ${formulaToSave.name} con ID normalizado: ${formulaToSave._id}")
+
+                // Usar timeout para evitar bloqueos
+                withTimeout(15000) {
+                    val success = if (formulaId == "new") {
+                        mongoDBService.createFormula(formulaToSave, user.username, "")
+                    } else {
+                        mongoDBService.updateFormula(formulaToSave, user.username, "")
+                    }
+
+                    if (success) {
+                        Log.d(TAG, "Fórmula guardada correctamente")
+                        successMessage = if (formulaId == "new") {
+                            "Fórmula creada correctamente"
+                        } else {
+                            "Fórmula actualizada correctamente"
+                        }
+
+                        // Clear form if creating a new formula
+                        if (formulaId == "new") {
+                            name = ""
+                            formulaText = ""
+                            variables = emptyMap()
+                            variableKey = ""
+                            variableValue = ""
+                        }
+                    } else {
+                        Log.e(TAG, "No se pudo guardar la fórmula")
+                        errorMessage = "No se pudo guardar la fórmula. Verifique la conexión e intente nuevamente."
+                    }
+                }
+            } catch (e: TimeoutCancellationException) {
+                Log.e(TAG, "Timeout al guardar la fórmula: ${e.message}", e)
+                errorMessage = "Tiempo de espera agotado al guardar la fórmula. Intente nuevamente."
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al guardar la fórmula: ${e.message}", e)
+                errorMessage = "Error: ${e.message?.take(100)}"
+            } finally {
+                isSaving = false
+            }
         }
     }
 
@@ -114,9 +205,16 @@ fun EditFormulaScreen(
                 .padding(paddingValues)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Cargando fórmula...")
+                }
             } else {
                 Column(
                     modifier = Modifier
@@ -246,6 +344,23 @@ fun EditFormulaScreen(
                         }
                     }
 
+                    Button(
+                        onClick = { saveFormula() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        enabled = !isSaving
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(if (formulaId == "new") "Crear Fórmula" else "Actualizar Fórmula")
+                        }
+                    }
+
                     if (errorMessage != null) {
                         Text(
                             text = errorMessage!!,
@@ -260,92 +375,6 @@ fun EditFormulaScreen(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
-                    }
-
-                    Button(
-                        onClick = {
-                            // Validate inputs
-                            if (name.isBlank()) {
-                                errorMessage = "El nombre no puede estar vacío"
-                                return@Button
-                            }
-
-                            if (formulaText.isBlank()) {
-                                errorMessage = "La fórmula no puede estar vacía"
-                                return@Button
-                            }
-
-                            // Save formula
-                            coroutineScope.launch {
-                                isSaving = true
-                                errorMessage = null
-                                successMessage = null
-
-                                try {
-                                    Log.d(TAG, "Encriptando fórmula para guardar")
-                                    // Encrypt formula
-                                    val encryptedFormula = FormulaEncryption.encrypt(formulaText)
-                                    Log.d(TAG, "Fórmula encriptada correctamente")
-
-                                    // Usar un ID normalizado o generar uno nuevo
-                                    val formulaId = if (formula?._id.isNullOrEmpty()) IdUtils.generateId() else formula?._id!!
-
-                                    val formulaToSave = Formula(
-                                        _id = formulaId,
-                                        name = name,
-                                        formula = encryptedFormula,
-                                        formulaEncrypted = true,
-                                        variables = variables
-                                    )
-
-                                    Log.d(TAG, "Guardando fórmula: ${formulaToSave.name} con ID: ${formulaToSave._id}")
-                                    val success = if (formulaId == "new") {
-                                        mongoDBService.createFormula(formulaToSave, user.username, "")
-                                    } else {
-                                        mongoDBService.updateFormula(formulaToSave, user.username, "")
-                                    }
-
-                                    if (success) {
-                                        Log.d(TAG, "Fórmula guardada correctamente")
-                                        successMessage = if (formulaId == "new") {
-                                            "Fórmula creada correctamente"
-                                        } else {
-                                            "Fórmula actualizada correctamente"
-                                        }
-
-                                        // Clear form if creating a new formula
-                                        if (formulaId == "new") {
-                                            name = ""
-                                            formulaText = ""
-                                            variables = emptyMap()
-                                            variableKey = ""
-                                            variableValue = ""
-                                        }
-                                    } else {
-                                        Log.e(TAG, "No se pudo guardar la fórmula")
-                                        errorMessage = "No se pudo guardar la fórmula"
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Error al guardar la fórmula: ${e.message}", e)
-                                    errorMessage = "Error: ${e.message}"
-                                } finally {
-                                    isSaving = false
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        enabled = !isSaving
-                    ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text(if (formulaId == "new") "Crear Fórmula" else "Actualizar Fórmula")
-                        }
                     }
                 }
             }

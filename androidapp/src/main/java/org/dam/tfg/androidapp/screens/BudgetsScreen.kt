@@ -13,9 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
+import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 import org.dam.tfg.androidapp.data.MongoDBService
-import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import org.dam.tfg.androidapp.models.Budget
 import org.dam.tfg.androidapp.models.User
 import java.text.SimpleDateFormat
@@ -23,6 +24,7 @@ import java.util.*
 
 private const val TAG = "BudgetsScreen"
 
+// Mejorar el manejo de errores y ciclo de vida en BudgetsScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetsScreen(
@@ -31,7 +33,7 @@ fun BudgetsScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val mongoDBService = remember { MongoDBServiceFactory.createService(context) }
+    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
 
     var budgets by remember { mutableStateOf<List<Budget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -42,15 +44,50 @@ fun BudgetsScreen(
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
 
+    // Función mejorada para cargar presupuestos
+    fun loadBudgets(
+        loadFunction: suspend () -> List<Budget>,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        coroutineScope.launch {
+            isLoading = true
+            errorMessage = null
+
+            try {
+                Log.d(TAG, "Iniciando carga de presupuestos...")
+
+                // Usar timeout para evitar bloqueos
+                withTimeout(20000) {
+                    val loadedBudgets = loadFunction()
+                    budgets = loadedBudgets
+                    Log.d(TAG, "Presupuestos cargados exitosamente: ${budgets.size}")
+                    onComplete(true, null)
+                }
+            } catch (e: TimeoutCancellationException) {
+                Log.e(TAG, "Timeout al cargar presupuestos: ${e.message}", e)
+                errorMessage = "Tiempo de espera agotado al cargar presupuestos. Intente nuevamente."
+                onComplete(false, errorMessage)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al cargar presupuestos: ${e.message}", e)
+                errorMessage = "Error al cargar presupuestos: ${e.message?.take(100)}"
+                onComplete(false, errorMessage)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     // Load budgets on first composition
     LaunchedEffect(Unit) {
-        Log.d(TAG, "Cargando presupuestos...")
-        loadAllBudgets(mongoDBService) { newBudgets, error ->
-            budgets = newBudgets
-            errorMessage = error
-            isLoading = false
-            Log.d(TAG, "Presupuestos cargados: ${budgets.size}, Error: $error")
-        }
+        Log.d(TAG, "Cargando presupuestos iniciales...")
+        loadBudgets(
+            loadFunction = { mongoDBService.getAllBudgets() },
+            onComplete = { success, error ->
+                if (!success) {
+                    Log.e(TAG, "Error en carga inicial: $error")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -124,37 +161,39 @@ fun BudgetsScreen(
 
                     Button(
                         onClick = {
-                            isLoading = true
-                            coroutineScope.launch {
-                                when {
-                                    searchUsername.isNotBlank() -> {
-                                        loadBudgetsByUsername(mongoDBService, searchUsername) { newBudgets, error ->
-                                            budgets = newBudgets
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
-                                    startDate.isNotBlank() && endDate.isNotBlank() -> {
-                                        loadBudgetsByDateRange(mongoDBService, startDate, endDate) { newBudgets, error ->
-                                            budgets = newBudgets
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
-                                    else -> {
-                                        loadAllBudgets(mongoDBService) { newBudgets, error ->
-                                            budgets = newBudgets
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
+                            when {
+                                searchUsername.isNotBlank() -> {
+                                    loadBudgets(
+                                        loadFunction = { mongoDBService.getBudgetsByUsername(searchUsername) },
+                                        onComplete = { _, _ -> }
+                                    )
+                                }
+                                startDate.isNotBlank() && endDate.isNotBlank() -> {
+                                    loadBudgets(
+                                        loadFunction = { mongoDBService.getBudgetsByDateRange(startDate, endDate) },
+                                        onComplete = { _, _ -> }
+                                    )
+                                }
+                                else -> {
+                                    loadBudgets(
+                                        loadFunction = { mongoDBService.getAllBudgets() },
+                                        onComplete = { _, _ -> }
+                                    )
                                 }
                             }
                         },
                         modifier = Modifier
                             .align(Alignment.End)
-                            .padding(top = 8.dp)
+                            .padding(top = 8.dp),
+                        enabled = !isLoading
                     ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
                         Text("Buscar")
                     }
                 }
@@ -167,9 +206,16 @@ fun BudgetsScreen(
                     .padding(horizontal = 16.dp)
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Cargando presupuestos...")
+                    }
                 } else if (errorMessage != null) {
                     Column(
                         modifier = Modifier
@@ -177,33 +223,54 @@ fun BudgetsScreen(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Error",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         Text(
-                            text = "Error: $errorMessage",
-                            color = MaterialTheme.colorScheme.error
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
 
                         Button(
                             onClick = {
-                                isLoading = true
-                                coroutineScope.launch {
-                                    loadAllBudgets(mongoDBService) { newBudgets, error ->
-                                        budgets = newBudgets
-                                        errorMessage = error
-                                        isLoading = false
-                                    }
-                                }
-                            },
-                            modifier = Modifier.padding(top = 8.dp)
+                                loadBudgets(
+                                    loadFunction = { mongoDBService.getAllBudgets() },
+                                    onComplete = { _, _ -> }
+                                )
+                            }
                         ) {
                             Text("Reintentar")
                         }
                     }
                 } else if (budgets.isEmpty()) {
-                    Text(
-                        text = "No hay presupuestos disponibles",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Sin datos",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "No hay presupuestos disponibles",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()

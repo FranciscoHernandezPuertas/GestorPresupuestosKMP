@@ -17,12 +17,16 @@ import kotlinx.coroutines.launch
 import org.dam.tfg.androidapp.data.MongoDBService
 import org.dam.tfg.androidapp.models.User
 import org.dam.tfg.androidapp.util.CryptoUtil
-import org.dam.tfg.androidapp.data.MongoDBServiceFactory
 import kotlinx.coroutines.withTimeout
 import org.dam.tfg.androidapp.util.IdUtils
+import kotlinx.coroutines.TimeoutCancellationException
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
 
 private const val TAG = "EditUserScreen"
 
+// Mejorar el manejo de errores y ciclo de vida en EditUserScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditUserScreen(
@@ -32,7 +36,7 @@ fun EditUserScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val mongoDBService = remember { MongoDBServiceFactory.createService(context) }
+    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
 
     var userToEdit by remember { mutableStateOf<User?>(null) }
     var username by remember { mutableStateOf("") }
@@ -50,29 +54,127 @@ fun EditUserScreen(
         if (userId != "new") {
             try {
                 Log.d(TAG, "Cargando usuario con ID: $userId")
+                isLoading = true
+                errorMessage = null
 
-                // Añadir timeout para evitar bloqueos infinitos
-                withTimeout(15000) {
-                    val loadedUser = mongoDBService.getUserById(userId)
+                try {
+                    // Usar un timeout más corto para evitar bloqueos prolongados
+                    withTimeout(10000) {
+                        val loadedUser = mongoDBService.getUserById(userId)
 
-                    if (loadedUser != null) {
-                        Log.d(TAG, "Usuario cargado: ${loadedUser.username} con ID: ${loadedUser._id}")
-                        userToEdit = loadedUser
-                        username = loadedUser.username
-                        userType = loadedUser.type
-                    } else {
-                        Log.e(TAG, "Usuario no encontrado con ID: $userId")
-                        errorMessage = "Usuario no encontrado. Verifique el ID."
+                        if (loadedUser != null) {
+                            Log.d(TAG, "Usuario cargado: ${loadedUser.username} con ID: ${loadedUser._id}")
+                            userToEdit = loadedUser
+                            username = loadedUser.username
+                            userType = loadedUser.type
+                        } else {
+                            Log.e(TAG, "Usuario no encontrado con ID: $userId")
+                            errorMessage = "Usuario no encontrado. Verifique el ID."
+                        }
                     }
+                } catch (e: TimeoutCancellationException) {
+                    Log.e(TAG, "Timeout al cargar el usuario: ${e.message}", e)
+                    errorMessage = "Tiempo de espera agotado al cargar el usuario. Intente nuevamente."
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al cargar el usuario: ${e.message}", e)
+                    errorMessage = "Error al cargar el usuario: ${e.message?.take(100)}"
+                } finally {
+                    isLoading = false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al cargar el usuario: ${e.message}", e)
-                errorMessage = "Error al cargar el usuario: ${e.message}"
-            } finally {
+                Log.e(TAG, "Error general: ${e.message}", e)
+                errorMessage = "Error general: ${e.message?.take(100)}"
                 isLoading = false
             }
         } else {
             isLoading = false
+        }
+    }
+
+    // Resto del código sin cambios...
+
+    // Función para guardar usuario con mejor manejo de errores
+    fun saveUser() {
+        // Validate inputs
+        if (username.isBlank()) {
+            errorMessage = "El nombre de usuario no puede estar vacío"
+            return
+        }
+
+        if (userId == "new" && password.isBlank()) {
+            errorMessage = "La contraseña no puede estar vacía"
+            return
+        }
+
+        if (password.isNotBlank() && password != confirmPassword) {
+            errorMessage = "Las contraseñas no coinciden"
+            return
+        }
+
+        // Save user
+        coroutineScope.launch {
+            isSaving = true
+            errorMessage = null
+            successMessage = null
+
+            try {
+                Log.d(TAG, "Guardando usuario: $username")
+                // Hash password if provided
+                val hashedPassword = if (password.isNotBlank()) {
+                    CryptoUtil.hashSHA256(password)
+                } else {
+                    userToEdit?.password ?: ""
+                }
+
+                // Usar un ID normalizado o generar uno nuevo
+                val userId = if (userToEdit?._id.isNullOrEmpty()) IdUtils.generateId() else userToEdit?._id!!
+
+                val userToSave = User(
+                    _id = IdUtils.normalizeId(userId), // Asegurar que el ID esté normalizado
+                    username = username,
+                    password = hashedPassword,
+                    type = userType
+                )
+
+                Log.d(TAG, "Guardando usuario con ID normalizado: ${userToSave._id}")
+
+                // Usar timeout para evitar bloqueos
+                withTimeout(15000) {
+                    val success = if (userId == "new") {
+                        mongoDBService.createUser(userToSave)
+                    } else {
+                        mongoDBService.updateUser(userToSave)
+                    }
+
+                    if (success) {
+                        Log.d(TAG, "Usuario guardado correctamente")
+                        successMessage = if (userId == "new") {
+                            "Usuario creado correctamente"
+                        } else {
+                            "Usuario actualizado correctamente"
+                        }
+
+                        // Clear form if creating a new user
+                        if (userId == "new") {
+                            username = ""
+                            password = ""
+                            confirmPassword = ""
+                            userType = "admin"
+                        }
+                    } else {
+                        Log.e(TAG, "No se pudo guardar el usuario")
+                        errorMessage = "No se pudo guardar el usuario. Verifique la conexión e intente nuevamente."
+                    }
+                }
+            } catch (e: TimeoutCancellationException) {
+                Log.e(TAG, "Timeout al guardar el usuario: ${e.message}", e)
+                errorMessage = "Tiempo de espera agotado al guardar el usuario. Intente nuevamente."
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al guardar el usuario: ${e.message}", e)
+                errorMessage = "Error: ${e.message?.take(100)}"
+            } finally {
+                isSaving = false
+            }
         }
     }
 
@@ -96,14 +198,22 @@ fun EditUserScreen(
                 .padding(paddingValues)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Cargando usuario...")
+                }
             } else {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
                 ) {
                     OutlinedTextField(
                         value = username,
@@ -183,6 +293,23 @@ fun EditUserScreen(
                         }
                     }
 
+                    Button(
+                        onClick = { saveUser() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        enabled = !isSaving
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(if (userId == "new") "Crear Usuario" else "Actualizar Usuario")
+                        }
+                    }
+
                     if (errorMessage != null) {
                         Text(
                             text = errorMessage!!,
@@ -197,98 +324,6 @@ fun EditUserScreen(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
-                    }
-
-                    Button(
-                        onClick = {
-                            // Validate inputs
-                            if (username.isBlank()) {
-                                errorMessage = "El nombre de usuario no puede estar vacío"
-                                return@Button
-                            }
-
-                            if (userId == "new" && password.isBlank()) {
-                                errorMessage = "La contraseña no puede estar vacía"
-                                return@Button
-                            }
-
-                            if (password.isNotBlank() && password != confirmPassword) {
-                                errorMessage = "Las contraseñas no coinciden"
-                                return@Button
-                            }
-
-                            // Save user
-                            coroutineScope.launch {
-                                isSaving = true
-                                errorMessage = null
-                                successMessage = null
-
-                                try {
-                                    Log.d(TAG, "Guardando usuario: $username")
-                                    // Hash password if provided
-                                    val hashedPassword = if (password.isNotBlank()) {
-                                        CryptoUtil.hashSHA256(password)
-                                    } else {
-                                        userToEdit?.password ?: ""
-                                    }
-
-                                    // Usar un ID normalizado o generar uno nuevo
-                                    val userId = if (userToEdit?._id.isNullOrEmpty()) IdUtils.generateId() else userToEdit?._id!!
-
-                                    val userToSave = User(
-                                        _id = userId,
-                                        username = username,
-                                        password = hashedPassword,
-                                        type = userType
-                                    )
-
-                                    Log.d(TAG, "Guardando usuario con ID: ${userToSave._id}")
-                                    val success = if (userId == "new") {
-                                        mongoDBService.createUser(userToSave)
-                                    } else {
-                                        mongoDBService.updateUser(userToSave)
-                                    }
-
-                                    if (success) {
-                                        Log.d(TAG, "Usuario guardado correctamente")
-                                        successMessage = if (userId == "new") {
-                                            "Usuario creado correctamente"
-                                        } else {
-                                            "Usuario actualizado correctamente"
-                                        }
-
-                                        // Clear form if creating a new user
-                                        if (userId == "new") {
-                                            username = ""
-                                            password = ""
-                                            confirmPassword = ""
-                                            userType = "admin"
-                                        }
-                                    } else {
-                                        Log.e(TAG, "No se pudo guardar el usuario")
-                                        errorMessage = "No se pudo guardar el usuario"
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Error al guardar el usuario: ${e.message}", e)
-                                    errorMessage = "Error: ${e.message}"
-                                } finally {
-                                    isSaving = false
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        enabled = !isSaving
-                    ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text(if (userId == "new") "Crear Usuario" else "Actualizar Usuario")
-                        }
                     }
                 }
             }
