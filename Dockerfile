@@ -1,69 +1,70 @@
 #-----------------------------------------------------------------------------
-# Variables are shared across multiple stages (they need to be explicitly
-# opted into each stage by being declaring there too, but their values need
-# only be specified once).
+# Variables compartidas entre etapas
 ARG KOBWEB_APP_ROOT="site"
 
 #-----------------------------------------------------------------------------
-# Create an intermediate stage which builds and exports our site. In the
-# final stage, we'll only extract what we need from this stage, saving a lot
-# of space.
-FROM eclipse-temurin:21 as export
+# Etapa de construcción
+FROM eclipse-temurin:21-jdk-jammy as export
 
 ENV KOBWEB_CLI_VERSION=0.9.18
 ARG KOBWEB_APP_ROOT
 ENV NODE_MAJOR=20
 
-# Copy project files excluding Android module
+# Copiar solo lo esencial primero para cachear dependencias
 COPY . /project
-
-# Remove Android module explicitly
 RUN rm -rf /project/androidapp
 
-# Install system dependencies
-RUN apt-get update \
-    && apt-get install -y ca-certificates curl gnupg unzip wget \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && npm init -y \
-    && npx playwright install --with-deps chromium
+# Instalar dependencias del sistema optimizadas
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    unzip \
+    wget && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install Kobweb CLI
-RUN wget https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip \
-    && unzip kobweb-${KOBWEB_CLI_VERSION}.zip \
-    && rm kobweb-${KOBWEB_CLI_VERSION}.zip
+# Instalar Node.js
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update -qq && \
+    apt-get install -y nodejs && \
+    npm init -y --quiet
+
+# Instalar Playwright mínimo
+RUN npx playwright install --with-deps chromium --quiet
+
+# Instalar Kobweb CLI
+RUN wget -q https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
+    unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip && \
+    rm kobweb-${KOBWEB_CLI_VERSION}.zip
 
 ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
 WORKDIR /project/${KOBWEB_APP_ROOT}
 
-# Configure Gradle memory settings
+# Configuración de memoria optimizada
 RUN mkdir -p ~/.gradle && \
-    echo "org.gradle.jvmargs=-Xmx325m" >> ~/.gradle/gradle.properties
+    echo "org.gradle.jvmargs=-Xmx256m -XX:MaxMetaspaceSize=128m" >> ~/.gradle/gradle.properties && \
+    echo "kotlin.daemon.jvmargs=-Xmx256m" >> ~/.gradle/gradle.properties && \
+    echo "org.gradle.parallel=false" >> ~/.gradle/gradle.properties && \
+    echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties && \
+    echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties
 
-# Build and export the Kobweb site
-RUN kobweb export --notty
-
-# Fix permissions for start script
-RUN chmod +x /project/${KOBWEB_APP_ROOT}/.kobweb/server/start.sh
+# Build con optimizaciones de memoria
+RUN kobweb export --notty --log-level WARN
 
 #-----------------------------------------------------------------------------
-# Create the final stage, which contains just enough bits to run the Kobweb
-# server.
-FROM eclipse-temurin:21 as run
+# Etapa final de ejecución
+FROM eclipse-temurin:21-jre-jammy as run
 
 ARG KOBWEB_APP_ROOT
-
 WORKDIR /app
 
-# Copy exported artifacts
 COPY --from=export /project/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
-# Set memory limits and verify permissions
-ENV JAVA_TOOL_OPTIONS="-Xmx512m"
+ENV JAVA_TOOL_OPTIONS="-Xmx256m -XX:+UseSerialGC -XX:MaxRAM=512m"
 RUN chmod +x .kobweb/server/start.sh
 
 ENTRYPOINT ["/app/.kobweb/server/start.sh"]
