@@ -1,6 +1,7 @@
 package org.dam.tfg.androidapp.screens
 
 import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,7 +12,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
@@ -24,7 +29,6 @@ import java.util.*
 
 private const val TAG = "BudgetsScreen"
 
-// Mejorar el manejo de errores y ciclo de vida en BudgetsScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetsScreen(
@@ -43,6 +47,10 @@ fun BudgetsScreen(
     var searchUsername by remember { mutableStateOf("") }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
+
+    // Para el diálogo de detalle
+    var selectedBudget by remember { mutableStateOf<Budget?>(null) }
+    var showDetailDialog by remember { mutableStateOf(false) }
 
     // Función mejorada para cargar presupuestos
     fun loadBudgets(
@@ -276,21 +284,42 @@ fun BudgetsScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(budgets) { budget ->
-                            BudgetItem(budget = budget)
+                            BudgetItem(
+                                budget = budget,
+                                onClick = {
+                                    selectedBudget = budget
+                                    showDetailDialog = true
+                                }
+                            )
                         }
                     }
                 }
+            }
+
+            // Diálogo de detalle
+            if (showDetailDialog && selectedBudget != null) {
+                BudgetDetailDialog(
+                    budget = selectedBudget!!,
+                    onDismiss = {
+                        showDetailDialog = false
+                        selectedBudget = null
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun BudgetItem(budget: Budget) {
+fun BudgetItem(
+    budget: Budget,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
+            .clickable(onClick = onClick)
     ) {
         Column(
             modifier = Modifier
@@ -357,7 +386,268 @@ fun BudgetItem(budget: Budget) {
                 text = "- ${budget.modulos.size} módulos",
                 style = MaterialTheme.typography.bodySmall
             )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Ver detalle",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Pulsa para ver detalles",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
+    }
+}
+
+@Composable
+fun BudgetDetailDialog(
+    budget: Budget,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxSize(0.95f)
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // Header with close button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Detalle del Presupuesto",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cerrar"
+                        )
+                    }
+                }
+
+                // Budget content in a scrollable column
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Sección principal del presupuesto
+                    item {
+                        SectionTitle("Información General")
+                        DetailRow("ID", budget._id)
+                        DetailRow("Tipo", budget.tipo)
+                        DetailRow("Usuario", budget.username)
+                        DetailRow("Fecha", formatDate(budget.fechaCreacion))
+                        DetailRow("Precio Total", "${formatPrice(budget.precioTotal)}€")
+                        if (budget.error.isNotEmpty()) {
+                            DetailRow("Error", budget.error)
+                        }
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+
+                    // Sección de tramos
+                    item {
+                        SectionTitle("Tramos (${budget.tramos.size})")
+                    }
+
+                    // Lista de tramos
+                    items(budget.tramos) { tramo ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                DetailRow("Número", tramo.numero.toString())
+                                DetailRow("Tipo", tramo.tipo)
+                                DetailRow("Largo", "${tramo.largo} mm")
+                                DetailRow("Ancho", "${tramo.ancho} mm")
+                                DetailRow("Precio", "${formatPrice(tramo.precio)}€")
+                                if (tramo.error.isNotEmpty()) {
+                                    DetailRow("Error", tramo.error)
+                                }
+                            }
+                        }
+                    }
+
+                    // Separador
+                    item {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+
+                    // Sección de elementos generales
+                    item {
+                        SectionTitle("Elementos Generales (${budget.elementosGenerales.size})")
+                    }
+
+                    // Lista de elementos generales
+                    items(budget.elementosGenerales) { elemento ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                DetailRow("Nombre", elemento.nombre)
+                                DetailRow("Cantidad", elemento.cantidad.toString())
+                                DetailRow("Precio", "${formatPrice(elemento.precio)}€")
+                            }
+                        }
+                    }
+
+                    // Separador
+                    item {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+
+                    // Sección de cubetas
+                    item {
+                        SectionTitle("Cubetas (${budget.cubetas.size})")
+                    }
+
+                    // Lista de cubetas
+                    items(budget.cubetas) { cubeta ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                DetailRow("Tipo", cubeta.tipo)
+                                DetailRow("Número", cubeta.numero.toString())
+                                DetailRow("Largo", "${cubeta.largo} mm")
+                                DetailRow("Fondo", "${cubeta.fondo} mm")
+                                DetailRow("Alto", "${cubeta.alto} mm")
+                                DetailRow("Precio", "${formatPrice(cubeta.precio)}€")
+                                if (cubeta.error.isNotEmpty()) {
+                                    DetailRow("Error", cubeta.error)
+                                }
+                            }
+                        }
+                    }
+
+                    // Separador
+                    item {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+
+                    // Sección de módulos
+                    item {
+                        SectionTitle("Módulos (${budget.modulos.size})")
+                    }
+
+                    // Lista de módulos
+                    items(budget.modulos) { modulo ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                DetailRow("Nombre", modulo.nombre)
+                                DetailRow("Largo", "${modulo.largo} mm")
+                                DetailRow("Fondo", "${modulo.fondo} mm")
+                                DetailRow("Alto", "${modulo.alto} mm")
+                                DetailRow("Cantidad", modulo.cantidad.toString())
+                                DetailRow("Precio", "${formatPrice(modulo.precio)}€")
+                            }
+                        }
+                    }
+
+                    // Espacio final
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(vertical = 8.dp)
+    )
+}
+
+@Composable
+fun DetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Text(
+            text = "$label: ",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(90.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -393,65 +683,5 @@ private fun formatDate(dateString: String): String {
     } catch (e: Exception) {
         Log.e(TAG, "Error al formatear fecha: $dateString", e)
         return dateString
-    }
-}
-
-// Modificar el método de carga de presupuestos para añadir mejor log y manejo de errores
-private suspend fun loadAllBudgets(
-    mongoDBService: MongoDBService,
-    onResult: (List<Budget>, String?) -> Unit
-) {
-    try {
-        Log.d(TAG, "Cargando todos los presupuestos...")
-        withTimeout(30000) { // Timeout de 30 segundos
-            val budgets = mongoDBService.getAllBudgets()
-            Log.d(TAG, "Presupuestos obtenidos: ${budgets.size}")
-
-            // Loguear algunos detalles para depuración
-            if (budgets.isNotEmpty()) {
-                Log.d(TAG, "Primer presupuesto: ID=${budgets[0]._id}, Tipo=${budgets[0].tipo}, Usuario=${budgets[0].username}")
-            }
-
-            onResult(budgets, null)
-        }
-    } catch (e: Exception) {
-        Log.e(TAG, "Error al cargar presupuestos: ${e.message}", e)
-        onResult(emptyList(), "Error: ${e.message}")
-    }
-}
-
-// Actualizar también los otros métodos de carga
-private suspend fun loadBudgetsByUsername(
-    mongoDBService: MongoDBService,
-    username: String,
-    onResult: (List<Budget>, String?) -> Unit
-) {
-    try {
-        withTimeout(30000) {
-            val budgets = mongoDBService.getBudgetsByUsername(username)
-            Log.d(TAG, "Presupuestos por usuario '$username' obtenidos: ${budgets.size}")
-            onResult(budgets, null)
-        }
-    } catch (e: Exception) {
-        Log.e(TAG, "Error al cargar presupuestos por usuario: ${e.message}", e)
-        onResult(emptyList(), "Error: ${e.message}")
-    }
-}
-
-private suspend fun loadBudgetsByDateRange(
-    mongoDBService: MongoDBService,
-    startDate: String,
-    endDate: String,
-    onResult: (List<Budget>, String?) -> Unit
-) {
-    try {
-        withTimeout(30000) {
-            val budgets = mongoDBService.getBudgetsByDateRange(startDate, endDate)
-            Log.d(TAG, "Presupuestos por rango de fechas obtenidos: ${budgets.size}")
-            onResult(budgets, null)
-        }
-    } catch (e: Exception) {
-        Log.e(TAG, "Error al cargar presupuestos por rango de fechas: ${e.message}", e)
-        onResult(emptyList(), "Error: ${e.message}")
     }
 }

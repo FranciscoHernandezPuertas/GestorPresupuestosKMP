@@ -373,7 +373,7 @@ object BudgetManager {
             // Imprimir todas las fórmulas disponibles para depuración
             console.log("Fórmulas disponibles: ${formulas.keys.joinToString()}")
 
-            val formulaElementos = formulas["Elementos"] 
+            val formulaElementos = formulas["Elementos"]
                 ?: formulas.entries.find { it.key.equals("Elementos", ignoreCase = true) }?.value
                 
             if (formulaElementos != null) {

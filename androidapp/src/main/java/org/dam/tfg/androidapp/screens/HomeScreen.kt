@@ -141,7 +141,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Bienvenido, ${user.username}",
+                        text = "Bienvenid@, ${user.username}",
                         style = MaterialTheme.typography.headlineMedium,
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
