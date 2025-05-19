@@ -53,8 +53,8 @@ RUN mkdir -p ~/.gradle && \
     echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties && \
     echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
 
-# Añadir swap temporal para la compilación
-RUN fallocate -l 1G /swapfile && \
+# Añadir swap temporal compatible
+RUN dd if=/dev/zero of=/swapfile bs=1M count=512 && \
     chmod 600 /swapfile && \
     mkswap /swapfile && \
     swapon /swapfile
@@ -62,9 +62,11 @@ RUN fallocate -l 1G /swapfile && \
 # Build con optimizaciones de memoria
 RUN kobweb export --notty
 
-# Limpiar swap después del build
+# Limpiar recursos temporales
 RUN swapoff /swapfile && \
-    rm /swapfile
+    rm /swapfile && \
+    rm -rf /root/.gradle/caches && \
+    rm -rf /root/.npm
 
 # Verificar y preparar archivo de inicio
 RUN if [ -f .kobweb/server/start.sh ]; then chmod +x .kobweb/server/start.sh; fi
