@@ -32,7 +32,7 @@ RUN mkdir -p /etc/apt/keyrings && \
     apt-get install -y nodejs && \
     npm init -y --quiet
 
-# Instalar Playwright mínimo (sin --quiet)
+# Instalar Playwright mínimo
 RUN npx playwright install --with-deps chromium
 
 # Instalar Kobweb CLI
@@ -52,8 +52,11 @@ RUN mkdir -p ~/.gradle && \
     echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties && \
     echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties
 
-# Build con optimizaciones de memoria
-RUN kobweb export --notty --log-level WARN
+# Build con optimizaciones de memoria (sin --log-level)
+RUN kobweb export --notty
+
+# Verificar y preparar archivo de inicio
+RUN if [ -f .kobweb/server/start.sh ]; then chmod +x .kobweb/server/start.sh; fi
 
 #-----------------------------------------------------------------------------
 # Etapa final de ejecución
@@ -65,6 +68,5 @@ WORKDIR /app
 COPY --from=export /project/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
 ENV JAVA_TOOL_OPTIONS="-Xmx256m -XX:+UseSerialGC -XX:MaxRAM=512m"
-RUN chmod +x .kobweb/server/start.sh
 
 ENTRYPOINT ["/app/.kobweb/server/start.sh"]
