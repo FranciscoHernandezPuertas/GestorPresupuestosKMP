@@ -12,8 +12,9 @@ ARG KOBWEB_APP_ROOT
 ENV NODE_MAJOR=20
 
 # Copy project and remove Android module
-COPY . /project
-RUN rm -rf /project/androidapp
+WORKDIR /project
+COPY . .
+RUN rm -rf androidapp
 
 # Install OS deps, Node.js & Playwright
 RUN apt-get update \
@@ -42,11 +43,11 @@ RUN mkdir -p ~/.gradle \
     && echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties \
     && echo "kotlin.js.ir.incremental=false" >> ~/.gradle/gradle.properties
 
-# Build & export in release mode, without TTY
-RUN kobweb export --release --notty --release --notty
+# Build & export the Kobweb site (no --release flag)
+RUN kobweb export --notty
 
-# Ensure start script is executable
-RUN chmod +x /project/${KOBWEB_APP_ROOT}/.kobweb/server/start.sh
+# Ensure start script is executable (relative to WORKDIR)
+RUN chmod +x .kobweb/server/start.sh
 
 
 ###############################################################################
