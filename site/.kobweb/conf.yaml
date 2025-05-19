@@ -13,7 +13,7 @@ server:
       siteRoot: ".kobweb/site"
   cors:
     hosts:
-      - name: "generadorpresupuestos.onrender.com/"
+      - name: "generadorpresupuestos.onrender.com"
         schemes:
           - "https"
   port: 8080
