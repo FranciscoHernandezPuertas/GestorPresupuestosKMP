@@ -42,14 +42,8 @@ RUN mkdir -p ~/.gradle \
     && echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties \
     && echo "kotlin.js.ir.incremental=false" >> ~/.gradle/gradle.properties
 
-# (Optional) Enable swap to avoid OOM
-RUN fallocate -l 1G /swapfile \
-    && chmod 600 /swapfile \
-    && mkswap /swapfile \
-    && swapon /swapfile
-
 # Build & export in release mode, without TTY
-RUN kobweb export --release --notty
+RUN kobweb export --release --notty --release --notty
 
 # Ensure start script is executable
 RUN chmod +x /project/${KOBWEB_APP_ROOT}/.kobweb/server/start.sh
