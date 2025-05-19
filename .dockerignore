@@ -1,1 +1,4 @@
 androidapp/
+.gradle
+build
+node_modules
