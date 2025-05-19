@@ -7,7 +7,6 @@ import com.varabyte.kobweb.api.data.add
 import com.varabyte.kobweb.api.init.InitApi
 import com.varabyte.kobweb.api.init.InitApiContext
 import org.dam.tfg.models.User
-import org.dam.tfg.util.Constants.DATABASE_NAME
 import com.mongodb.client.model.Filters.eq
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -20,9 +19,9 @@ import org.dam.tfg.models.table.Mesa
 fun initMongoDB(context: InitApiContext) {
     context.data.add(MongoDB(context))
 }
-
+const val DATABASE_NAME = "gestor_db"
 class MongoDB(private val context: InitApiContext) : MongoRepository {
-    private val client = MongoClient.create("mongodb://localhost:27017")
+    private val client = MongoClient.create(System.getenv("MONGODB_URI"))
     private val database = client.getDatabase(DATABASE_NAME)
 
     private val userCollection: MongoCollection<User> = database.getCollection("users")

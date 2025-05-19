@@ -1,3 +1,4 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +6,9 @@ plugins {
     //alias(libs.plugins.mongodb.realm)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.parcelize)
+}
+val localProperties = Properties().apply {
+    load(File(rootProject.rootDir, "local.properties").inputStream())
 }
 
 android {
@@ -19,6 +23,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        localProperties["MONGODB_URI"]?.let {
+            buildConfigField("String", "MONGODB_URI", "\"$it\"")
+        }
+
     }
 
     buildTypes {
@@ -47,6 +55,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
