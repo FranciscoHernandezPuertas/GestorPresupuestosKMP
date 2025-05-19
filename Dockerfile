@@ -29,11 +29,11 @@ RUN apt-get update \
     && npm init -y \
     && npx playwright install --with-deps chromium
 
-# Install Kobweb CLI to a fixed directory
+# Install Kobweb CLI
 RUN wget https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip \
     && unzip kobweb-${KOBWEB_CLI_VERSION}.zip -d /kobweb-cli \
     && rm kobweb-${KOBWEB_CLI_VERSION}.zip
-ENV PATH="/kobweb-cli/bin:${PATH}"
+ENV PATH="/kobweb-cli/bin:${PATH}"="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
 # Configure Gradle/Kotlin to use minimal memory & single worker
 WORKDIR /project/${KOBWEB_APP_ROOT}
