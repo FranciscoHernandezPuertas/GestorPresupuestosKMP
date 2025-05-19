@@ -10,6 +10,8 @@ import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.core.Page
 import kotlinx.browser.localStorage
 import kotlinx.browser.window
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.dam.tfg.components.AppHeader
 import org.dam.tfg.components.BudgetFooter
@@ -27,6 +29,7 @@ import org.jetbrains.compose.web.css.px
 import org.jetbrains.compose.web.dom.H2
 import org.jetbrains.compose.web.dom.P
 import org.jetbrains.compose.web.dom.Text
+import kotlinx.serialization.decodeFromString
 
 @Page
 @Composable
@@ -44,7 +47,6 @@ fun TableSelectorBudgetPage() {
 fun TableSelectorBudget() {
     val coroutineScope = rememberCoroutineScope()
 
-    var formulas by remember { mutableStateOf<List<Formula>>(emptyList()) }
     var materials by remember { mutableStateOf<List<Material>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -64,37 +66,83 @@ fun TableSelectorBudget() {
         }
     }
 
-    // Calcular precio final
+    // Estados para el presupuesto
     var precioTotal by remember { mutableStateOf(0.0) }
     var presupuestoCalculado by remember { mutableStateOf(false) }
     var presupuestoDesglosado by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
 
     LaunchedEffect(Unit) {
         try {
-            // Cargar fórmulas y materiales desde el servidor
-            val userType = localStorage.getItem("userType") ?: "user"
-            formulas = getAllFormulas(userType)
+            console.log("Iniciando cálculo de presupuesto")
+
+            // Cargar materiales desde el servidor (solo para UI)
             materials = getAllMaterials()
 
-            // Calcular el presupuesto en el backend para mayor seguridad
-            calcularPresupuesto(
+            // Crear objeto Mesa para enviar al servidor
+            val mesaData = Mesa(
+                tipo = BudgetManager.getMesaTipo(),
                 tramos = tramos,
+                elementosGenerales = elementosGenerales,
                 cubetas = cubetas,
                 modulos = modulos,
-                elementosGenerales = elementosGenerales,
-                onResult = { precio, desglose ->
-                    precioTotal = precio
-                    presupuestoDesglosado = desglose
-                    presupuestoCalculado = true
-                },
-                onError = { errorMsg ->
-                    error = errorMsg
-                }
+                precioTotal = 0.0, // El precio lo calculará el servidor
+                fechaCreacion = null,
+                error = "",
+                username = localStorage.getItem("username") ?: ""
             )
+
+            console.log("Enviando datos al servidor: ${Json.encodeToString(Mesa.serializer(), mesaData)}")
+
+            // Llamar al servidor para calcular el presupuesto
+            val result = window.api.tryPost(
+                apiPath = "budget/calculate",
+                body = Json.encodeToString(Mesa.serializer(), mesaData).encodeToByteArray()
+            )
+
+            if (result != null) {
+                val responseStr = result.decodeToString()
+                console.log("Respuesta recibida con tipo: ${responseStr::class.simpleName}")
+                console.log("Respuesta completa: $responseStr")
+
+                // Intentar decodificar con registro de errores detallado
+                try {
+                    val response = Json.decodeFromString<BudgetResponse>(responseStr)
+                    console.log("Precio total calculado: ${response.precioTotal}")
+                    console.log("Desglose: ${response.desglose}")
+                    console.log("Tipo de objeto deserializado: ${response::class.simpleName}")
+
+                    // Actualizar estados
+                    precioTotal = response.precioTotal
+                    presupuestoDesglosado = response.desglose
+                    presupuestoCalculado = true
+                } catch (e: Exception) {
+                    // Si falla, intentamos leer el objeto como es (para análisis)
+                    console.error("Error al deserializar: ${e.message}")
+                    try {
+                        // Intenta parsear manualmente para ver qué estructura tiene realmente
+                        val jsonObject = JSON.parse<dynamic>(responseStr)
+                        console.log("Estructura real del objeto:", jsonObject)
+
+                        if (js("typeof jsonObject.precioTotal") != "undefined") {
+                            precioTotal = jsonObject.precioTotal as Double
+                            presupuestoDesglosado = (jsonObject.desglose as? Map<String, Double>) ?: emptyMap()
+                            presupuestoCalculado = true
+                        }
+                    } catch (e2: Exception) {
+                        console.error("También falló el análisis manual: ${e2.message}")
+                        error = "Error al procesar la respuesta: ${e.message}"
+                    }
+                }
+            } else {
+                error = "No se pudo conectar con el servidor para calcular el presupuesto"
+                console.error("Error: No se pudo conectar con el servidor")
+            }
 
             isLoading = false
         } catch (e: Exception) {
             error = "Error al cargar datos: ${e.message}"
+            console.error("Error en cálculo: ${e.message}")
+            console.error(e.stackTraceToString())
             isLoading = false
         }
     }
@@ -169,64 +217,23 @@ fun TableSelectorBudget() {
                 precioTotal = precioTotal,
                 fechaCreacion = null,
                 error = "",
-                username = ""
+                username = localStorage.getItem("username") ?: ""
             )
+
+            // Validar antes de finalizar (opcional) - ahora envuelto en una corrutina
+            coroutineScope.launch {
+                try {
+                    window.api.tryPost(
+                        apiPath = "budget/validate",
+                        body = Json.encodeToString(Mesa.serializer(), mesa).encodeToByteArray()
+                    )
+                } catch (e: Exception) {
+                    console.error("Error al validar presupuesto: ${e.message}")
+                }
+            }
         },
         continueButtonText = { "Aceptar y generar PDF" }
     )
-}
-
-// Función para calcular el presupuesto de forma segura
-private suspend fun calcularPresupuesto(
-    tramos: List<Tramo>,
-    cubetas: List<Cubeta>,
-    modulos: List<Modulo>,
-    elementosGenerales: List<ElementoSeleccionado>,
-    onResult: (Double, Map<String, Double>) -> Unit,
-    onError: (String) -> Unit
-) {
-    try {
-        // Cargar fórmulas necesarias
-        val userType = localStorage.getItem("userType") ?: "user"
-        val formulas = getAllFormulas(userType)
-            .associateBy { it.name }
-
-        // Realizar cálculos localmente para optimizar
-        val (precioTotal, desglose) = BudgetManager.calcularPresupuesto(formulas)
-
-
-        // Validar resultado en el backend (opcional)
-        val mesaData = Mesa(
-            tipo = BudgetManager.getMesaTipo(),
-            tramos = tramos,
-            elementosGenerales = elementosGenerales,
-            cubetas = cubetas,
-            modulos = modulos,
-            precioTotal = precioTotal,
-            fechaCreacion = null,
-            error = "",
-            username = ""
-        )
-
-        // Llamada al backend para validar los cálculos
-
-        val result = window.api.tryPost(
-            apiPath = "budget/validate",
-            body = Json.encodeToString(Mesa.serializer(), mesaData).encodeToByteArray()
-        )
-
-        // Procesar respuesta o usar cálculo local si no hay respuesta
-        if (result != null) {
-            val responseStr = result.decodeToString()
-            val response = Json.decodeFromString(BudgetResponse.serializer(), responseStr)
-            onResult(response.precioTotal, response.desglose)
-        } else {
-            onResult(precioTotal, desglose)
-        }
-
-    } catch (e: Exception) {
-        onError("Error al calcular presupuesto: ${e.message}")
-    }
 }
 
 @Composable
@@ -351,8 +358,8 @@ private fun DesgloseLine(
 }
 
 // Clase para la respuesta de cálculo de presupuesto
-@kotlinx.serialization.Serializable
-private data class BudgetResponse(
+@Serializable
+data class BudgetResponse(
     val precioTotal: Double,
     val desglose: Map<String, Double>
 )

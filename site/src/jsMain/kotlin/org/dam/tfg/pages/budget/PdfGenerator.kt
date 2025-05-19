@@ -404,28 +404,34 @@ private fun generateAndDownloadPdf(mesa: Mesa, username: String) {
                         y = 20;
                     }
                     
-                    // Precio total
+                    // Línea separadora antes del total
                     doc.setLineWidth(0.5);
                     doc.line(15, y, 195, y);
                     y += 10;
                     
-                    // Nota sobre impuestos excluidos
+                    // CORRECCIÓN: Mostrar el precio total primero y luego las notas
+                    // Precio total con espacio adecuado
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(0, 0, 0);
+                    doc.text('PRECIO TOTAL:', 15, y);
+                    
+                    const precioTotalFormateado = Number(window._pdfData.mesaPrecioTotal).toLocaleString('es-ES', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }) + ' €';
+                    doc.text(precioTotalFormateado, 190, y, null, null, 'right');
+                    
+                    // Agregar espacio antes de las notas
                     y += 15;
+                    
+                    // Nota sobre impuestos excluidos
                     doc.setFontSize(10);
                     doc.setFont(undefined, 'italic');
                     doc.setTextColor(100, 100, 100);
                     doc.text('* Los precios indicados no incluyen IVA ni otros impuestos aplicables.', 15, y);
                     y += 5;
                     doc.text('  Pueden existir costes adicionales no contemplados en este presupuesto.', 15, y);
-
-                    doc.setFontSize(14);
-                    doc.setFont(undefined, 'bold');
-                    doc.text('PRECIO TOTAL:', 15, y);
-                    const precioTotalFormateado = Number(window._pdfData.mesaPrecioTotal).toLocaleString('es-ES', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    }) + ' €';
-                    doc.text(precioTotalFormateado, 190, y, null, null, 'right');
                     
                     // Pie de página
                     doc.setFont(undefined, 'normal');
