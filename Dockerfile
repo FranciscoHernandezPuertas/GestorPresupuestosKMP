@@ -29,16 +29,10 @@ RUN mkdir -p /etc/apt/keyrings && \
     apt-get update -qq && \
     apt-get install -y --no-install-recommends nodejs
 
-# 4. Actualizar npm y limpiar caché
-RUN npm install -g npm@latest && \
-    npm cache clean --force
+# 4. Instalar Playwright
+RUN npx playwright install --with-deps chromium
 
-# 5. Instalar Playwright
-RUN npm init -y && \
-    npm install @playwright/test && \
-    npx playwright install --with-deps chromium
-
-# 6. Instalar Kobweb CLI
+# 5. Instalar Kobweb CLI
 RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
     unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip && \
     rm kobweb-${KOBWEB_CLI_VERSION}.zip
@@ -47,7 +41,7 @@ ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
 WORKDIR /project/${KOBWEB_APP_ROOT}
 
-# 7. Configuración de memoria extrema
+# 6. Configuración de memoria extrema
 RUN mkdir -p ~/.gradle && \
     echo "org.gradle.jvmargs=-Xmx96m -XX:MaxMetaspaceSize=64m -XX:+UseSerialGC -XX:+UseCompressedClassPointers" >> ~/.gradle/gradle.properties && \
     echo "kotlin.daemon.jvmargs=-Xmx64m" >> ~/.gradle/gradle.properties && \
@@ -55,11 +49,11 @@ RUN mkdir -p ~/.gradle && \
     echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties && \
     echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties
 
-# 8. Build con verificación de archivos
+# 7. Build con verificación de archivos
 RUN kobweb export --notty && \
     if [ -f .kobweb/server/start.sh ]; then chmod +x .kobweb/server/start.sh; fi
 
-# 9. Limpieza final
+# 8. Limpieza final
 RUN rm -rf \
     ~/.gradle/caches \
     /root/.cache \
