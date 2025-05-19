@@ -1,6 +1,7 @@
 site:
   title: "GeneradorPresupuestosKMP"
-
+  exclude:
+    - androidapp/
 server:
   files:
     dev:

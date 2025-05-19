@@ -19,6 +19,7 @@ import org.dam.tfg.androidapp.util.IdUtils
 import java.util.*
 import java.util.concurrent.TimeUnit
 import org.dam.tfg.androidapp.BuildConfig
+
 object MongoDBConstants {
     const val DATABASE_NAME = "gestor_db"
     const val DATABASE_URI = BuildConfig.MONGODB_URI
