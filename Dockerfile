@@ -44,16 +44,27 @@ ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
 WORKDIR /project/${KOBWEB_APP_ROOT}
 
-# Configuración de memoria optimizada
+# Configuración de memoria optimizada para 512MB
 RUN mkdir -p ~/.gradle && \
-    echo "org.gradle.jvmargs=-Xmx256m -XX:MaxMetaspaceSize=128m" >> ~/.gradle/gradle.properties && \
-    echo "kotlin.daemon.jvmargs=-Xmx256m" >> ~/.gradle/gradle.properties && \
+    echo "org.gradle.jvmargs=-Xmx192m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:+UseCompressedClassPointers -XX:+UseCompressedOops" >> ~/.gradle/gradle.properties && \
+    echo "kotlin.daemon.jvmargs=-Xmx128m -XX:+UseSerialGC" >> ~/.gradle/gradle.properties && \
     echo "org.gradle.parallel=false" >> ~/.gradle/gradle.properties && \
     echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties && \
-    echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties
+    echo "org.gradle.workers.max=1" >> ~/.gradle/gradle.properties && \
+    echo "org.gradle.caching=true" >> ~/.gradle/gradle.properties
 
-# Build con optimizaciones de memoria (sin --log-level)
+# Añadir swap temporal para la compilación
+RUN fallocate -l 1G /swapfile && \
+    chmod 600 /swapfile && \
+    mkswap /swapfile && \
+    swapon /swapfile
+
+# Build con optimizaciones de memoria
 RUN kobweb export --notty
+
+# Limpiar swap después del build
+RUN swapoff /swapfile && \
+    rm /swapfile
 
 # Verificar y preparar archivo de inicio
 RUN if [ -f .kobweb/server/start.sh ]; then chmod +x .kobweb/server/start.sh; fi
@@ -67,6 +78,6 @@ WORKDIR /app
 
 COPY --from=export /project/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
-ENV JAVA_TOOL_OPTIONS="-Xmx256m -XX:+UseSerialGC -XX:MaxRAM=512m"
+ENV JAVA_TOOL_OPTIONS="-Xmx256m -XX:+UseSerialGC -XX:MaxRAM=512m -XX:+UseCompressedClassPointers -XX:+UseCompressedOops"
 
 ENTRYPOINT ["/app/.kobweb/server/start.sh"]
