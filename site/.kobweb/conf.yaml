@@ -11,5 +11,9 @@ server:
     prod:
       script: "build/kotlin-webpack/js/productionExecutable/tfg.js"
       siteRoot: ".kobweb/site"
-
+  cors:
+    hosts:
+      - name: "generadorpresupuestos.onrender.com/"
+        schemes:
+          - "https"
   port: 8080

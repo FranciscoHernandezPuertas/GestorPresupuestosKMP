@@ -32,8 +32,8 @@ RUN mkdir -p /etc/apt/keyrings && \
     apt-get install -y nodejs && \
     npm init -y --quiet
 
-# Instalar Playwright mínimo
-RUN npx playwright install --with-deps chromium --quiet
+# Instalar Playwright mínimo (sin --quiet)
+RUN npx playwright install --with-deps chromium
 
 # Instalar Kobweb CLI
 RUN wget -q https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
