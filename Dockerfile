@@ -44,8 +44,8 @@ RUN mkdir -p ~/.gradle && \
     printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\norg.gradle.daemon=false\norg.gradle.workers.max=1\n" \
       >> ~/.gradle/gradle.properties
 
-# 6. Construir y exportar para RELEASE
-RUN kobweb export --build-target RELEASE --notty && \
+# 6. Construir y exportar
+RUN kobweb export --notty && \
     [ -f .kobweb/server/start.sh ] && chmod +x .kobweb/server/start.sh || true
 
 # 7. Limpieza intermedia de caches
