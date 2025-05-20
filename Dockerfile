@@ -32,7 +32,6 @@ RUN mkdir -p /etc/apt/keyrings && \
 
 # 4. Instalar Kobweb CLI en ruta global
 RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
-    mkdir -p /kobweb-cli && \
     unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip -d /kobweb-cli && \
     rm kobweb-${KOBWEB_CLI_VERSION}.zip
 ENV PATH="/kobweb-cli/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
@@ -45,8 +44,8 @@ RUN mkdir -p ~/.gradle && \
     printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\norg.gradle.daemon=false\norg.gradle.workers.max=1\n" \
       >> ~/.gradle/gradle.properties
 
-# 6. Construir y exportar
-RUN kobweb export --notty && \
+# 6. Construir y exportar para RELEASE
+RUN kobweb export --build-target RELEASE --notty && \
     [ -f .kobweb/server/start.sh ] && chmod +x .kobweb/server/start.sh || true
 
 # 7. Limpieza intermedia de caches
