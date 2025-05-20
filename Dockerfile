@@ -40,11 +40,12 @@ ENV PATH="/kobweb-cli/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 # 5. Memoria Gradle
 ENV GRADLE_OPTS="-Xmx64m -XX:MaxMetaspaceSize=32m -XX:+UseSerialGC -XX:+UseCompressedClassPointers -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=1 -Dorg.gradle.configuration-cache=false"
 
-# 6. Exportar estáticos en modo producción (no arranca server)
+# 6. Ajustar modo producción y exportar
+ENV KOBWEB_ENV=PROD
 WORKDIR /src/${KOBWEB_APP_ROOT}
-RUN kobweb export --env PROD --layout fullstack --notty
+RUN kobweb export --layout fullstack --notty
 
-# 7. Limpiar cachés
+# 7. Limpiar cachés intermedios para reducir tamaño
 RUN rm -rf ~/.gradle ~/.m2 ~/.npm ~/.config ~/.local /root/.cache /tmp/*
 
 #-----------------------------------------------------------------------------
@@ -54,10 +55,10 @@ FROM eclipse-temurin:21-jre-jammy AS run
 ARG KOBWEB_APP_ROOT
 WORKDIR /app
 
-# Copiar sólo el sitio exportado
+# 8. Copiar sólo el resultado exportado
 COPY --from=build /src/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
-# Inyecta en runtime la URI de Mongo (Render la proporciona)
+# 9. Variables de entorno para producción en 512 MB
 ENV KOBWEB_SERVER_ENV=PROD
 ENV JAVA_TOOL_OPTIONS="-Xmx160m -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
 ENV JAVA_TMPDIR="/tmp"
