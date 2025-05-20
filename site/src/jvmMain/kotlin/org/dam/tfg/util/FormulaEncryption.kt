@@ -9,7 +9,10 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
 object FormulaEncryption {
-    private const val SECRET = "SUPERSECRET12345" // Clave para AES
+    private val SECRET = System.getenv("SECRET") ?: run {
+        System.err.println("SECRET no encontrado, usando URI por defecto")
+        "SECRET"
+    }
     private const val ISSUER = "formula-encryption"
     private val algorithm = Algorithm.HMAC256(SECRET)
     private const val EXPIRATION_TIME = 7_776_000_000L // 90 días en milisegundos

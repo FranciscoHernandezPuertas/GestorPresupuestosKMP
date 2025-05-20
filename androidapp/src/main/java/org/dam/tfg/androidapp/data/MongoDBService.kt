@@ -19,49 +19,78 @@ import org.dam.tfg.androidapp.util.IdUtils
 import java.util.*
 import java.util.concurrent.TimeUnit
 import org.dam.tfg.androidapp.BuildConfig
+import org.dam.tfg.androidapp.util.AndroidDnsResolver
 
 object MongoDBConstants {
     const val DATABASE_NAME = "gestor_db"
-    const val DATABASE_URI = BuildConfig.MONGODB_URI
+    val DATABASE_URI = BuildConfig.MONGODB_URI
 }
 
 class MongoDBService(private val mongodbUri: String) {
     private val TAG = "MongoDBService"
+    private val dnsResolver = AndroidDnsResolver()
 
-    // Configuración del cliente con opciones mejoradas
-    private val clientSettings = MongoClientSettings.builder()
-        .applyConnectionString(ConnectionString(mongodbUri))
-        .applyToSocketSettings { builder ->
-            builder.connectTimeout(30000, TimeUnit.MILLISECONDS)
-            builder.readTimeout(30000, TimeUnit.MILLISECONDS)
+    private val client: MongoClient by lazy {
+        try {
+            val standardUri = if (mongodbUri.startsWith("mongodb+srv://")) {
+                dnsResolver.convertSrvToStandardUri(mongodbUri)
+            } else {
+                mongodbUri
+            }
+            val settings = MongoClientSettings.builder()
+                .applyConnectionString(ConnectionString(standardUri))
+                .build()
+            MongoClient.create(settings)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al crear el cliente MongoDB: ${e.message}", e)
+            throw e
         }
-        .applyToClusterSettings { builder ->
-            builder.serverSelectionTimeout(30000, TimeUnit.MILLISECONDS)
-        }
-        .build()
+    }
 
-    private val client = MongoClient.create(clientSettings)
-    private val database = client.getDatabase("gestor_db")
+    private val database by lazy { client.getDatabase(DATABASE_NAME) }
 
     // Collections
-    private val usersCollection = database.getCollection<Document>("users")
-    private val materialsCollection = database.getCollection<Document>("materials")
-    private val formulasCollection = database.getCollection<Document>("formulas")
-    private val historyCollection = database.getCollection<Document>("history")
-    private val budgetsCollection = database.getCollection<Document>("mesas")
+    private val usersCollection by lazy { database.getCollection<Document>("users") }
+    private val materialsCollection by lazy { database.getCollection<Document>("materials") }
+    private val formulasCollection by lazy { database.getCollection<Document>("formulas") }
+    private val historyCollection by lazy { database.getCollection<Document>("history") }
+    private val budgetsCollection by lazy { database.getCollection<Document>("mesas") }
 
-    // Authentication
+    // Authentication - Mejorada para ser más robusta
     suspend fun authenticateUser(username: String, password: String): User? = withContext(Dispatchers.IO) {
-        val hashedPassword = CryptoUtil.hashSHA256(password)
-        val query = Filters.and(
-            Filters.eq("username", username),
-            Filters.eq("password", hashedPassword),
-            Filters.eq("type", "admin")
-        )
-
         try {
-            val document = usersCollection.find(query).firstOrNull()
-            return@withContext document?.let { doc -> documentToUser(doc) }
+            Log.d(TAG, "Intentando autenticar usuario: $username")
+
+            // Primero, buscar al usuario solo por nombre
+            val userDoc = usersCollection.find(Filters.eq("username", username)).firstOrNull()
+
+            if (userDoc == null) {
+                Log.d(TAG, "Usuario no encontrado: $username")
+                return@withContext null
+            }
+
+            // Ahora tenemos el documento, verificar la contraseña
+            val storedPassword = userDoc.getString("password")
+            val hashedInputPassword = CryptoUtil.hashSHA256(password)
+
+            Log.d(TAG, "Contraseña almacenada: $storedPassword")
+            Log.d(TAG, "Contraseña proporcionada (hasheada): $hashedInputPassword")
+
+            // También intentar con la contraseña directa por si acaso está almacenada sin hash
+            if (storedPassword == hashedInputPassword || storedPassword == password) {
+                // Verificar si es admin
+                val userType = userDoc.getString("type") ?: ""
+                if (userType == "admin") {
+                    Log.d(TAG, "Autenticación exitosa para: $username (admin)")
+                    return@withContext documentToUser(userDoc)
+                } else {
+                    Log.d(TAG, "Usuario no es admin: $username ($userType)")
+                }
+            } else {
+                Log.d(TAG, "Contraseña incorrecta para: $username")
+            }
+
+            return@withContext null
         } catch (e: Exception) {
             Log.e(TAG, "Error en authenticateUser: ${e.message}", e)
             throw e

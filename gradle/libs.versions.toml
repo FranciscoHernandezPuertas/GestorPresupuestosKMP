@@ -24,6 +24,7 @@ coil = "3.1.0"
 retrofit = "2.9.0"
 retrofit-serialization = "1.0.0"
 navigation-runtime-android = "2.9.0"
+dnsjava = "3.6.2"
 
 [libraries]
 # MongoDB Official Driver
@@ -69,6 +70,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 retrofit-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 kotlinx-serialization-converter = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofit-serialization" }
 navigation-runtime-android = { group = "androidx.navigation", name = "navigation-runtime-android", version.ref = "navigation-runtime-android" }
+dnsjava = { group = "dnsjava", name = "dnsjava", version.ref = "dnsjava" }
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    //alias(libs.plugins.mongodb.realm)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.parcelize)
 }
@@ -48,6 +47,10 @@ android {
             excludes.add("META-INF/native-image/native-image.properties")
             // o para el folder:
             excludes.add("META-INF/native-image/**")
+            excludes += setOf(
+                "javax/annotation/**",
+                "javax/naming/**" // Excluir clases JNDI
+            )
         }
     }
     kotlinOptions {
@@ -83,4 +86,5 @@ dependencies {
     implementation(libs.bson.kotlinx)
     implementation(libs.java.jwt)
     implementation(libs.exp4j)
+    implementation(libs.dnsjava)
 }

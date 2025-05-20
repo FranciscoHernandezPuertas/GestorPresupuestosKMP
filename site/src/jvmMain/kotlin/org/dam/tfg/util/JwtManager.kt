@@ -7,7 +7,10 @@ import org.dam.tfg.models.UserWithoutPassword
 import java.util.Date
 
 object JwtManager {
-    private const val SECRET = "SUPERSECRET" // Cambiar por una clave segura
+    private val SECRET = System.getenv("SECRET") ?: run {
+        System.err.println("SECRET no encontrado, usando URI por defecto")
+        "SECRET123456789"
+    }
     private const val ISSUER = "tfg-app"
     private const val TOKEN_EXPIRATION = 86400000L // 24 horas
 
