@@ -36,20 +36,16 @@ RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB
     rm kobweb-${KOBWEB_CLI_VERSION}.zip
 ENV PATH="/kobweb-cli/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
-# 5. Configurar Gradle para bajo consumo de memoria
-WORKDIR /src/${KOBWEB_APP_ROOT}
-RUN mkdir -p ~/.gradle && \
-    printf "org.gradle.jvmargs=-Xmx96m -XX:MaxMetaspaceSize=64m -XX:+UseSerialGC -XX:+UseCompressedClassPointers\n" \
-      >> ~/.gradle/gradle.properties && \
-    printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\norg.gradle.daemon=false\norg.gradle.workers.max=1\n" \
-      >> ~/.gradle/gradle.properties
+# 5. Configurar Gradle vía variable de entorno (más ligero)
+ENV GRADLE_OPTS="-Xmx64m -XX:MaxMetaspaceSize=32m -XX:+UseSerialGC -XX:+UseCompressedClassPointers -Dorg.gradle.parallel=false -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dorg.gradle.configuration-cache=false"
 
-# 6. Construir y exportar
+# 6. Construir y exportar mínima
+WORKDIR /src/${KOBWEB_APP_ROOT}
 RUN kobweb export --notty && \
     [ -f .kobweb/server/start.sh ] && chmod +x .kobweb/server/start.sh || true
 
-# 7. Limpieza intermedia de caches
-RUN rm -rf ~/.gradle/caches /root/.cache /tmp/*
+# 7. Limpieza final de caches
+RUN rm -rf ~/.gradle ~/.m2 ~/.npm ~/.config ~/.local /root/.cache /tmp/*
 
 #-----------------------------------------------------------------------------
 # Etapa final de ejecución
@@ -62,7 +58,8 @@ WORKDIR /app
 COPY --from=build /src/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
 # Ajustes de JVM para 512 MB de memoria total
-ENV JAVA_TOOL_OPTIONS="-Xmx192m -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
+ENV JAVA_TOOL_OPTIONS="-Xmx160m -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
+ENV JAVA_TMPDIR="/tmp"
 
 EXPOSE 8080
 ENTRYPOINT ["/app/.kobweb/server/start.sh"]
