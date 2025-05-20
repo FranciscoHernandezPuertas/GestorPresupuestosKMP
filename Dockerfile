@@ -27,24 +27,25 @@ RUN mkdir -p /etc/apt/keyrings && \
       | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
       | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update -qq && apt-get install -y --no-install-recommends nodejs && \
+    apt-get update -qq && \
+    apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# 4. Instalar Kobweb CLI en ruta global
+# 4. Instalar Kobweb CLI globalmente
 RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
     unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip -d /kobweb-cli && \
     rm kobweb-${KOBWEB_CLI_VERSION}.zip
 ENV PATH="/kobweb-cli/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
-# 5. Configurar Gradle vía variable de entorno (más ligero)
+# 5. Ajustar opciones de Gradle para bajo consumo de memoria
 ENV GRADLE_OPTS="-Xmx64m -XX:MaxMetaspaceSize=32m -XX:+UseSerialGC -XX:+UseCompressedClassPointers -Dorg.gradle.parallel=false -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dorg.gradle.configuration-cache=false"
 
-# 6. Construir y exportar mínima
+# 6. Exportar el sitio en modo Fullstack (incluye carpeta site)
 WORKDIR /src/${KOBWEB_APP_ROOT}
-RUN kobweb export --notty && \
-    [ -f .kobweb/server/start.sh ] && chmod +x .kobweb/server/start.sh || true
+RUN kobweb export --layout fullstack --notty && \
+    chmod +x .kobweb/server/start.sh
 
-# 7. Limpieza final de caches
+# 7. Limpieza de cachés intermedios para reducir el tamaño
 RUN rm -rf ~/.gradle ~/.m2 ~/.npm ~/.config ~/.local /root/.cache /tmp/*
 
 #-----------------------------------------------------------------------------
@@ -54,10 +55,11 @@ FROM eclipse-temurin:21-jre-jammy AS run
 ARG KOBWEB_APP_ROOT
 WORKDIR /app
 
-# Copiar sólo el servidor exportado
+# 8. Copiar únicamente el resultado de export
 COPY --from=build /src/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
-# Ajustes de JVM para 512 MB de memoria total
+# 9. Variables de entorno para producción en 512 MB
+ENV KOBWEB_SERVER_ENV=PROD
 ENV JAVA_TOOL_OPTIONS="-Xmx160m -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
 ENV JAVA_TMPDIR="/tmp"
 
