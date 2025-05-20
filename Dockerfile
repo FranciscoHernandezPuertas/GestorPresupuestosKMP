@@ -59,8 +59,21 @@ WORKDIR /app
 COPY --from=build /src/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
 # 9. Variables para runtime
-#    Render inyecta aquí MONGODB_URI
+# IMPORTANTE: Asegurarse que las variables de entorno se pasen correctamente
 ENV JAVA_TOOL_OPTIONS="-Xmx160m -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
 
+# Crear un wrapper script que asegure que las variables de entorno estén disponibles
+RUN echo '#!/bin/bash\n\
+# Archivo para variables de entorno fallback\nif [ ! -f /app/.env ]; then\n\
+  echo "# Variables de entorno de fallback" > /app/.env\n\
+fi\n\
+# Cargar variables de archivo .env\nsource /app/.env\n\
+# Comprobar si MONGODB_URI está definido, sino usar el valor de fallback\nif [ -z "${MONGODB_URI}" ]; then\n\
+  export MONGODB_URI=${MONGODB_URI_FALLBACK:-"mongodb+srv://fallback:password@localhost/gestor_db"}\n\
+fi\n\
+# Imprimir información de debug (quitar en producción final)\necho "Using MONGODB_URI: ${MONGODB_URI}"\n\
+# Iniciar la aplicación con las variables disponibles\nexec /app/.kobweb/server/start.sh "$@"' > /app/start-wrapper.sh && \
+chmod +x /app/start-wrapper.sh
+
 EXPOSE 8080
-ENTRYPOINT ["/app/.kobweb/server/start.sh"]
+ENTRYPOINT ["/app/start-wrapper.sh"]

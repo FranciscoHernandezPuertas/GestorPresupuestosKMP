@@ -19,9 +19,24 @@ import org.dam.tfg.models.table.Mesa
 fun initMongoDB(context: InitApiContext) {
     context.data.add(MongoDB(context))
 }
+
 const val DATABASE_NAME = "gestor_db"
+
 class MongoDB(private val context: InitApiContext) : MongoRepository {
-    private val client = MongoClient.create(System.getenv("MONGODB_URI"))
+    // Obtener URI de MongoDB con fallback
+    private val mongoUri = System.getenv("MONGODB_URI") ?: run {
+        context.logger.warn("MONGODB_URI no encontrado, usando URI por defecto")
+        "mongodb://localhost:27017"
+    }
+
+    private val client = try {
+        context.logger.info("Conectando a MongoDB con URI: $mongoUri")
+        MongoClient.create(mongoUri)
+    } catch (e: Exception) {
+        context.logger.error("Error al conectar a MongoDB: ${e.message}")
+        throw e
+    }
+
     private val database = client.getDatabase(DATABASE_NAME)
 
     private val userCollection: MongoCollection<User> = database.getCollection("users")
@@ -29,7 +44,6 @@ class MongoDB(private val context: InitApiContext) : MongoRepository {
     private val formulaCollection: MongoCollection<Formula> = database.getCollection("formulas")
     private val mesaCollection: MongoCollection<Mesa> = database.getCollection("mesas")
     private val historyCollection: MongoCollection<History> = database.getCollection("history")
-
 
     override suspend fun checkUserExistence(user: User): User? {
         return try {
