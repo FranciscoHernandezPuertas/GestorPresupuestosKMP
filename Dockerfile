@@ -4,7 +4,7 @@ ARG KOBWEB_APP_ROOT="site"
 
 #-----------------------------------------------------------------------------
 # Etapa de construcción
-FROM eclipse-temurin:21-jdk-slim as build
+FROM eclipse-temurin:21-jdk-jammy AS build
 
 ENV KOBWEB_CLI_VERSION=0.9.18
 ARG KOBWEB_APP_ROOT
@@ -21,43 +21,52 @@ RUN apt-get update -qq && \
       curl gnupg unzip ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# 3. Instalar Node.js ligero
+# 3. Instalar Node.js desde Nodesource
 RUN mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] \
+      https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
       | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update -qq && apt-get install -y nodejs && rm -rf /var/lib/apt/lists/*
+    apt-get update -qq && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # 4. Instalar Kobweb CLI
-RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
-    unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip && rm kobweb-${KOBWEB_CLI_VERSION}.zip
+RUN curl -sLO \
+      https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
+    unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip && \
+    rm kobweb-${KOBWEB_CLI_VERSION}.zip
 ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
-# 5. Configuración de memoria para gradle
+# 5. Configurar Gradle para bajo consumo de memoria
 WORKDIR /src/${KOBWEB_APP_ROOT}
 RUN mkdir -p ~/.gradle && \
-    printf "org.gradle.jvmargs=-Xmx96m -XX:MaxMetaspaceSize=64m -XX:+UseSerialGC -XX:+UseCompressedClassPointers\n" >> ~/.gradle/gradle.properties && \
-    printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\norg.gradle.daemon=false\norg.gradle.workers.max=1\n" \
+    printf "org.gradle.jvmargs=-Xmx96m -XX:MaxMetaspaceSize=64m \
+-XX:+UseSerialGC -XX:+UseCompressedClassPointers\n" \
+      >> ~/.gradle/gradle.properties && \
+    printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\n\
+org.gradle.daemon=false\norg.gradle.workers.max=1\n" \
       >> ~/.gradle/gradle.properties
 
-# 6. Build y export minimal
+# 6. Construir y exportar
 RUN kobweb export --notty && \
     [ -f .kobweb/server/start.sh ] && chmod +x .kobweb/server/start.sh || true
 
-# 7. Limpieza intermedia
+# 7. Limpieza intermedia de caches
 RUN rm -rf ~/.gradle/caches /root/.cache /tmp/*
 
 #-----------------------------------------------------------------------------
 # Etapa final de ejecución
-FROM eclipse-temurin:21-jre-slim as run
+FROM eclipse-temurin:21-jre-jammy AS run
 
 ARG KOBWEB_APP_ROOT
 WORKDIR /app
 
-# Copiar artefactos mínimos para arrancar
+# Copiar sólo el servidor exportado
 COPY --from=build /src/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
-# Ajustes de JVM para 512MB
+# Ajustes de JVM para 512 MB de memoria total
 ENV JAVA_TOOL_OPTIONS="-Xmx192m -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
 
 EXPOSE 8080
