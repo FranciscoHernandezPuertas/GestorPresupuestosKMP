@@ -15,33 +15,54 @@ WORKDIR /src
 COPY . .
 RUN rm -rf androidapp
 
-# 2. Dependencias mínimas
+# 2. Dependencias mínimas + librerías para Playwright
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
-      curl gnupg unzip ca-certificates && \
+      curl \
+      gnupg \
+      unzip \
+      ca-certificates \
+      # Librerías requeridas por Playwright para navegadores \
+      libglib2.0-0 \
+      libnss3 \
+      libnspr4 \
+      libdbus-1-3 \
+      libatk1.0-0 \
+      libatk-bridge2.0-0 \
+      libatspi2.0-0 \
+      libx11-6 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxext6 \
+      libxfixes3 \
+      libxrandr2 \
+      libgbm1 \
+      libxcb1 \
+      libxkbcommon0 \
+      libasound2 && \
     rm -rf /var/lib/apt/lists/*
 
-# 3. Instalar Node.js
+# 3. Instalar Node.js (corrigiendo la URL del repositorio)
 RUN mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key  \
       | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_ ${NODE_MAJOR}.x nodistro main" \
       | tee /etc/apt/sources.list.d/nodesource.list && \
     apt-get update -qq && \
     apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 # 4. Instalar Kobweb CLI
-RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
+RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v ${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
     unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip -d /kobweb-cli && \
     rm kobweb-${KOBWEB_CLI_VERSION}.zip
 ENV PATH="/kobweb-cli/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
-# 5. Ajustes de memoria para Gradle (build ligero)
-ENV GRADLE_OPTS="-Xmx64m -XX:MaxMetaspaceSize=32m -XX:+UseSerialGC -XX:+UseCompressedClassPointers \
--Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=1"
+# 5. Ajustes de memoria para Gradle (compatible con 512MB)
+ENV GRADLE_OPTS="-Xmx128m -XX:MaxMetaspaceSize=48m -XX:+UseSerialGC -XX:+UseCompressedClassPointers \
+  -Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=1"
 
-# 6. Exportar sitio en modo producción (no arranca servidor Dev)
+# 6. Exportar sitio en modo producción
 WORKDIR /src/${KOBWEB_APP_ROOT}
 RUN kobweb export --layout fullstack --notty
 
@@ -55,25 +76,19 @@ FROM eclipse-temurin:21-jre-jammy AS run
 ARG KOBWEB_APP_ROOT
 WORKDIR /app
 
-# 8. Copiar sólo el resultado exportado
+# 8. Copiar solo el resultado exportado
 COPY --from=build /src/${KOBWEB_APP_ROOT}/.kobweb ./.kobweb
 
-# 9. Variables para runtime
-# IMPORTANTE: Asegurarse que las variables de entorno se pasen correctamente
-ENV JAVA_TOOL_OPTIONS="-Xmx160m -XX:MaxRAMPercentage=60 -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
+# 9. Variables para runtime (ajustadas a 512MB)
+ENV JAVA_TOOL_OPTIONS="-Xmx192m -XX:MaxRAMPercentage=50 -XX:+UseSerialGC -XX:+UseCompressedClassPointers"
 
-# Crear un wrapper script que asegure que las variables de entorno estén disponibles
+# Script de inicio con variables de entorno
 RUN echo '#!/bin/bash\n\
-# Archivo para variables de entorno fallback\nif [ ! -f /app/.env ]; then\n\
-  echo "# Variables de entorno de fallback" > /app/.env\n\
-fi\n\
-# Cargar variables de archivo .env\nsource /app/.env\n\
-# Comprobar si MONGODB_URI está definido, sino usar el valor de fallback\nif [ -z "${MONGODB_URI}" ]; then\n\
-  export MONGODB_URI=${MONGODB_URI_FALLBACK:-"mongodb+srv://fallback:password@localhost/gestor_db"}\n\
-fi\n\
-# Imprimir información de debug (quitar en producción final)\necho "Using MONGODB_URI: ${MONGODB_URI}"\n\
-# Iniciar la aplicación con las variables disponibles\nexec /app/.kobweb/server/start.sh "$@"' > /app/start-wrapper.sh && \
-chmod +x /app/start-wrapper.sh
+# Cargar variables de entorno\nsource /app/.env 2>/dev/null || true\n\
+# Fallback para MONGODB_URI\nexport MONGODB_URI=${MONGODB_URI:-"mongodb+srv://fallback:password@localhost/gestor_db"}\n\
+echo "Using MONGODB_URI: $MONGODB_URI"\n\
+exec /app/.kobweb/server/start.sh "$@"' > /app/start-wrapper.sh && \
+  chmod +x /app/start-wrapper.sh
 
 EXPOSE 8080
 ENTRYPOINT ["/app/start-wrapper.sh"]

@@ -94,7 +94,7 @@ El sistema implementa varias capas de seguridad:
 
 Progreso:
 
-![Progreso](https://progress-bar.xyz/65)
+![Progreso](https://progress-bar.xyz/95)
 
 ### Implementado (✅)
 - Sistema completo de autenticación con JWT
@@ -107,35 +107,39 @@ Progreso:
 - Persistencia de datos en localStorage
 - Integración con MongoDB
 - Encriptación segura de fórmulas sensibles
-
-### Pendiente (⏳)
 - Panel de historial para seguimiento de presupuestos
 - Panel de listas de materiales y elementos
 - Cálculo final del presupuesto
 - Generación de PDF del presupuesto
 - Guardar presupuestos en la base de datos
 - Desarrollo del módulo para Android
+
+### Pendiente (⏳)
 - Optimización y pruebas de rendimiento
-
-## Módulo Android (Futuro)
-
-Se prevé la implementación de un módulo Android que compartirá:
-- Lógica de negocio con el código común
-- Modelos de datos
-- Algoritmos de generación de presupuestos
-
-El módulo Android tendrá UI nativa utilizando Compose y aprovechará las ventajas de la plataforma móvil.
 
 ## Dependencias principales
 
 ```
 - Kotlin Multiplatform: 2.1.10
 - Kobweb: 0.20.6
-- MongoDB Driver: 5.3.0
-- Compose: 1.7.3
-- KotlinX Serialization: 1.4.1
-- JWT: 4.2.1
-- exp4j 0.4.8
+-MongoDB Driver: 5.3.0
+-Compose: 1.7.3
+-KotlinX Serialization: 1.4.1
+-JWT: 4.2.1
+-exp4j: 0.4.8
+-KSP: 2.1.10-1.0.31
+-Foundation Layout Android: 1.8.1
+-Ktor: 2.3.2
+-Core KTX: 1.16.0
+-Lifecycle Runtime KTX: 2.9.0
+-Activity Compose: 1.10.1
+-Compose BOM: 2025.05.00
+-Navigation: 2.9.0
+-Coroutines: 1.8.1
+-Mongo Sync: 2.3.0
+-Coil: 3.1.0
+-Retrofit: 2.9.0
+-Retrofit Serialization: 1.0.0
 ```
 
 ## Licencia
