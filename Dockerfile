@@ -25,28 +25,24 @@ RUN apt-get update -qq && \
 RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
       | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] \
-      https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
       | tee /etc/apt/sources.list.d/nodesource.list && \
-    apt-get update -qq && \
-    apt-get install -y --no-install-recommends nodejs && \
+    apt-get update -qq && apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# 4. Instalar Kobweb CLI
-RUN curl -sLO \
-      https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
-    unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip && \
+# 4. Instalar Kobweb CLI en ruta global
+RUN curl -sLO https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip && \
+    mkdir -p /kobweb-cli && \
+    unzip -q kobweb-${KOBWEB_CLI_VERSION}.zip -d /kobweb-cli && \
     rm kobweb-${KOBWEB_CLI_VERSION}.zip
-ENV PATH="/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
+ENV PATH="/kobweb-cli/kobweb-${KOBWEB_CLI_VERSION}/bin:${PATH}"
 
 # 5. Configurar Gradle para bajo consumo de memoria
 WORKDIR /src/${KOBWEB_APP_ROOT}
 RUN mkdir -p ~/.gradle && \
-    printf "org.gradle.jvmargs=-Xmx96m -XX:MaxMetaspaceSize=64m \
--XX:+UseSerialGC -XX:+UseCompressedClassPointers\n" \
+    printf "org.gradle.jvmargs=-Xmx96m -XX:MaxMetaspaceSize=64m -XX:+UseSerialGC -XX:+UseCompressedClassPointers\n" \
       >> ~/.gradle/gradle.properties && \
-    printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\n\
-org.gradle.daemon=false\norg.gradle.workers.max=1\n" \
+    printf "kotlin.daemon.jvmargs=-Xmx64m\norg.gradle.parallel=false\norg.gradle.daemon=false\norg.gradle.workers.max=1\n" \
       >> ~/.gradle/gradle.properties
 
 # 6. Construir y exportar
