@@ -22,7 +22,7 @@ private val json = Json {
 /**
  * Obtener todas las fórmulas
  */
-@Api(routeOverride = "/formulas")
+@Api(routeOverride = "GET /android/formulas")
 suspend fun getAllAndroidFormulas(context: ApiContext) {
     try {
         // Obtener el tipo de usuario para determinar si puede ver fórmulas desencriptadas
@@ -78,7 +78,7 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
 /**
  * Obtener fórmula por ID
  */
-@Api(routeOverride = "/formulas/{id}")
+@Api(routeOverride = "GET /android/formulas/{id}")
 suspend fun getAndroidFormulaById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -135,7 +135,7 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
 /**
  * Crear una nueva fórmula
  */
-@Api(routeOverride = "/formulas")
+@Api(routeOverride = "POST /android/formulas")
 suspend fun createAndroidFormula(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
@@ -208,7 +208,7 @@ suspend fun createAndroidFormula(context: ApiContext) {
 /**
  * Actualizar una fórmula existente
  */
-@Api(routeOverride = "/formulas/{id}")
+@Api(routeOverride = "PUT /android/formulas/{id}")
 suspend fun updateAndroidFormula(context: ApiContext) {
     try {
         // Verificar que la petición es un PUT
@@ -286,7 +286,7 @@ suspend fun updateAndroidFormula(context: ApiContext) {
 /**
  * Eliminar una fórmula
  */
-@Api(routeOverride = "/formulas/{id}")
+@Api(routeOverride = "DELETE /android/formulas/{id}")
 suspend fun deleteAndroidFormula(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE
@@ -326,3 +326,4 @@ suspend fun deleteAndroidFormula(context: ApiContext) {
         )
     }
 }
+
