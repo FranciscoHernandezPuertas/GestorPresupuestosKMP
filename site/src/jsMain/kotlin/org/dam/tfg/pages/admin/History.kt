@@ -103,7 +103,15 @@ fun AdminHistoryContent() {
     // Cargar datos al iniciar
     LaunchedEffect(Unit) {
         try {
-            historyEntries = getAllHistory().sortedByDescending { it.timestamp }
+            historyEntries = getAllHistory().sortedByDescending {
+                try {
+                    // Convertir el string de timestamp a objeto Date para ordenar correctamente
+                    Date(it.timestamp).getTime()
+                } catch (e: Exception) {
+                    // Si hay error en el formato de fecha, usar 0 como valor por defecto
+                    0.0
+                }
+            }
             filteredEntries = historyEntries
             isLoading = false
         } catch (e: Exception) {
