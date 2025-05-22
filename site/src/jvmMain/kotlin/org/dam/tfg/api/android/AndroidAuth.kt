@@ -8,6 +8,10 @@ import com.varabyte.kobweb.api.data.getValue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.dam.tfg.data.MongoDB
 import org.dam.tfg.models.AuthResponse
 import org.dam.tfg.models.ErrorResponse
@@ -25,7 +29,6 @@ private val json = Json {
 
 /**
  * Endpoint para la autenticación desde la app Android
- * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
 @Api(routeOverride = "auth/login")
 suspend fun androidLogin(context: ApiContext) {
@@ -41,31 +44,34 @@ suspend fun androidLogin(context: ApiContext) {
 
         println("Body received: $bodyText")
 
-        val userRequest = try {
-            json.decodeFromString<User>(bodyText)
-        } catch (e: Exception) {
-            println("Error decoding user: ${e.message}")
-            throw Exception("Error al decodificar datos de usuario: ${e.message}")
-        }
+        // Primero parseamos como JsonObject para manejar _id correctamente
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
 
-        println("User parsed: username=${userRequest.username}, type=${userRequest.type}")
+        // Extraer campos, con preferencia por _id
+        val userId = (jsonObject["_id"] ?: jsonObject["id"])?.jsonPrimitive?.content ?: ""
+        val username = jsonObject["username"]?.jsonPrimitive?.content ?: ""
+        val password = jsonObject["password"]?.jsonPrimitive?.content ?: ""
+        val type = jsonObject["type"]?.jsonPrimitive?.content ?: "user"
+
+        println("User parsed: username=$username, type=$type, id=$userId")
 
         // Validar datos de entrada
-        if (userRequest.username.isBlank() || userRequest.password.isBlank()) {
+        if (username.isBlank() || password.isBlank()) {
             throw Exception("Usuario y contraseña son requeridos")
         }
 
         // Aplicar hash a la contraseña
-        val hashedPassword = hashPassword(userRequest.password)
+        val hashedPassword = hashPassword(password)
         println("Password hashed successfully")
 
         // Verificar credenciales
         val user = context.data.getValue<MongoDB>().checkUserExistence(
             User(
-                id = userRequest.id,
-                username = userRequest.username,
+                id = userId,
+                username = username,
                 password = hashedPassword,
-                type = userRequest.type
+                type = type
             )
         )
 
@@ -86,16 +92,20 @@ suspend fun androidLogin(context: ApiContext) {
             val token = JwtManager.generateToken(userWithoutPassword)
             println("Token generated successfully")
 
-            // Devolver respuesta con usuario y token
-            val response = ApiResponse(
-                success = true,
-                data = AuthResponse(
-                    user = userWithoutPassword,
-                    token = token
-                )
-            )
+            // Crear respuesta adaptada para Android (con campo _id)
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "user" to JsonObject(mapOf(
+                        "_id" to JsonPrimitive(userWithoutPassword.id),
+                        "username" to JsonPrimitive(userWithoutPassword.username),
+                        "type" to JsonPrimitive(userWithoutPassword.type)
+                    )),
+                    "token" to JsonPrimitive(token)
+                ))
+            ))
 
-            val responseJson = json.encodeToString(response)
+            val responseJson = json.encodeToString(responseJsonObject)
             println("Response to send: $responseJson")
 
             context.res.setBodyText(responseJson)
@@ -152,3 +162,4 @@ private fun hashPassword(password: String): String {
 
     return hexString.toString()
 }
+
