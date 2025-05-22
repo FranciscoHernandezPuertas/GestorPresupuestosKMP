@@ -8,6 +8,10 @@ import com.varabyte.kobweb.api.data.getValue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.dam.tfg.data.MongoDB
 import org.dam.tfg.models.Formula
 import org.dam.tfg.util.FormulaEncryption
@@ -55,14 +59,27 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
             formulas
         }
 
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse(
-                    success = true,
-                    data = resultFormulas
-                )
-            )
-        )
+        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        val formulasJsonArray = resultFormulas.map { formula ->
+            val variablesMap = formula.variables.map { entry ->
+                entry.key to JsonPrimitive(entry.value)
+            }.toMap()
+
+            JsonObject(mapOf(
+                "id" to JsonPrimitive(formula.id),
+                "name" to JsonPrimitive(formula.name),
+                "formula" to JsonPrimitive(formula.formula),
+                "formulaEncrypted" to JsonPrimitive(formula.formulaEncrypted),
+                "variables" to JsonObject(variablesMap)
+            ))
+        }
+
+        val responseJsonObject = JsonObject(mapOf(
+            "success" to JsonPrimitive(true),
+            "data" to kotlinx.serialization.json.JsonArray(formulasJsonArray)
+        ))
+
+        context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
         context.res.status = 500
         context.res.setBodyText(
@@ -112,14 +129,23 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
             formula
         }
 
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse(
-                    success = true,
-                    data = resultFormula
-                )
-            )
-        )
+        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        val variablesMap = resultFormula.variables.map { entry ->
+            entry.key to JsonPrimitive(entry.value)
+        }.toMap()
+
+        val responseJsonObject = JsonObject(mapOf(
+            "success" to JsonPrimitive(true),
+            "data" to JsonObject(mapOf(
+                "id" to JsonPrimitive(resultFormula.id),
+                "name" to JsonPrimitive(resultFormula.name),
+                "formula" to JsonPrimitive(resultFormula.formula),
+                "formulaEncrypted" to JsonPrimitive(resultFormula.formulaEncrypted),
+                "variables" to JsonObject(variablesMap)
+            ))
+        ))
+
+        context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
         val status = if (e.message?.contains("no encontrada") == true) 404 else 500
         context.res.status = status
@@ -149,49 +175,71 @@ suspend fun createAndroidFormula(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de la fórmula")
 
-        val formulaDto = try {
-            json.decodeFromString<Formula>(bodyText)
-        } catch (e: Exception) {
-            throw Exception("Error al decodificar datos de la fórmula: ${e.message}")
-        }
+        // Primero parseamos como JsonObject para manejar id/_id correctamente
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
+
+        // Extraer campos, con preferencia por _id
+        val formulaId = (jsonObject["_id"] ?: jsonObject["id"])?.jsonPrimitive?.content ?: ""
+        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
+        val formulaText = jsonObject["formula"]?.jsonPrimitive?.content ?: ""
+        val formulaEncrypted = jsonObject["formulaEncrypted"]?.jsonPrimitive?.content?.toBoolean() ?: false
+
+        // Extraer variables (que es un objeto anidado)
+        val variablesObject = jsonObject["variables"]?.jsonObject
+        val variables = variablesObject?.let { obj ->
+            obj.entries.associate { entry ->
+                entry.key to (entry.value.jsonPrimitive.content)
+            }
+        } ?: emptyMap()
 
         // Validaciones básicas
-        if (formulaDto.name.isBlank()) {
+        if (name.isBlank()) {
             throw Exception("El nombre de la fórmula no puede estar vacío")
         }
 
-        if (formulaDto.formula.isBlank()) {
+        if (formulaText.isBlank()) {
             throw Exception("La fórmula no puede estar vacía")
         }
 
         // Encriptar la fórmula si no está encriptada
-        val encryptedFormula = if (!formulaDto.formulaEncrypted) {
-            FormulaEncryption.encrypt(formulaDto.formula)
+        val encryptedFormula = if (!formulaEncrypted) {
+            FormulaEncryption.encrypt(formulaText)
         } else {
-            formulaDto.formula
+            formulaText
         }
 
         // Crear fórmula con ID generado si no tiene uno
         val newFormula = Formula(
-            id = if (formulaDto.id.isBlank()) ObjectId().toHexString() else formulaDto.id,
-            name = formulaDto.name.trim(),
+            id = if (formulaId.isBlank()) ObjectId().toHexString() else formulaId,
+            name = name.trim(),
             formula = encryptedFormula,
             formulaEncrypted = true, // Siempre marcamos como encriptada
-            variables = formulaDto.variables
+            variables = variables
         )
 
         val success = context.data.getValue<MongoDB>().addFormula(newFormula)
 
         if (success) {
             context.res.status = 201 // Created
-            context.res.setBodyText(
-                json.encodeToString(
-                    ApiResponse<Formula>(
-                        success = true,
-                        data = newFormula
-                    )
-                )
-            )
+
+            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            val variablesMap = newFormula.variables.map { entry ->
+                entry.key to JsonPrimitive(entry.value)
+            }.toMap()
+
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "id" to JsonPrimitive(newFormula.id),
+                    "name" to JsonPrimitive(newFormula.name),
+                    "formula" to JsonPrimitive(newFormula.formula),
+                    "formulaEncrypted" to JsonPrimitive(newFormula.formulaEncrypted),
+                    "variables" to JsonObject(variablesMap)
+                ))
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
         } else {
             throw Exception("No se pudo crear la fórmula")
         }
@@ -229,48 +277,68 @@ suspend fun updateAndroidFormula(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de la fórmula")
 
-        val formulaDto = try {
-            json.decodeFromString<Formula>(bodyText)
-        } catch (e: Exception) {
-            throw Exception("Error al decodificar datos de la fórmula: ${e.message}")
-        }
+        // Primero parseamos como JsonObject para manejar correctamente
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
+
+        // Extraer campos
+        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
+        val formulaText = jsonObject["formula"]?.jsonPrimitive?.content ?: ""
+        val formulaEncrypted = jsonObject["formulaEncrypted"]?.jsonPrimitive?.content?.toBoolean() ?: false
+
+        // Extraer variables (que es un objeto anidado)
+        val variablesObject = jsonObject["variables"]?.jsonObject
+        val variables = variablesObject?.let { obj ->
+            obj.entries.associate { entry ->
+                entry.key to (entry.value.jsonPrimitive.content)
+            }
+        } ?: emptyMap()
 
         // Validaciones
-        if (formulaDto.name.isBlank()) {
+        if (name.isBlank()) {
             throw Exception("El nombre de la fórmula no puede estar vacío")
         }
 
-        if (formulaDto.formula.isBlank()) {
+        if (formulaText.isBlank()) {
             throw Exception("La fórmula no puede estar vacía")
         }
 
         // Encriptar la fórmula si no está encriptada
-        val encryptedFormula = if (!formulaDto.formulaEncrypted) {
-            FormulaEncryption.encrypt(formulaDto.formula)
+        val encryptedFormula = if (!formulaEncrypted) {
+            FormulaEncryption.encrypt(formulaText)
         } else {
-            formulaDto.formula
+            formulaText
         }
 
         // Asegurar que el ID en el path coincida con el ID en el cuerpo
         val formulaToUpdate = Formula(
             id = id,
-            name = formulaDto.name.trim(),
+            name = name.trim(),
             formula = encryptedFormula,
             formulaEncrypted = true, // Siempre marcamos como encriptada
-            variables = formulaDto.variables
+            variables = variables
         )
 
         val success = context.data.getValue<MongoDB>().updateFormula(formulaToUpdate)
 
         if (success) {
-            context.res.setBodyText(
-                json.encodeToString(
-                    ApiResponse<Formula>(
-                        success = true,
-                        data = formulaToUpdate
-                    )
-                )
-            )
+            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            val variablesMap = formulaToUpdate.variables.map { entry ->
+                entry.key to JsonPrimitive(entry.value)
+            }.toMap()
+
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "id" to JsonPrimitive(formulaToUpdate.id),
+                    "name" to JsonPrimitive(formulaToUpdate.name),
+                    "formula" to JsonPrimitive(formulaToUpdate.formula),
+                    "formulaEncrypted" to JsonPrimitive(formulaToUpdate.formulaEncrypted),
+                    "variables" to JsonObject(variablesMap)
+                ))
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
         } else {
             throw Exception("No se pudo actualizar la fórmula. Posiblemente no existe.")
         }
@@ -308,14 +376,13 @@ suspend fun deleteAndroidFormula(context: ApiContext) {
         val success = context.data.getValue<MongoDB>().deleteFormula(id)
 
         if (success) {
-            context.res.setBodyText(
-                json.encodeToString(
-                    ApiResponse<Boolean>(
-                        success = true,
-                        data = true
-                    )
-                )
-            )
+            // Crear respuesta adaptada para Android
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonPrimitive(true)
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
         } else {
             throw Exception("No se pudo eliminar la fórmula. Posiblemente no existe.")
         }

@@ -8,6 +8,10 @@ import com.varabyte.kobweb.api.data.getValue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.dam.tfg.data.MongoDB
 import org.dam.tfg.models.Material
 import org.bson.types.ObjectId
@@ -27,14 +31,21 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
     try {
         val materials = context.data.getValue<MongoDB>().getAllMaterials()
 
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse(
-                    success = true,
-                    data = materials
-                )
-            )
-        )
+        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        val materialsJsonArray = materials.map { material ->
+            JsonObject(mapOf(
+                "id" to JsonPrimitive(material.id),
+                "name" to JsonPrimitive(material.name),
+                "price" to JsonPrimitive(material.price)
+            ))
+        }
+
+        val responseJsonObject = JsonObject(mapOf(
+            "success" to JsonPrimitive(true),
+            "data" to kotlinx.serialization.json.JsonArray(materialsJsonArray)
+        ))
+
+        context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
         context.res.status = 500
         context.res.setBodyText(
@@ -64,14 +75,17 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
         val material = context.data.getValue<MongoDB>().getMaterialById(id)
             ?: throw Exception("Material no encontrado")
 
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse(
-                    success = true,
-                    data = material
-                )
-            )
-        )
+        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        val responseJsonObject = JsonObject(mapOf(
+            "success" to JsonPrimitive(true),
+            "data" to JsonObject(mapOf(
+                "id" to JsonPrimitive(material.id),
+                "name" to JsonPrimitive(material.name),
+                "price" to JsonPrimitive(material.price)
+            ))
+        ))
+
+        context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
         val status = if (e.message?.contains("no encontrado") == true) 404 else 500
         context.res.status = status
@@ -101,40 +115,47 @@ suspend fun createAndroidMaterial(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos del material")
 
-        val material = try {
-            json.decodeFromString<Material>(bodyText)
-        } catch (e: Exception) {
-            throw Exception("Error al decodificar datos del material: ${e.message}")
-        }
+        // Primero parseamos como JsonObject para manejar id/_id correctamente
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
+
+        // Extraer campos, con preferencia por _id
+        val materialId = (jsonObject["_id"] ?: jsonObject["id"])?.jsonPrimitive?.content ?: ""
+        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
+        val price = jsonObject["price"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
 
         // Validaciones
-        if (material.name.isBlank()) {
+        if (name.isBlank()) {
             throw Exception("El nombre del material no puede estar vacío")
         }
 
-        if (material.price < 0) {
+        if (price < 0) {
             throw Exception("El precio no puede ser negativo")
         }
 
         // Crear material con ID generado si no tiene uno
         val newMaterial = Material(
-            id = if (material.id.isBlank()) ObjectId().toHexString() else material.id,
-            name = material.name.trim(),
-            price = material.price
+            id = if (materialId.isBlank()) ObjectId().toHexString() else materialId,
+            name = name.trim(),
+            price = price
         )
 
         val success = context.data.getValue<MongoDB>().addMaterial(newMaterial)
 
         if (success) {
             context.res.status = 201 // Created
-            context.res.setBodyText(
-                json.encodeToString(
-                    ApiResponse<Material>(
-                        success = true,
-                        data = newMaterial
-                    )
-                )
-            )
+
+            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "id" to JsonPrimitive(newMaterial.id),
+                    "name" to JsonPrimitive(newMaterial.name),
+                    "price" to JsonPrimitive(newMaterial.price)
+                ))
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
         } else {
             throw Exception("No se pudo crear el material")
         }
@@ -172,39 +193,44 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos del material")
 
-        val material = try {
-            json.decodeFromString<Material>(bodyText)
-        } catch (e: Exception) {
-            throw Exception("Error al decodificar datos del material: ${e.message}")
-        }
+        // Primero parseamos como JsonObject para manejar id/_id correctamente
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
+
+        // Extraer campos
+        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
+        val price = jsonObject["price"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0
 
         // Validaciones
-        if (material.name.isBlank()) {
+        if (name.isBlank()) {
             throw Exception("El nombre del material no puede estar vacío")
         }
 
-        if (material.price < 0) {
+        if (price < 0) {
             throw Exception("El precio no puede ser negativo")
         }
 
         // Asegurar que el ID en el path coincida con el ID en el cuerpo
         val materialToUpdate = Material(
             id = id,
-            name = material.name,
-            price = material.price
+            name = name,
+            price = price
         )
 
         val success = context.data.getValue<MongoDB>().updateMaterial(materialToUpdate)
 
         if (success) {
-            context.res.setBodyText(
-                json.encodeToString(
-                    ApiResponse<Material>(
-                        success = true,
-                        data = materialToUpdate
-                    )
-                )
-            )
+            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "id" to JsonPrimitive(materialToUpdate.id),
+                    "name" to JsonPrimitive(materialToUpdate.name),
+                    "price" to JsonPrimitive(materialToUpdate.price)
+                ))
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
         } else {
             throw Exception("No se pudo actualizar el material. Posiblemente no existe.")
         }
@@ -242,14 +268,13 @@ suspend fun deleteAndroidMaterial(context: ApiContext) {
         val success = context.data.getValue<MongoDB>().deleteMaterial(id)
 
         if (success) {
-            context.res.setBodyText(
-                json.encodeToString(
-                    ApiResponse<Boolean>(
-                        success = true,
-                        data = true
-                    )
-                )
-            )
+            // Crear respuesta adaptada para Android
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonPrimitive(true)
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
         } else {
             throw Exception("No se pudo eliminar el material. Posiblemente no existe.")
         }
