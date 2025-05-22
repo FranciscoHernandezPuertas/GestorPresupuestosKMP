@@ -1061,20 +1061,41 @@ fun FormulasTab() {
                                 formulaToDelete?.let { formula ->
                                     scope.launch {
                                         try {
-                                            deleteFormula(formula.id)
-                                            logAction(
-                                                "Eliminar Fórmula",
-                                                "Fórmula: ${formulaToDelete!!.name}"
-                                            )
-                                            formulas = formulas.filter { it.id != formula.id }
-                                            showConfirmDelete = false
-                                            formulaToDelete = null
+                                            console.log("Intentando eliminar fórmula con ID: ${formula.id}")
+
+                                            // Comprobamos que el ID no esté vacío
+                                            if (formula.id.isBlank()) {
+                                                error = "No se puede eliminar: ID de fórmula vacío"
+                                                return@launch
+                                            }
+
+                                            // Llamada al backend con manejo explícito de resultado
+                                            val result = deleteFormula(formula.id)
+                                            console.log("Resultado de eliminación: $result")
+
+                                            if (result) {
+                                                console.log("Fórmula eliminada con éxito")
+                                                logAction(
+                                                    "Eliminar Fórmula",
+                                                    "Fórmula: ${formulaToDelete!!.name}"
+                                                )
+                                                formulas = formulas.filter { it.id != formula.id }
+                                                showConfirmDelete = false
+                                                formulaToDelete = null
+                                            } else {
+                                                error = "No se pudo eliminar la fórmula. Servidor rechazó la operación."
+                                                console.error("Error: Servidor rechazó la eliminación")
+                                            }
                                         } catch (e: Exception) {
+                                            console.error("Excepción al eliminar: ${e.message}", e)
                                             error = "Error al eliminar: ${e.message ?: "Desconocido"}"
                                             showConfirmDelete = false
                                             formulaToDelete = null
                                         }
                                     }
+                                } ?: run {
+                                    console.error("formulaToDelete es null")
+                                    error = "Error: No hay fórmula seleccionada para eliminar"
                                 }
                             }
                         ) {
