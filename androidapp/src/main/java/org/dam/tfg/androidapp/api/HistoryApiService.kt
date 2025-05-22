@@ -9,12 +9,12 @@ import retrofit2.http.*
  * Interfaz para operaciones CRUD de historial
  */
 interface HistoryApiService {
-    @GET("android/history")
+    @GET("api/android/history")
     suspend fun getAllHistory(): Response<ApiResponse<List<History>>>
 
-    @GET("android/history/{id}")
+    @GET("api/android/history/{id}")
     suspend fun getHistoryById(@Path("id") id: String): Response<ApiResponse<History>>
 
-    @POST("android/history")
+    @POST("api/android/history")
     suspend fun createHistory(@Body history: History): Response<ApiResponse<History>>
 }

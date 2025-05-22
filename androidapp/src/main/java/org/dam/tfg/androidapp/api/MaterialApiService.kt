@@ -9,18 +9,18 @@ import retrofit2.http.*
  * Interfaz para operaciones CRUD de materiales
  */
 interface MaterialApiService {
-    @GET("android/materials")
+    @GET("api/android/materials")
     suspend fun getAllMaterials(): Response<ApiResponse<List<Material>>>
 
-    @GET("android/materials/{id}")
+    @GET("api/android/materials/{id}")
     suspend fun getMaterialById(@Path("id") id: String): Response<ApiResponse<Material>>
 
-    @POST("android/materials")
+    @POST("api/android/materials")
     suspend fun createMaterial(@Body material: Material): Response<ApiResponse<Material>>
 
-    @PUT("android/materials/{id}")
+    @PUT("api/android/materials/{id}")
     suspend fun updateMaterial(@Path("id") id: String, @Body material: Material): Response<ApiResponse<Material>>
 
-    @DELETE("android/materials/{id}")
+    @DELETE("api/android/materials/{id}")
     suspend fun deleteMaterial(@Path("id") id: String): Response<ApiResponse<Boolean>>
 }

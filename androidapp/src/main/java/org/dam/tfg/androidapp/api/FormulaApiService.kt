@@ -9,18 +9,18 @@ import retrofit2.http.*
  * Interfaz para operaciones CRUD de fórmulas
  */
 interface FormulaApiService {
-    @GET("android/formulas")
+    @GET("api/android/formulas")
     suspend fun getAllFormulas(): Response<ApiResponse<List<Formula>>>
 
-    @GET("android/formulas/{id}")
+    @GET("api/android/formulas/{id}")
     suspend fun getFormulaById(@Path("id") id: String): Response<ApiResponse<Formula>>
 
-    @POST("android/formulas")
+    @POST("api/android/formulas")
     suspend fun createFormula(@Body formula: Formula): Response<ApiResponse<Formula>>
 
-    @PUT("android/formulas/{id}")
+    @PUT("api/android/formulas/{id}")
     suspend fun updateFormula(@Path("id") id: String, @Body formula: Formula): Response<ApiResponse<Formula>>
 
-    @DELETE("android/formulas/{id}")
+    @DELETE("api/android/formulas/{id}")
     suspend fun deleteFormula(@Path("id") id: String): Response<ApiResponse<Boolean>>
 }

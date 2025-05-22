@@ -11,6 +11,6 @@ import retrofit2.http.POST
  * Interfaz para operaciones de autenticación
  */
 interface AuthApiService {
-    @POST("android/auth/login")
+    @POST("api/android/auth/login")
     suspend fun login(@Body user: User): Response<ApiResponse<AuthResponse>>
 }

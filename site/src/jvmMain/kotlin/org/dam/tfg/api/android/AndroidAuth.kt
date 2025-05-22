@@ -128,6 +128,18 @@ suspend fun androidLogin(context: ApiContext) {
     }
 }
 
+@Api(routeOverride = "auth/test")
+suspend fun testEndpoint(context: ApiContext) {
+    try {
+        // Verificar si podemos acceder a MongoDB
+        val mongodb = context.data.getValue<MongoDB>()
+        context.res.setBodyText("""{"success":true,"message":"Conexión correcta"}""")
+    } catch (e: Exception) {
+        context.res.status = 500
+        context.res.setBodyText("""{"success":false,"error":"${e.message}"}""")
+    }
+}
+
 // Función para crear un hash de la contraseña usando SHA-256
 private fun hashPassword(password: String): String {
     val messageDigest = MessageDigest.getInstance("SHA-256")
@@ -140,4 +152,3 @@ private fun hashPassword(password: String): String {
 
     return hexString.toString()
 }
-

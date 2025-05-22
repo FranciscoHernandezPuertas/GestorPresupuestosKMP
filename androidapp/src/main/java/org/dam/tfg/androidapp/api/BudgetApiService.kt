@@ -9,18 +9,18 @@ import retrofit2.http.*
  * Interfaz para operaciones CRUD de presupuestos (mesas)
  */
 interface BudgetApiService {
-    @GET("android/budgets")
+    @GET("api/android/budgets")
     suspend fun getAllBudgets(): Response<ApiResponse<List<Budget>>>
 
-    @GET("android/budgets/{id}")
+    @GET("api/android/budgets/{id}")
     suspend fun getBudgetById(@Path("id") id: String): Response<ApiResponse<Budget>>
 
-    @POST("android/budgets")
+    @POST("api/android/budgets")
     suspend fun createBudget(@Body budget: Budget): Response<ApiResponse<Budget>>
 
-    @PUT("android/budgets/{id}")
+    @PUT("api/android/budgets/{id}")
     suspend fun updateBudget(@Path("id") id: String, @Body budget: Budget): Response<ApiResponse<Budget>>
 
-    @DELETE("android/budgets/{id}")
+    @DELETE("api/android/budgets/{id}")
     suspend fun deleteBudget(@Path("id") id: String): Response<ApiResponse<Boolean>>
 }
