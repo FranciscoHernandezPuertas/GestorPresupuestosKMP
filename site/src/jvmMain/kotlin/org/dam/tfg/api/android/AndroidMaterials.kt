@@ -20,6 +20,7 @@ private val json = Json {
 
 /**
  * Obtener todos los materiales
+ * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
 @Api(routeOverride = "materials")
 suspend fun getAllAndroidMaterials(context: ApiContext) {
@@ -49,8 +50,9 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
 
 /**
  * Obtener material por ID
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "GET /android/materials/{id}")
+@Api(routeOverride = "GET materials/{id}")
 suspend fun getAndroidMaterialById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -86,8 +88,9 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
 
 /**
  * Crear un nuevo material
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "POST /android/materials")
+@Api(routeOverride = "POST materials")
 suspend fun createAndroidMaterial(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
@@ -150,8 +153,9 @@ suspend fun createAndroidMaterial(context: ApiContext) {
 
 /**
  * Actualizar un material existente
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "PUT /android/materials/{id}")
+@Api(routeOverride = "PUT materials/{id}")
 suspend fun updateAndroidMaterial(context: ApiContext) {
     try {
         // Verificar que la petición es un PUT
@@ -219,8 +223,9 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
 
 /**
  * Eliminar un material
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "DELETE /android/materials/{id}")
+@Api(routeOverride = "DELETE materials/{id}")
 suspend fun deleteAndroidMaterial(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE

@@ -23,7 +23,7 @@ private val json = Json {
 
 /**
  * Obtener todos los usuarios
- * CORREGIDO: Removida la barra inicial para que coincida con el cliente
+ * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
 @Api(routeOverride = "users")
 suspend fun getAllAndroidUsers(context: ApiContext) {
@@ -59,9 +59,9 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
 
 /**
  * Obtener usuario por ID
- * CORREGIDO: Removida la barra inicial para que coincida con el cliente
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "android/users/{id}")
+@Api(routeOverride = "GET users/{id}")
 suspend fun getAndroidUserById(context: ApiContext) {
     try {
         println("=== GET USER BY ID ===")
@@ -102,9 +102,9 @@ suspend fun getAndroidUserById(context: ApiContext) {
 
 /**
  * Crear un nuevo usuario
- * CORREGIDO: Removida la barra inicial para que coincida con el cliente
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "android/users")
+@Api(routeOverride = "POST users")
 suspend fun createAndroidUser(context: ApiContext) {
     try {
         println("=== CREATE USER ===")
@@ -181,9 +181,9 @@ suspend fun createAndroidUser(context: ApiContext) {
 
 /**
  * Actualizar un usuario existente
- * CORREGIDO: Removida la barra inicial para que coincida con el cliente
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "android/users/{id}")
+@Api(routeOverride = "PUT users/{id}")
 suspend fun updateAndroidUser(context: ApiContext) {
     try {
         println("=== UPDATE USER ===")
@@ -263,9 +263,9 @@ suspend fun updateAndroidUser(context: ApiContext) {
 
 /**
  * Eliminar un usuario
- * CORREGIDO: Removida la barra inicial para que coincida con el cliente
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "android/users/{id}")
+@Api(routeOverride = "DELETE users/{id}")
 suspend fun deleteAndroidUser(context: ApiContext) {
     try {
         println("=== DELETE USER ===")
@@ -325,3 +325,4 @@ private fun hashPassword(password: String): String {
 
     return hexString.toString()
 }
+

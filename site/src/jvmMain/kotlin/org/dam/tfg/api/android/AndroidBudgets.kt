@@ -20,6 +20,7 @@ private val json = Json {
 
 /**
  * Obtener todos los presupuestos
+ * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
 @Api(routeOverride = "budgets")
 suspend fun getAllAndroidBudgets(context: ApiContext) {
@@ -49,8 +50,9 @@ suspend fun getAllAndroidBudgets(context: ApiContext) {
 
 /**
  * Obtener presupuesto por ID
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "GET /android/budgets/{id}")
+@Api(routeOverride = "GET budgets/{id}")
 suspend fun getAndroidBudgetById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -86,8 +88,9 @@ suspend fun getAndroidBudgetById(context: ApiContext) {
 
 /**
  * Crear un nuevo presupuesto
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "POST /android/budgets")
+@Api(routeOverride = "POST budgets")
 suspend fun createAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
@@ -157,8 +160,9 @@ suspend fun createAndroidBudget(context: ApiContext) {
 
 /**
  * Actualizar un presupuesto existente
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "PUT /android/budgets/{id}")
+@Api(routeOverride = "PUT budgets/{id}")
 suspend fun updateAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un PUT
@@ -229,8 +233,9 @@ suspend fun updateAndroidBudget(context: ApiContext) {
 
 /**
  * Eliminar un presupuesto
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "DELETE /android/budgets/{id}")
+@Api(routeOverride = "DELETE budgets/{id}")
 suspend fun deleteAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE

@@ -25,7 +25,7 @@ private val json = Json {
 
 /**
  * Endpoint para la autenticación desde la app Android
- * CORREGIDO: Removida la barra inicial para que coincida con el cliente
+ * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
 @Api(routeOverride = "auth/login")
 suspend fun androidLogin(context: ApiContext) {
@@ -140,3 +140,4 @@ private fun hashPassword(password: String): String {
 
     return hexString.toString()
 }
+

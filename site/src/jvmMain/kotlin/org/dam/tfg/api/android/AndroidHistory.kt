@@ -20,6 +20,7 @@ private val json = Json {
 
 /**
  * Obtener todo el historial
+ * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
 @Api(routeOverride = "history")
 suspend fun getAllAndroidHistory(context: ApiContext) {
@@ -49,8 +50,9 @@ suspend fun getAllAndroidHistory(context: ApiContext) {
 
 /**
  * Obtener registro de historial por ID
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "GET /android/history/{id}")
+@Api(routeOverride = "GET history/{id}")
 suspend fun getAndroidHistoryById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -86,8 +88,9 @@ suspend fun getAndroidHistoryById(context: ApiContext) {
 
 /**
  * Crear un nuevo registro de historial
+ * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "POST /android/history")
+@Api(routeOverride = "POST history")
 suspend fun createAndroidHistory(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
