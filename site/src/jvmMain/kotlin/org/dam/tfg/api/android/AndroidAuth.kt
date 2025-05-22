@@ -26,7 +26,7 @@ private val json = Json {
 /**
  * Endpoint para la autenticación desde la app Android
  */
-@Api(routeOverride = "android/auth/login")
+@Api(routeOverride = "/auth/login")
 suspend fun androidLogin(context: ApiContext) {
     try {
         // Parsear el cuerpo de la solicitud

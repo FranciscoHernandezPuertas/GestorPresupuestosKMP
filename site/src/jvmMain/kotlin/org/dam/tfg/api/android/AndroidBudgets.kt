@@ -21,7 +21,7 @@ private val json = Json {
 /**
  * Obtener todos los presupuestos
  */
-@Api(routeOverride = "android/budgets")
+@Api(routeOverride = "/budgets")
 suspend fun getAllAndroidBudgets(context: ApiContext) {
     try {
         val mesas = context.data.getValue<MongoDB>().getAllMesas()
@@ -50,7 +50,7 @@ suspend fun getAllAndroidBudgets(context: ApiContext) {
 /**
  * Obtener presupuesto por ID
  */
-@Api(routeOverride = "android/budgets/{id}")
+@Api(routeOverride = "/budgets/{id}")
 suspend fun getAndroidBudgetById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -87,7 +87,7 @@ suspend fun getAndroidBudgetById(context: ApiContext) {
 /**
  * Crear un nuevo presupuesto
  */
-@Api(routeOverride = "android/budgets")
+@Api(routeOverride = "/budgets")
 suspend fun createAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
@@ -158,7 +158,7 @@ suspend fun createAndroidBudget(context: ApiContext) {
 /**
  * Actualizar un presupuesto existente
  */
-@Api(routeOverride = "android/budgets/{id}")
+@Api(routeOverride = "/budgets/{id}")
 suspend fun updateAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un PUT
@@ -230,7 +230,7 @@ suspend fun updateAndroidBudget(context: ApiContext) {
 /**
  * Eliminar un presupuesto
  */
-@Api(routeOverride = "android/budgets/{id}")
+@Api(routeOverride = "/budgets/{id}")
 suspend fun deleteAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE

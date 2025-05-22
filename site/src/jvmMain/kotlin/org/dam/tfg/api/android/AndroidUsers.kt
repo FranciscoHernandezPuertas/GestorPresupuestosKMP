@@ -24,7 +24,7 @@ private val json = Json {
 /**
  * Obtener todos los usuarios
  */
-@Api(routeOverride = "android/users")
+@Api(routeOverride = "/users")
 suspend fun getAllAndroidUsers(context: ApiContext) {
     try {
         val users = context.data.getValue<MongoDB>().getAllUsers()
@@ -53,7 +53,7 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
 /**
  * Obtener usuario por ID
  */
-@Api(routeOverride = "android/users/{id}")
+@Api(routeOverride = "/users/{id}")
 suspend fun getAndroidUserById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -90,7 +90,7 @@ suspend fun getAndroidUserById(context: ApiContext) {
 /**
  * Crear un nuevo usuario
  */
-@Api(routeOverride = "android/users")
+@Api(routeOverride = "/users")
 suspend fun createAndroidUser(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
@@ -155,7 +155,7 @@ suspend fun createAndroidUser(context: ApiContext) {
 /**
  * Actualizar un usuario existente
  */
-@Api(routeOverride = "android/users/{id}")
+@Api(routeOverride = "/users/{id}")
 suspend fun updateAndroidUser(context: ApiContext) {
     try {
         // Verificar que la petición es un PUT
@@ -224,7 +224,7 @@ suspend fun updateAndroidUser(context: ApiContext) {
 /**
  * Eliminar un usuario
  */
-@Api(routeOverride = "android/users/{id}")
+@Api(routeOverride = "/users/{id}")
 suspend fun deleteAndroidUser(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE

@@ -21,7 +21,7 @@ private val json = Json {
 /**
  * Obtener todos los materiales
  */
-@Api(routeOverride = "android/materials")
+@Api(routeOverride = "/materials")
 suspend fun getAllAndroidMaterials(context: ApiContext) {
     try {
         val materials = context.data.getValue<MongoDB>().getAllMaterials()
@@ -50,7 +50,7 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
 /**
  * Obtener material por ID
  */
-@Api(routeOverride = "android/materials/{id}")
+@Api(routeOverride = "/materials/{id}")
 suspend fun getAndroidMaterialById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -87,7 +87,7 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
 /**
  * Crear un nuevo material
  */
-@Api(routeOverride = "android/materials")
+@Api(routeOverride = "/materials")
 suspend fun createAndroidMaterial(context: ApiContext) {
     try {
         // Verificar que la petición es un POST
@@ -151,7 +151,7 @@ suspend fun createAndroidMaterial(context: ApiContext) {
 /**
  * Actualizar un material existente
  */
-@Api(routeOverride = "android/materials/{id}")
+@Api(routeOverride = "/materials/{id}")
 suspend fun updateAndroidMaterial(context: ApiContext) {
     try {
         // Verificar que la petición es un PUT
@@ -220,7 +220,7 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
 /**
  * Eliminar un material
  */
-@Api(routeOverride = "android/materials/{id}")
+@Api(routeOverride = "/materials/{id}")
 suspend fun deleteAndroidMaterial(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE
