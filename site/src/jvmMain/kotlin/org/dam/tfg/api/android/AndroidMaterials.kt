@@ -21,7 +21,7 @@ private val json = Json {
 /**
  * Obtener todos los materiales
  */
-@Api(routeOverride = "GET /android/materials")
+@Api(routeOverride = "materials")
 suspend fun getAllAndroidMaterials(context: ApiContext) {
     try {
         val materials = context.data.getValue<MongoDB>().getAllMaterials()

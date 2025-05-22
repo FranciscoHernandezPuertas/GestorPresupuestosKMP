@@ -21,7 +21,7 @@ private val json = Json {
 /**
  * Obtener todo el historial
  */
-@Api(routeOverride = "GET /android/history")
+@Api(routeOverride = "history")
 suspend fun getAllAndroidHistory(context: ApiContext) {
     try {
         val history = context.data.getValue<MongoDB>().getAllHistory()

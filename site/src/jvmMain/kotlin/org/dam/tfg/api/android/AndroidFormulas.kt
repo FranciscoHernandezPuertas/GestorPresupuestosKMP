@@ -22,7 +22,7 @@ private val json = Json {
 /**
  * Obtener todas las fórmulas
  */
-@Api(routeOverride = "GET /android/formulas")
+@Api(routeOverride = "formulas")
 suspend fun getAllAndroidFormulas(context: ApiContext) {
     try {
         // Obtener el tipo de usuario para determinar si puede ver fórmulas desencriptadas

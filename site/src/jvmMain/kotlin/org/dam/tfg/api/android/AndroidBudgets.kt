@@ -21,7 +21,7 @@ private val json = Json {
 /**
  * Obtener todos los presupuestos
  */
-@Api(routeOverride = "GET /android/budgets")
+@Api(routeOverride = "budgets")
 suspend fun getAllAndroidBudgets(context: ApiContext) {
     try {
         val mesas = context.data.getValue<MongoDB>().getAllMesas()

@@ -25,7 +25,7 @@ private val json = Json {
  * Obtener todos los usuarios
  * CORREGIDO: Removida la barra inicial para que coincida con el cliente
  */
-@Api(routeOverride = "android/users")
+@Api(routeOverride = "users")
 suspend fun getAllAndroidUsers(context: ApiContext) {
     try {
         println("=== GET ALL USERS ===")
