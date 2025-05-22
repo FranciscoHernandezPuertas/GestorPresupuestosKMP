@@ -23,11 +23,16 @@ private val json = Json {
 
 /**
  * Obtener todos los usuarios
+ * CORREGIDO: Removida la barra inicial para que coincida con el cliente
  */
-@Api(routeOverride = "GET /android/users")
+@Api(routeOverride = "android/users")
 suspend fun getAllAndroidUsers(context: ApiContext) {
     try {
+        println("=== GET ALL USERS ===")
+        println("Method: ${context.req.method}")
+
         val users = context.data.getValue<MongoDB>().getAllUsers()
+        println("Found ${users.size} users")
 
         context.res.setBodyText(
             json.encodeToString(
@@ -38,6 +43,8 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
             )
         )
     } catch (e: Exception) {
+        println("Error getting all users: ${e.message}")
+        e.printStackTrace()
         context.res.status = 500
         context.res.setBodyText(
             json.encodeToString(
@@ -52,11 +59,14 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
 
 /**
  * Obtener usuario por ID
+ * CORREGIDO: Removida la barra inicial para que coincida con el cliente
  */
-@Api(routeOverride = "GET /android/users/{id}")
+@Api(routeOverride = "android/users/{id}")
 suspend fun getAndroidUserById(context: ApiContext) {
     try {
+        println("=== GET USER BY ID ===")
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Requested ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de usuario no puede estar vacío")
@@ -64,6 +74,8 @@ suspend fun getAndroidUserById(context: ApiContext) {
 
         val user = context.data.getValue<MongoDB>().getUserById(id)
             ?: throw Exception("Usuario no encontrado")
+
+        println("User found: ${user.username}")
 
         context.res.setBodyText(
             json.encodeToString(
@@ -74,6 +86,7 @@ suspend fun getAndroidUserById(context: ApiContext) {
             )
         )
     } catch (e: Exception) {
+        println("Error getting user by ID: ${e.message}")
         val status = if (e.message?.contains("no encontrado") == true) 404 else 500
         context.res.status = status
         context.res.setBodyText(
@@ -89,10 +102,14 @@ suspend fun getAndroidUserById(context: ApiContext) {
 
 /**
  * Crear un nuevo usuario
+ * CORREGIDO: Removida la barra inicial para que coincida con el cliente
  */
-@Api(routeOverride = "POST /android/users")
+@Api(routeOverride = "android/users")
 suspend fun createAndroidUser(context: ApiContext) {
     try {
+        println("=== CREATE USER ===")
+        println("Method: ${context.req.method}")
+
         // Verificar que la petición es un POST
         if (context.req.method.toString().lowercase() != "post") {
             throw Exception("Método no permitido")
@@ -101,11 +118,16 @@ suspend fun createAndroidUser(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de usuario")
 
+        println("Body received: $bodyText")
+
         val user = try {
             json.decodeFromString<User>(bodyText)
         } catch (e: Exception) {
+            println("Error decoding user: ${e.message}")
             throw Exception("Error al decodificar datos de usuario: ${e.message}")
         }
+
+        println("User to create: username=${user.username}, type=${user.type}")
 
         // Validar datos del usuario
         if (user.username.isBlank()) {
@@ -124,9 +146,12 @@ suspend fun createAndroidUser(context: ApiContext) {
             type = user.type
         )
 
+        println("Creating user with ID: ${newUser.id}")
+
         val success = context.data.getValue<MongoDB>().addUser(newUser)
 
         if (success) {
+            println("User created successfully")
             context.res.status = 201 // Created
             context.res.setBodyText(
                 json.encodeToString(
@@ -140,6 +165,8 @@ suspend fun createAndroidUser(context: ApiContext) {
             throw Exception("No se pudo crear el usuario")
         }
     } catch (e: Exception) {
+        println("Error creating user: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(
@@ -154,16 +181,21 @@ suspend fun createAndroidUser(context: ApiContext) {
 
 /**
  * Actualizar un usuario existente
+ * CORREGIDO: Removida la barra inicial para que coincida con el cliente
  */
-@Api(routeOverride = "PUT /android/users/{id}")
+@Api(routeOverride = "android/users/{id}")
 suspend fun updateAndroidUser(context: ApiContext) {
     try {
+        println("=== UPDATE USER ===")
+        println("Method: ${context.req.method}")
+
         // Verificar que la petición es un PUT
         if (context.req.method.toString().lowercase() != "put") {
             throw Exception("Método no permitido")
         }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Updating user ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de usuario no puede estar vacío")
@@ -172,9 +204,12 @@ suspend fun updateAndroidUser(context: ApiContext) {
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de usuario")
 
+        println("Body received: $bodyText")
+
         val user = try {
             json.decodeFromString<User>(bodyText)
         } catch (e: Exception) {
+            println("Error decoding user: ${e.message}")
             throw Exception("Error al decodificar datos de usuario: ${e.message}")
         }
 
@@ -194,9 +229,12 @@ suspend fun updateAndroidUser(context: ApiContext) {
             }
         )
 
+        println("Updating user: username=${userToUpdate.username}, type=${userToUpdate.type}")
+
         val success = context.data.getValue<MongoDB>().updateUser(userToUpdate)
 
         if (success) {
+            println("User updated successfully")
             context.res.setBodyText(
                 json.encodeToString(
                     ApiResponse<User>(
@@ -209,6 +247,8 @@ suspend fun updateAndroidUser(context: ApiContext) {
             throw Exception("No se pudo actualizar el usuario. Posiblemente no existe.")
         }
     } catch (e: Exception) {
+        println("Error updating user: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(
@@ -223,16 +263,21 @@ suspend fun updateAndroidUser(context: ApiContext) {
 
 /**
  * Eliminar un usuario
+ * CORREGIDO: Removida la barra inicial para que coincida con el cliente
  */
-@Api(routeOverride = "DELETE /android/users/{id}")
+@Api(routeOverride = "android/users/{id}")
 suspend fun deleteAndroidUser(context: ApiContext) {
     try {
+        println("=== DELETE USER ===")
+        println("Method: ${context.req.method}")
+
         // Verificar que la petición es un DELETE
         if (context.req.method.toString().lowercase() != "delete") {
             throw Exception("Método no permitido")
         }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Deleting user ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de usuario no puede estar vacío")
@@ -241,6 +286,7 @@ suspend fun deleteAndroidUser(context: ApiContext) {
         val success = context.data.getValue<MongoDB>().deleteUser(id)
 
         if (success) {
+            println("User deleted successfully")
             context.res.setBodyText(
                 json.encodeToString(
                     ApiResponse<Boolean>(
@@ -253,6 +299,8 @@ suspend fun deleteAndroidUser(context: ApiContext) {
             throw Exception("No se pudo eliminar el usuario. Posiblemente no existe.")
         }
     } catch (e: Exception) {
+        println("Error deleting user: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(

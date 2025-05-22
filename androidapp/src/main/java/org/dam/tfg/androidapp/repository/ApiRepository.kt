@@ -37,8 +37,16 @@ class ApiRepository {
                     val authResponse = response.body()?.data
 
                     if (authResponse != null) {
+                        // Obtener el interceptor para configurar el token y el tipo de usuario
+                        val interceptor = ApiClient.okHttpClient.interceptors.first() as? AuthInterceptor
+
                         // Configurar el token para futuras solicitudes
-                        (ApiClient.okHttpClient.interceptors.first() as? AuthInterceptor)?.setToken(authResponse.token)
+                        interceptor?.setToken(authResponse.token)
+
+                        // Configurar también el tipo de usuario (importante para las operaciones con fórmulas)
+                        interceptor?.setUserType(authResponse.user.type)
+
+                        Log.d(TAG, "Inicio de sesión exitoso para: ${authResponse.user.username}, tipo: ${authResponse.user.type}")
 
                         // Construir y devolver el usuario
                         return@withContext User(
@@ -392,24 +400,33 @@ class ApiRepository {
  */
 class AuthInterceptor : okhttp3.Interceptor {
     private var token: String? = null
+    private var userType: String? = null
 
     fun setToken(token: String) {
         this.token = token
     }
 
+    fun setUserType(type: String) {
+        this.userType = type
+    }
+
     override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
         val originalRequest = chain.request()
 
-        // Si no hay token, proceder sin modificar la request
-        if (token == null) {
-            return chain.proceed(originalRequest)
+        // Iniciar con la petición original
+        var requestBuilder = originalRequest.newBuilder()
+
+        // Añadir token si está disponible
+        if (token != null) {
+            requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 
-        // Añadir token a las cabeceras
-        val newRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer $token")
-            .build()
+        // Añadir tipo de usuario si está disponible (importante para operaciones con fórmulas)
+        if (userType != null) {
+            requestBuilder.addHeader("X-User-Type", userType!!)
+        }
 
+        val newRequest = requestBuilder.build()
         return chain.proceed(newRequest)
     }
 }

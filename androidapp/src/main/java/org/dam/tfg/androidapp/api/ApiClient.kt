@@ -53,24 +53,33 @@ object ApiClient {
  */
 class AuthInterceptor : Interceptor {
     private var token: String? = null
+    private var userType: String? = null
 
     fun setToken(token: String) {
         this.token = token
     }
 
+    fun setUserType(type: String) {
+        this.userType = type
+    }
+
     override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
         val originalRequest = chain.request()
 
-        // Si no hay token, proceder sin modificar la request
-        if (token == null) {
-            return chain.proceed(originalRequest)
+        // Iniciar con la petición original
+        var requestBuilder = originalRequest.newBuilder()
+
+        // Añadir token si está disponible
+        if (token != null) {
+            requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 
-        // Añadir token a las cabeceras
-        val newRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer $token")
-            .build()
+        // Añadir tipo de usuario si está disponible (importante para operaciones con fórmulas)
+        if (userType != null) {
+            requestBuilder.addHeader("X-User-Type", userType!!)
+        }
 
+        val newRequest = requestBuilder.build()
         return chain.proceed(newRequest)
     }
 }
