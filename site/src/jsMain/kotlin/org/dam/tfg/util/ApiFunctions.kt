@@ -135,7 +135,7 @@ suspend fun deleteUser(id: String): Boolean {
     return try {
         window.api.tryPost(
             apiPath = "admin/deleteUser",
-            body = Json.encodeToString(id).encodeToByteArray()
+            body = id.encodeToByteArray()
         )?.decodeToString().toBoolean()
     } catch (e: Exception) {
         console.error(e.message.toString())
@@ -211,7 +211,7 @@ suspend fun deleteMaterial(id: String): Boolean {
     return try {
         window.api.tryPost(
             apiPath = "admin/deleteMaterial",
-            body = Json.encodeToString(id).encodeToByteArray()
+            body = id.encodeToByteArray()  // Eliminar la serialización JSON
         )?.decodeToString().toBoolean()
     } catch (e: Exception) {
         console.error(e.message.toString())
