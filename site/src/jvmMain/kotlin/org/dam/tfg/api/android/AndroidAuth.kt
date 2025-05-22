@@ -92,12 +92,12 @@ suspend fun androidLogin(context: ApiContext) {
             val token = JwtManager.generateToken(userWithoutPassword)
             println("Token generated successfully")
 
-            // Crear respuesta adaptada para Android (con campo _id)
+            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
                 "data" to JsonObject(mapOf(
                     "user" to JsonObject(mapOf(
-                        "_id" to JsonPrimitive(userWithoutPassword.id),
+                        "id" to JsonPrimitive(userWithoutPassword.id),
                         "username" to JsonPrimitive(userWithoutPassword.username),
                         "type" to JsonPrimitive(userWithoutPassword.type)
                     )),
