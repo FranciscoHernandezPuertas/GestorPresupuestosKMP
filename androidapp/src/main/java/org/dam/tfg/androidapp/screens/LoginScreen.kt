@@ -10,8 +10,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.User
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,8 +24,8 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val coroutineScope = rememberCoroutineScope()
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+    val apiRepository = remember { ApiRepository() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -94,7 +93,7 @@ fun LoginScreen(
                             errorMessage = null
                             
                             try {
-                                val user = mongoDBService.authenticateUser(username, password)
+                                val user = apiRepository.login(username, password)
                                 if (user != null && user.type == "admin") {
                                     onLoginSuccess(user)
                                 } else {

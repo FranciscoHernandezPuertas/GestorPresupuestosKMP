@@ -11,8 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.User
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,8 +22,8 @@ fun UsersScreen(
     onNavigateToEditUser: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+    val apiRepository = remember { ApiRepository() }
+
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -32,7 +31,7 @@ fun UsersScreen(
     
     // Load users on first composition
     LaunchedEffect(Unit) {
-        loadUsers(mongoDBService) { newUsers, error ->
+        loadUsers(apiRepository) { newUsers, error ->
             users = newUsers
             errorMessage = error
             isLoading = false
@@ -83,7 +82,7 @@ fun UsersScreen(
                         onClick = {
                             isLoading = true
                             coroutineScope.launch {
-                                loadUsers(mongoDBService) { newUsers, error ->
+                                loadUsers(apiRepository) { newUsers, error ->
                                     users = newUsers
                                     errorMessage = error
                                     isLoading = false
@@ -153,9 +152,9 @@ fun UsersScreen(
                                 isLoading = true
                                 coroutineScope.launch {
                                     try {
-                                        val success = mongoDBService.deleteUser(userToDelete._id, user.username)
+                                        val success = apiRepository.deleteUser(userToDelete._id)
                                         if (success) {
-                                            loadUsers(mongoDBService) { newUsers, error ->
+                                            loadUsers(apiRepository) { newUsers, error ->
                                                 users = newUsers
                                                 errorMessage = error
                                                 isLoading = false
@@ -244,12 +243,12 @@ fun UserItem(
 }
 
 private suspend fun loadUsers(
-    mongoDBService: MongoDBService,
+    apiRepository: ApiRepository,
     onResult: (List<User>, String?) -> Unit
 ) {
     try {
-        val users = mongoDBService.getAllUsers()
-        onResult(users, null)
+        val users = apiRepository.getAllUsers()
+        onResult(users, if (users.isEmpty()) "No se encontraron usuarios" else null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }

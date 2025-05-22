@@ -12,8 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.Material
 import org.dam.tfg.androidapp.models.User
 
@@ -27,8 +26,7 @@ fun EditMaterialScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    // Crear una instancia directa de MongoDBService en lugar de usar el singleton
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
+    val apiRepository = remember { ApiRepository() }
 
     var material by remember { mutableStateOf<Material?>(null) }
     var name by remember { mutableStateOf("") }
@@ -44,7 +42,7 @@ fun EditMaterialScreen(
         if (materialId != "new") {
             try {
                 Log.d(TAG, "Cargando material con ID: $materialId")
-                val loadedMaterial = mongoDBService.getMaterialById(materialId)
+                val loadedMaterial = apiRepository.getMaterialById(materialId)
 
                 if (loadedMaterial != null) {
                     Log.d(TAG, "Material cargado: ${loadedMaterial.name}")
@@ -163,9 +161,9 @@ fun EditMaterialScreen(
                                     )
 
                                     val success = if (materialId == "new") {
-                                        mongoDBService.createMaterial(materialToSave, user.username)
+                                        apiRepository.createMaterial(materialToSave)
                                     } else {
-                                        mongoDBService.updateMaterial(materialToSave, user.username)
+                                        apiRepository.updateMaterial(materialToSave)
                                     }
 
                                     if (success) {

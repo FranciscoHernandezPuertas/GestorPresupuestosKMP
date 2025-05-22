@@ -12,21 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBService
-import org.dam.tfg.androidapp.models.User
-import org.dam.tfg.androidapp.util.CryptoUtil
-import kotlinx.coroutines.withTimeout
-import org.dam.tfg.androidapp.util.IdUtils
-import kotlinx.coroutines.TimeoutCancellationException
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
+import kotlinx.coroutines.launch
+import org.dam.tfg.androidapp.repository.ApiRepository
+import org.dam.tfg.androidapp.models.User
 
 private const val TAG = "EditUserScreen"
 
-// Mejorar el manejo de errores y ciclo de vida en EditUserScreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditUserScreen(
@@ -35,8 +28,7 @@ fun EditUserScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
+    val apiRepository = remember { ApiRepository() }
 
     var userToEdit by remember { mutableStateOf<User?>(null) }
     var username by remember { mutableStateOf("") }
@@ -57,41 +49,27 @@ fun EditUserScreen(
                 isLoading = true
                 errorMessage = null
 
-                try {
-                    // Usar un timeout más corto para evitar bloqueos prolongados
-                    withTimeout(10000) {
-                        val loadedUser = mongoDBService.getUserById(userId)
+                val loadedUser = apiRepository.getUserById(userId)
 
-                        if (loadedUser != null) {
-                            Log.d(TAG, "Usuario cargado: ${loadedUser.username} con ID: ${loadedUser._id}")
-                            userToEdit = loadedUser
-                            username = loadedUser.username
-                            userType = loadedUser.type
-                        } else {
-                            Log.e(TAG, "Usuario no encontrado con ID: $userId")
-                            errorMessage = "Usuario no encontrado. Verifique el ID."
-                        }
-                    }
-                } catch (e: TimeoutCancellationException) {
-                    Log.e(TAG, "Timeout al cargar el usuario: ${e.message}", e)
-                    errorMessage = "Tiempo de espera agotado al cargar el usuario. Intente nuevamente."
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error al cargar el usuario: ${e.message}", e)
-                    errorMessage = "Error al cargar el usuario: ${e.message?.take(100)}"
-                } finally {
-                    isLoading = false
+                if (loadedUser != null) {
+                    Log.d(TAG, "Usuario cargado: ${loadedUser.username} con ID: ${loadedUser._id}")
+                    userToEdit = loadedUser
+                    username = loadedUser.username
+                    userType = loadedUser.type
+                } else {
+                    Log.e(TAG, "Usuario no encontrado con ID: $userId")
+                    errorMessage = "Usuario no encontrado. Verifique el ID."
                 }
+                isLoading = false
             } catch (e: Exception) {
-                Log.e(TAG, "Error general: ${e.message}", e)
-                errorMessage = "Error general: ${e.message?.take(100)}"
+                Log.e(TAG, "Error al cargar el usuario: ${e.message}", e)
+                errorMessage = "Error al cargar el usuario: ${e.message?.take(100)}"
                 isLoading = false
             }
         } else {
             isLoading = false
         }
     }
-
-    // Resto del código sin cambios...
 
     // Función para guardar usuario con mejor manejo de errores
     fun saveUser() {
@@ -119,56 +97,39 @@ fun EditUserScreen(
 
             try {
                 Log.d(TAG, "Guardando usuario: $username")
-                // Hash password if provided
-                val hashedPassword = if (password.isNotBlank()) {
-                    CryptoUtil.hashSHA256(password)
-                } else {
-                    userToEdit?.password ?: ""
-                }
-
-                // Usar un ID normalizado o generar uno nuevo
-                val userId = if (userToEdit?._id.isNullOrEmpty()) IdUtils.generateId() else userToEdit?._id!!
-
+                // Password handling is done by the server
                 val userToSave = User(
-                    _id = IdUtils.normalizeId(userId), // Asegurar que el ID esté normalizado
+                    _id = userToEdit?._id ?: "",
                     username = username,
-                    password = hashedPassword,
+                    password = password, // Si está vacío y es una actualización, el servidor mantiene la existente
                     type = userType
                 )
 
-                Log.d(TAG, "Guardando usuario con ID normalizado: ${userToSave._id}")
-
-                // Usar timeout para evitar bloqueos
-                withTimeout(15000) {
-                    val success = if (userId == "new") {
-                        mongoDBService.createUser(userToSave)
-                    } else {
-                        mongoDBService.updateUser(userToSave)
-                    }
-
-                    if (success) {
-                        Log.d(TAG, "Usuario guardado correctamente")
-                        successMessage = if (userId == "new") {
-                            "Usuario creado correctamente"
-                        } else {
-                            "Usuario actualizado correctamente"
-                        }
-
-                        // Clear form if creating a new user
-                        if (userId == "new") {
-                            username = ""
-                            password = ""
-                            confirmPassword = ""
-                            userType = "admin"
-                        }
-                    } else {
-                        Log.e(TAG, "No se pudo guardar el usuario")
-                        errorMessage = "No se pudo guardar el usuario. Verifique la conexión e intente nuevamente."
-                    }
+                val success = if (userId == "new") {
+                    apiRepository.createUser(userToSave)
+                } else {
+                    apiRepository.updateUser(userToSave)
                 }
-            } catch (e: TimeoutCancellationException) {
-                Log.e(TAG, "Timeout al guardar el usuario: ${e.message}", e)
-                errorMessage = "Tiempo de espera agotado al guardar el usuario. Intente nuevamente."
+
+                if (success) {
+                    Log.d(TAG, "Usuario guardado correctamente")
+                    successMessage = if (userId == "new") {
+                        "Usuario creado correctamente"
+                    } else {
+                        "Usuario actualizado correctamente"
+                    }
+
+                    // Clear form if creating a new user
+                    if (userId == "new") {
+                        username = ""
+                        password = ""
+                        confirmPassword = ""
+                        userType = "admin"
+                    }
+                } else {
+                    Log.e(TAG, "No se pudo guardar el usuario")
+                    errorMessage = "No se pudo guardar el usuario. Verifique la conexión e intente nuevamente."
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error al guardar el usuario: ${e.message}", e)
                 errorMessage = "Error: ${e.message?.take(100)}"

@@ -11,8 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.History
 import org.dam.tfg.androidapp.models.User
 import java.text.SimpleDateFormat
@@ -25,8 +24,8 @@ fun HistoryScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+    val apiRepository = remember { ApiRepository() }
+
     var historyList by remember { mutableStateOf<List<History>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -34,12 +33,10 @@ fun HistoryScreen(
     // Search filters
     var searchUsername by remember { mutableStateOf("") }
     var searchAction by remember { mutableStateOf("") }
-    var startDate by remember { mutableStateOf("") }
-    var endDate by remember { mutableStateOf("") }
-    
+
     // Load history on first composition
     LaunchedEffect(Unit) {
-        loadAllHistory(mongoDBService) { newHistory, error ->
+        loadHistory(apiRepository) { newHistory, error ->
             historyList = newHistory
             errorMessage = error
             isLoading = false
@@ -105,64 +102,26 @@ fun HistoryScreen(
                         )
                     }
                     
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        OutlinedTextField(
-                            value = startDate,
-                            onValueChange = { startDate = it },
-                            label = { Text("Fecha inicio (YYYY-MM-DD)") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp),
-                            singleLine = true
-                        )
-                        
-                        OutlinedTextField(
-                            value = endDate,
-                            onValueChange = { endDate = it },
-                            label = { Text("Fecha fin (YYYY-MM-DD)") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp),
-                            singleLine = true
-                        )
-                    }
-                    
                     Button(
                         onClick = {
                             isLoading = true
                             coroutineScope.launch {
-                                when {
-                                    searchUsername.isNotBlank() -> {
-                                        loadHistoryByUsername(mongoDBService, searchUsername) { newHistory, error ->
-                                            historyList = newHistory
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
+                                loadHistory(apiRepository) { newHistory, error ->
+                                    // Aplicar filtros localmente a los datos recuperados de la API
+                                    val filteredHistory = newHistory.filter { historyItem ->
+                                        val matchesUsername = searchUsername.isEmpty() ||
+                                                historyItem.userId.contains(searchUsername, ignoreCase = true)
+                                        val matchesAction = searchAction.isEmpty() ||
+                                                historyItem.action.contains(searchAction, ignoreCase = true)
+                                        matchesUsername && matchesAction
                                     }
-                                    searchAction.isNotBlank() -> {
-                                        loadHistoryByAction(mongoDBService, searchAction) { newHistory, error ->
-                                            historyList = newHistory
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
-                                    startDate.isNotBlank() && endDate.isNotBlank() -> {
-                                        loadHistoryByDateRange(mongoDBService, startDate, endDate) { newHistory, error ->
-                                            historyList = newHistory
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
-                                    else -> {
-                                        loadAllHistory(mongoDBService) { newHistory, error ->
-                                            historyList = newHistory
-                                            errorMessage = error
-                                            isLoading = false
-                                        }
-                                    }
+
+                                    historyList = filteredHistory
+                                    errorMessage = if (filteredHistory.isEmpty() && newHistory.isNotEmpty())
+                                        "No hay resultados para los filtros aplicados"
+                                    else
+                                        error
+                                    isLoading = false
                                 }
                             }
                         },
@@ -201,7 +160,7 @@ fun HistoryScreen(
                             onClick = {
                                 isLoading = true
                                 coroutineScope.launch {
-                                    loadAllHistory(mongoDBService) { newHistory, error ->
+                                    loadHistory(apiRepository) { newHistory, error ->
                                         historyList = newHistory
                                         errorMessage = error
                                         isLoading = false
@@ -288,53 +247,13 @@ private fun formatDate(dateString: String): String {
     }
 }
 
-private suspend fun loadAllHistory(
-    mongoDBService: MongoDBService,
+private suspend fun loadHistory(
+    apiRepository: ApiRepository,
     onResult: (List<History>, String?) -> Unit
 ) {
     try {
-        val history = mongoDBService.getAllHistory()
-        onResult(history, null)
-    } catch (e: Exception) {
-        onResult(emptyList(), e.message)
-    }
-}
-
-private suspend fun loadHistoryByUsername(
-    mongoDBService: MongoDBService,
-    username: String,
-    onResult: (List<History>, String?) -> Unit
-) {
-    try {
-        val history = mongoDBService.getHistoryByUsername(username)
-        onResult(history, null)
-    } catch (e: Exception) {
-        onResult(emptyList(), e.message)
-    }
-}
-
-private suspend fun loadHistoryByAction(
-    mongoDBService: MongoDBService,
-    action: String,
-    onResult: (List<History>, String?) -> Unit
-) {
-    try {
-        val history = mongoDBService.getHistoryByAction(action)
-        onResult(history, null)
-    } catch (e: Exception) {
-        onResult(emptyList(), e.message)
-    }
-}
-
-private suspend fun loadHistoryByDateRange(
-    mongoDBService: MongoDBService,
-    startDate: String,
-    endDate: String,
-    onResult: (List<History>, String?) -> Unit
-) {
-    try {
-        val history = mongoDBService.getHistoryByDateRange(startDate, endDate)
-        onResult(history, null)
+        val history = apiRepository.getAllHistory()
+        onResult(history, if (history.isEmpty()) "No se encontraron registros de historial" else null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }

@@ -18,10 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withTimeout
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.Budget
 import org.dam.tfg.androidapp.models.User
 import java.text.SimpleDateFormat
@@ -36,8 +33,7 @@ fun BudgetsScreen(
     onNavigateBack: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
+    val apiRepository = remember { ApiRepository() }
 
     var budgets by remember { mutableStateOf<List<Budget>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -45,18 +41,13 @@ fun BudgetsScreen(
 
     // Search filters
     var searchUsername by remember { mutableStateOf("") }
-    var startDate by remember { mutableStateOf("") }
-    var endDate by remember { mutableStateOf("") }
 
     // Para el diálogo de detalle
     var selectedBudget by remember { mutableStateOf<Budget?>(null) }
     var showDetailDialog by remember { mutableStateOf(false) }
 
-    // Función mejorada para cargar presupuestos
-    fun loadBudgets(
-        loadFunction: suspend () -> List<Budget>,
-        onComplete: (Boolean, String?) -> Unit
-    ) {
+    // Función para cargar presupuestos
+    fun loadBudgets(onComplete: (Boolean, String?) -> Unit) {
         coroutineScope.launch {
             isLoading = true
             errorMessage = null
@@ -64,17 +55,19 @@ fun BudgetsScreen(
             try {
                 Log.d(TAG, "Iniciando carga de presupuestos...")
 
-                // Usar timeout para evitar bloqueos
-                withTimeout(20000) {
-                    val loadedBudgets = loadFunction()
-                    budgets = loadedBudgets
-                    Log.d(TAG, "Presupuestos cargados exitosamente: ${budgets.size}")
-                    onComplete(true, null)
+                val loadedBudgets = apiRepository.getAllBudgets()
+
+                // Filtrar por username si se especificó
+                val filteredBudgets = if (searchUsername.isNotBlank()) {
+                    loadedBudgets.filter { it.username.contains(searchUsername, ignoreCase = true) }
+                } else {
+                    loadedBudgets
                 }
-            } catch (e: TimeoutCancellationException) {
-                Log.e(TAG, "Timeout al cargar presupuestos: ${e.message}", e)
-                errorMessage = "Tiempo de espera agotado al cargar presupuestos. Intente nuevamente."
-                onComplete(false, errorMessage)
+
+                budgets = filteredBudgets
+
+                Log.d(TAG, "Presupuestos cargados exitosamente: ${budgets.size}")
+                onComplete(true, null)
             } catch (e: Exception) {
                 Log.e(TAG, "Error al cargar presupuestos: ${e.message}", e)
                 errorMessage = "Error al cargar presupuestos: ${e.message?.take(100)}"
@@ -88,14 +81,11 @@ fun BudgetsScreen(
     // Load budgets on first composition
     LaunchedEffect(Unit) {
         Log.d(TAG, "Cargando presupuestos iniciales...")
-        loadBudgets(
-            loadFunction = { mongoDBService.getAllBudgets() },
-            onComplete = { success, error ->
-                if (!success) {
-                    Log.e(TAG, "Error en carga inicial: $error")
-                }
+        loadBudgets { success, error ->
+            if (!success) {
+                Log.e(TAG, "Error en carga inicial: $error")
             }
-        )
+        }
     }
 
     Scaffold(
@@ -142,53 +132,9 @@ fun BudgetsScreen(
                         singleLine = true
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        OutlinedTextField(
-                            value = startDate,
-                            onValueChange = { startDate = it },
-                            label = { Text("Fecha inicio (YYYY-MM-DD)") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp),
-                            singleLine = true
-                        )
-
-                        OutlinedTextField(
-                            value = endDate,
-                            onValueChange = { endDate = it },
-                            label = { Text("Fecha fin (YYYY-MM-DD)") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp),
-                            singleLine = true
-                        )
-                    }
-
                     Button(
                         onClick = {
-                            when {
-                                searchUsername.isNotBlank() -> {
-                                    loadBudgets(
-                                        loadFunction = { mongoDBService.getBudgetsByUsername(searchUsername) },
-                                        onComplete = { _, _ -> }
-                                    )
-                                }
-                                startDate.isNotBlank() && endDate.isNotBlank() -> {
-                                    loadBudgets(
-                                        loadFunction = { mongoDBService.getBudgetsByDateRange(startDate, endDate) },
-                                        onComplete = { _, _ -> }
-                                    )
-                                }
-                                else -> {
-                                    loadBudgets(
-                                        loadFunction = { mongoDBService.getAllBudgets() },
-                                        onComplete = { _, _ -> }
-                                    )
-                                }
-                            }
+                            loadBudgets { _, _ -> }
                         },
                         modifier = Modifier
                             .align(Alignment.End)
@@ -249,10 +195,7 @@ fun BudgetsScreen(
 
                         Button(
                             onClick = {
-                                loadBudgets(
-                                    loadFunction = { mongoDBService.getAllBudgets() },
-                                    onComplete = { _, _ -> }
-                                )
+                                loadBudgets { _, _ -> }
                             }
                         ) {
                             Text("Reintentar")
@@ -685,3 +628,4 @@ private fun formatDate(dateString: String): String {
         return dateString
     }
 }
+

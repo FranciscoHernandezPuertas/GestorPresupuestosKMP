@@ -11,8 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.Material
 import org.dam.tfg.androidapp.models.User
 
@@ -24,8 +23,7 @@ fun MaterialsScreen(
     onNavigateToEditMaterial: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    // Crear una instancia directa de MongoDBService en lugar de usar el singleton
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
+    val apiRepository = remember { ApiRepository() }
 
     var materials by remember { mutableStateOf<List<Material>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -34,7 +32,7 @@ fun MaterialsScreen(
 
     // Load materials on first composition
     LaunchedEffect(Unit) {
-        loadMaterials(mongoDBService) { newMaterials, error ->
+        loadMaterials(apiRepository) { newMaterials, error ->
             materials = newMaterials
             errorMessage = error
             isLoading = false
@@ -85,7 +83,7 @@ fun MaterialsScreen(
                         onClick = {
                             isLoading = true
                             coroutineScope.launch {
-                                loadMaterials(mongoDBService) { newMaterials, error ->
+                                loadMaterials(apiRepository) { newMaterials, error ->
                                     materials = newMaterials
                                     errorMessage = error
                                     isLoading = false
@@ -149,9 +147,9 @@ fun MaterialsScreen(
                                 isLoading = true
                                 coroutineScope.launch {
                                     try {
-                                        val success = mongoDBService.deleteMaterial(materialToDelete._id, user.username)
+                                        val success = apiRepository.deleteMaterial(materialToDelete._id)
                                         if (success) {
-                                            loadMaterials(mongoDBService) { newMaterials, error ->
+                                            loadMaterials(apiRepository) { newMaterials, error ->
                                                 materials = newMaterials
                                                 errorMessage = error
                                                 isLoading = false
@@ -189,6 +187,7 @@ fun MaterialItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    // Mantener el diseño del elemento de la lista sin cambios
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -236,12 +235,12 @@ fun MaterialItem(
 }
 
 private suspend fun loadMaterials(
-    mongoDBService: MongoDBService,
+    apiRepository: ApiRepository,
     onResult: (List<Material>, String?) -> Unit
 ) {
     try {
-        val materials = mongoDBService.getAllMaterials()
-        onResult(materials, null)
+        val materials = apiRepository.getAllMaterials()
+        onResult(materials, if (materials.isEmpty()) "No se encontraron materiales" else null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }

@@ -11,8 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.dam.tfg.androidapp.data.MongoDBConstants.DATABASE_URI
-import org.dam.tfg.androidapp.data.MongoDBService
+import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.Formula
 import org.dam.tfg.androidapp.models.User
 
@@ -24,16 +23,16 @@ fun FormulasScreen(
     onNavigateToEditFormula: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val mongoDBService = remember { MongoDBService(DATABASE_URI) }
-    
+    val apiRepository = remember { ApiRepository() }
+
     var formulas by remember { mutableStateOf<List<Formula>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showDeleteDialog by remember { mutableStateOf<Formula?>(null) }
     
-    // Load formulas on first composition
+    // Cargar fórmulas al iniciar la pantalla
     LaunchedEffect(Unit) {
-        loadFormulas(mongoDBService) { newFormulas, error ->
+        loadFormulas(apiRepository) { newFormulas, error ->
             formulas = newFormulas
             errorMessage = error
             isLoading = false
@@ -84,7 +83,7 @@ fun FormulasScreen(
                         onClick = {
                             isLoading = true
                             coroutineScope.launch {
-                                loadFormulas(mongoDBService) { newFormulas, error ->
+                                loadFormulas(apiRepository) { newFormulas, error ->
                                     formulas = newFormulas
                                     errorMessage = error
                                     isLoading = false
@@ -132,7 +131,7 @@ fun FormulasScreen(
             }
         }
         
-        // Delete confirmation dialog
+        // Diálogo de confirmación para eliminar
         if (showDeleteDialog != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
@@ -148,9 +147,9 @@ fun FormulasScreen(
                                 isLoading = true
                                 coroutineScope.launch {
                                     try {
-                                        val success = mongoDBService.deleteFormula(formulaToDelete._id, user.username)
+                                        val success = apiRepository.deleteFormula(formulaToDelete._id)
                                         if (success) {
-                                            loadFormulas(mongoDBService) { newFormulas, error ->
+                                            loadFormulas(apiRepository) { newFormulas, error ->
                                                 formulas = newFormulas
                                                 errorMessage = error
                                                 isLoading = false
@@ -235,12 +234,12 @@ fun FormulaItem(
 }
 
 private suspend fun loadFormulas(
-    mongoDBService: MongoDBService,
+    apiRepository: ApiRepository,
     onResult: (List<Formula>, String?) -> Unit
 ) {
     try {
-        val formulas = mongoDBService.getAllFormulas()
-        onResult(formulas, null)
+        val formulas = apiRepository.getAllFormulas()
+        onResult(formulas, if (formulas.isEmpty()) "No se encontraron fórmulas" else null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }
