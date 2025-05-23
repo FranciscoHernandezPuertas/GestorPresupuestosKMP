@@ -881,7 +881,7 @@ class MongoDBService(private val mongodbUri: String) {
                 elementosGenerales = parseElementosGenerales(document.get("elementosGenerales") as? List<Document>),
                 cubetas = parseCubetas(document.get("cubetas") as? List<Document>),
                 modulos = parseModulos(document.get("modulos") as? List<Document>),
-                precioTotal = getLongValue(document, "precioTotal"),
+                precioTotal = getDoubleValue(document, "precioTotal"),
                 fechaCreacion = document.getString("fechaCreacion") ?: "",
                 username = document.getString("username") ?: "",
                 error = document.getString("error") ?: ""
@@ -929,9 +929,9 @@ class MongoDBService(private val mongodbUri: String) {
                 tramos.add(
                     Tramo(
                         numero = getIntValue(doc, "numero"),
-                        largo = getIntValue(doc, "largo"),
-                        ancho = getIntValue(doc, "ancho"),
-                        precio = getLongValue(doc, "precio"),
+                        largo = getDoubleValue(doc, "largo"),
+                        ancho = getDoubleValue(doc, "ancho"),
+                        precio = getDoubleValue(doc, "precio"),
                         tipo = doc.getString("tipo") ?: "",
                         error = doc.getString("error") ?: ""
                     )
@@ -953,7 +953,7 @@ class MongoDBService(private val mongodbUri: String) {
                     ElementoGeneral(
                         nombre = doc.getString("nombre") ?: "",
                         cantidad = getIntValue(doc, "cantidad"),
-                        precio = getLongValue(doc, "precio"),
+                        precio = getDoubleValue(doc, "precio"),
                         limite = parseLimite(doc.get("limite") as? Document)
                     )
                 )
@@ -991,10 +991,10 @@ class MongoDBService(private val mongodbUri: String) {
                     Cubeta(
                         tipo = doc.getString("tipo") ?: "",
                         numero = getIntValue(doc, "numero"),
-                        largo = getIntValue(doc, "largo"),
-                        fondo = getIntValue(doc, "fondo"),
-                        alto = getIntValue(doc, "alto"),
-                        precio = getLongValue(doc, "precio"),
+                        largo = getDoubleValue(doc, "largo"),
+                        fondo = getDoubleValue(doc, "fondo"),
+                        alto = getDoubleValue(doc, "alto"),
+                        precio = getDoubleValue(doc, "precio"),
                         error = doc.getString("error") ?: "",
                         minQuantity = getIntValue(doc, "minQuantity")
                     )
@@ -1015,12 +1015,12 @@ class MongoDBService(private val mongodbUri: String) {
                 modulos.add(
                     Modulo(
                         nombre = doc.getString("nombre") ?: "",
-                        largo = getIntValue(doc, "largo"),
-                        fondo = getIntValue(doc, "fondo"),
-                        alto = getIntValue(doc, "alto"),
+                        largo = getDoubleValue(doc, "largo"),
+                        fondo = getDoubleValue(doc, "fondo"),
+                        alto = getDoubleValue(doc, "alto"),
                         cantidad = getIntValue(doc, "cantidad"),
                         limite = parseLimite(doc.get("limite") as? Document),
-                        precio = getLongValue(doc, "precio")
+                        precio = getDoubleValue(doc, "precio")
                     )
                 )
             } catch (e: Exception) {
@@ -1058,6 +1058,23 @@ class MongoDBService(private val mongodbUri: String) {
                     value.toString().toLongOrNull() ?: 0L
                 } catch (e: Exception) {
                     0L
+                }
+            }
+        }
+    }
+
+    // Añadir método para obtener valores Double
+    private fun getDoubleValue(doc: Document, key: String): Double {
+        return when (val value = doc.get(key)) {
+            is Double -> value
+            is Int -> value.toDouble()
+            is Long -> value.toDouble()
+            null -> 0.0
+            else -> {
+                try {
+                    value.toString().toDoubleOrNull() ?: 0.0
+                } catch (e: Exception) {
+                    0.0
                 }
             }
         }

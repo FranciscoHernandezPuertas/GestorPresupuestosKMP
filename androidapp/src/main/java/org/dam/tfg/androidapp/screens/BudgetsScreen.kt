@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -594,8 +593,8 @@ fun DetailRow(label: String, value: String) {
     }
 }
 
-private fun formatPrice(price: Long): String {
-    return String.format("%,d", price)
+private fun formatPrice(price: Double): String {
+    return String.format("%,.2f", price)
 }
 
 private fun formatDate(dateString: String): String {

@@ -11,12 +11,22 @@ import org.dam.tfg.androidapp.util.IdUtils
 import retrofit2.Response
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import okhttp3.ResponseBody
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
 
 /**
  * Repositorio que gestiona todas las operaciones con la API REST
  */
 class ApiRepository {
     private val TAG = "ApiRepository"
+    private val gson = Gson()
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
 
     // Autenticación
     suspend fun login(username: String, password: String): User? {
@@ -85,11 +95,37 @@ class ApiRepository {
     suspend fun getAllUsers(): List<User> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Obteniendo todos los usuarios...")
                 val response = ApiClient.userService.getAllUsers()
-                handleResponse(response) ?: emptyList()
+                Log.d(TAG, "Respuesta de getAllUsers: ${response.isSuccessful}, código: ${response.code()}")
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al obtener usuarios: ${response.code()} - ${response.message()}")
+                    return@withContext emptyList()
+                }
+
+                val apiResponse = response.body()
+                if (apiResponse == null) {
+                    Log.e(TAG, "Respuesta nula al obtener usuarios")
+                    return@withContext emptyList()
+                }
+
+                if (!apiResponse.success) {
+                    Log.e(TAG, "Error en respuesta de API: ${apiResponse.error}")
+                    return@withContext emptyList()
+                }
+
+                val users = apiResponse.data
+                if (users == null) {
+                    Log.d(TAG, "Lista de usuarios nula")
+                    return@withContext emptyList()
+                }
+
+                Log.d(TAG, "Usuarios obtenidos correctamente: ${users.size}")
+                return@withContext users
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getAllUsers: ${e.message}", e)
-                emptyList()
+                return@withContext emptyList()
             }
         }
     }
@@ -122,7 +158,9 @@ class ApiRepository {
     suspend fun updateUser(user: User): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = ApiClient.userService.updateUser(user._id, user)
+                // Usar getActualId para obtener el ID correcto sea _id o id
+                val actualId = user.getActualId()
+                val response = ApiClient.userService.updateUser(actualId, user)
                 handleResponseBoolean(response)
             } catch (e: Exception) {
                 Log.e(TAG, "Error en updateUser: ${e.message}", e)
@@ -148,7 +186,8 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.materialService.getAllMaterials()
-                handleResponse(response) ?: emptyList()
+                Log.d(TAG, "getAllMaterials response: ${response.isSuccessful}")
+                return@withContext handleResponseBody<List<Material>>(response.body()) ?: emptyList()
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getAllMaterials: ${e.message}", e)
                 emptyList()
@@ -159,8 +198,41 @@ class ApiRepository {
     suspend fun getMaterialById(id: String): Material? {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Obteniendo material con ID: $id")
                 val response = ApiClient.materialService.getMaterialById(id)
-                handleResponse(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error al obtener material: Código ${response.code()}")
+                    return@withContext null
+                }
+
+                val responseBody = response.body()
+                if (responseBody == null) {
+                    Log.e(TAG, "Cuerpo de respuesta nulo al obtener material")
+                    return@withContext null
+                }
+
+                val jsonString = responseBody.string()
+                Log.d(TAG, "Respuesta para material: $jsonString")
+
+                val apiResponse = gson.fromJson<ApiResponse<Material>>(
+                    jsonString,
+                    object : TypeToken<ApiResponse<Material>>() {}.type
+                )
+
+                if (!apiResponse.success) {
+                    Log.e(TAG, "Error en respuesta de API: ${apiResponse.error}")
+                    return@withContext null
+                }
+
+                val material = apiResponse.data
+                if (material == null) {
+                    Log.e(TAG, "Material no encontrado en respuesta")
+                    return@withContext null
+                }
+
+                Log.d(TAG, "Material obtenido correctamente: ${material.name}")
+                return@withContext material
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getMaterialById: ${e.message}", e)
                 null
@@ -172,7 +244,7 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.materialService.createMaterial(material)
-                handleResponseBoolean(response)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en createMaterial: ${e.message}", e)
                 false
@@ -183,8 +255,10 @@ class ApiRepository {
     suspend fun updateMaterial(material: Material): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = ApiClient.materialService.updateMaterial(material._id, material)
-                handleResponseBoolean(response)
+                // Usar getActualId para obtener el ID correcto sea _id o id
+                val actualId = material.getActualId()
+                val response = ApiClient.materialService.updateMaterial(actualId, material)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en updateMaterial: ${e.message}", e)
                 false
@@ -196,7 +270,7 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.materialService.deleteMaterial(id)
-                handleResponseBoolean(response)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en deleteMaterial: ${e.message}", e)
                 false
@@ -220,8 +294,33 @@ class ApiRepository {
     suspend fun getFormulaById(id: String): Formula? {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Obteniendo fórmula con ID: $id")
                 val response = ApiClient.formulaService.getFormulaById(id)
-                handleResponse(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error al obtener fórmula: Código ${response.code()}")
+                    return@withContext null
+                }
+
+                val apiResponse = response.body()
+                if (apiResponse == null) {
+                    Log.e(TAG, "Cuerpo de respuesta nulo al obtener fórmula")
+                    return@withContext null
+                }
+
+                if (!apiResponse.success) {
+                    Log.e(TAG, "Error en respuesta de API: ${apiResponse.error}")
+                    return@withContext null
+                }
+
+                val formula = apiResponse.data
+                if (formula == null) {
+                    Log.e(TAG, "Fórmula no encontrada en respuesta")
+                    return@withContext null
+                }
+
+                Log.d(TAG, "Fórmula obtenida correctamente: ${formula.name}")
+                return@withContext formula
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getFormulaById: ${e.message}", e)
                 null
@@ -244,7 +343,9 @@ class ApiRepository {
     suspend fun updateFormula(formula: Formula): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = ApiClient.formulaService.updateFormula(formula._id, formula)
+                // Usar getActualId para obtener el ID correcto sea _id o id
+                val actualId = formula.getActualId()
+                val response = ApiClient.formulaService.updateFormula(actualId, formula)
                 handleResponseBoolean(response)
             } catch (e: Exception) {
                 Log.e(TAG, "Error en updateFormula: ${e.message}", e)
@@ -270,7 +371,8 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.budgetService.getAllBudgets()
-                handleResponse(response) ?: emptyList()
+                Log.d(TAG, "getAllBudgets response: ${response.isSuccessful}")
+                return@withContext handleResponseBody<List<Budget>>(response.body()) ?: emptyList()
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getAllBudgets: ${e.message}", e)
                 emptyList()
@@ -282,7 +384,8 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.budgetService.getBudgetById(id)
-                handleResponse(response)
+                Log.d(TAG, "getBudgetById response: ${response.isSuccessful}")
+                return@withContext handleResponseBody<Budget>(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getBudgetById: ${e.message}", e)
                 null
@@ -294,7 +397,7 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.budgetService.createBudget(budget)
-                handleResponseBoolean(response)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en createBudget: ${e.message}", e)
                 false
@@ -305,8 +408,10 @@ class ApiRepository {
     suspend fun updateBudget(budget: Budget): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = ApiClient.budgetService.updateBudget(budget._id, budget)
-                handleResponseBoolean(response)
+                // Usar getActualId para obtener el ID correcto sea _id o id
+                val actualId = budget.getActualId()
+                val response = ApiClient.budgetService.updateBudget(actualId, budget)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en updateBudget: ${e.message}", e)
                 false
@@ -318,7 +423,7 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.budgetService.deleteBudget(id)
-                handleResponseBoolean(response)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en deleteBudget: ${e.message}", e)
                 false
@@ -331,7 +436,8 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.historyService.getAllHistory()
-                handleResponse(response) ?: emptyList()
+                Log.d(TAG, "getAllHistory response: ${response.isSuccessful}")
+                return@withContext handleResponseBody<List<History>>(response.body()) ?: emptyList()
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getAllHistory: ${e.message}", e)
                 emptyList()
@@ -343,7 +449,7 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.historyService.getHistoryById(id)
-                handleResponse(response)
+                return@withContext handleResponseBody<History>(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getHistoryById: ${e.message}", e)
                 null
@@ -355,7 +461,7 @@ class ApiRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val response = ApiClient.historyService.createHistory(history)
-                handleResponseBoolean(response)
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en createHistory: ${e.message}", e)
                 false
@@ -390,6 +496,93 @@ class ApiRepository {
             }
         } else {
             Log.e(TAG, "Error HTTP: ${response.code()} - ${response.message()}")
+            false
+        }
+    }
+
+    // Nuevas funciones para manejar respuestas de tipo ResponseBody directamente
+    private inline fun <reified T> handleResponseBody(responseBody: ResponseBody?): T? {
+        return try {
+            if (responseBody == null) {
+                Log.d(TAG, "handleResponseBody: responseBody es null")
+                return handleEmptyResponse<T>()
+            }
+
+            val jsonString = responseBody.string()
+            Log.d(TAG, "Respuesta recibida: ${jsonString.take(200)}${if (jsonString.length > 200) "..." else ""}")
+
+            val apiResponse = try {
+                gson.fromJson<ApiResponse<T>>(
+                    jsonString,
+                    object : TypeToken<ApiResponse<T>>() {}.type
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al deserializar ApiResponse: ${e.message}", e)
+                // Intento alternativo de parsear el JSON directamente
+                try {
+                    val data = gson.fromJson<T>(jsonString, object : TypeToken<T>() {}.type)
+                    return data
+                } catch (innerE: Exception) {
+                    Log.e(TAG, "Error al deserializar directamente: ${innerE.message}", innerE)
+                    return handleEmptyResponse<T>()
+                }
+            }
+
+            if (apiResponse.success) {
+                val data = apiResponse.data
+                if (data == null) {
+                    Log.d(TAG, "API respuesta exitosa pero con datos nulos")
+                    handleEmptyResponse<T>()
+                } else {
+                    data
+                }
+            } else {
+                Log.e(TAG, "Error en respuesta: ${apiResponse.error}")
+                handleEmptyResponse<T>()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al procesar respuesta: ${e.message}", e)
+            handleEmptyResponse<T>()
+        }
+    }
+
+    private inline fun <reified T> handleEmptyResponse(): T? {
+        return when {
+            // Para listas, devolver lista vacía en lugar de null
+            List::class.java.isAssignableFrom(T::class.java) -> {
+                try {
+                    @Suppress("UNCHECKED_CAST")
+                    emptyList<Any>() as T
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al crear lista vacía: ${e.message}", e)
+                    null
+                }
+            }
+            // Para otros casos, devolver null
+            else -> null
+        }
+    }
+
+    private fun handleResponseBodyBoolean(responseBody: ResponseBody?): Boolean {
+        return try {
+            if (responseBody == null) return false
+
+            val jsonString = responseBody.string()
+            Log.d(TAG, "Respuesta recibida (boolean): ${jsonString.take(200)}${if (jsonString.length > 200) "..." else ""}")
+
+            val apiResponse = gson.fromJson<ApiResponse<Any>>(
+                jsonString,
+                object : TypeToken<ApiResponse<Any>>() {}.type
+            )
+
+            if (apiResponse.success) {
+                true
+            } else {
+                Log.e(TAG, "Error en respuesta: ${apiResponse.error}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al procesar respuesta booleana: ${e.message}", e)
             false
         }
     }

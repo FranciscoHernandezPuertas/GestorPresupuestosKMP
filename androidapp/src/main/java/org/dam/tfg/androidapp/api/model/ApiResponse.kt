@@ -1,6 +1,7 @@
 package org.dam.tfg.androidapp.api.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
 /**
  * Modelo de respuesta estándar para todas las APIs
@@ -14,3 +15,4 @@ data class ApiResponse<T>(
     val data: T? = null,
     val error: String? = null
 )
+
