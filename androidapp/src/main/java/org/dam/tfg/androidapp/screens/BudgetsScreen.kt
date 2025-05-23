@@ -45,6 +45,29 @@ fun BudgetsScreen(
     var selectedBudget by remember { mutableStateOf<Budget?>(null) }
     var showDetailDialog by remember { mutableStateOf(false) }
 
+    // Función para parsear diferentes formatos de fecha
+    fun parseDate(dateString: String): Date? {
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd",
+            "dd/MM/yyyy"
+        )
+
+        for (format in formats) {
+            try {
+                val simpleDateFormat = SimpleDateFormat(format, Locale.getDefault())
+                if (format.contains("'Z'")) {
+                    simpleDateFormat.timeZone = TimeZone.getTimeZone("UTC")
+                }
+                return simpleDateFormat.parse(dateString)
+            } catch (e: Exception) {
+                // Intentar con el siguiente formato
+            }
+        }
+        return null
+    }
+
     // Función para cargar presupuestos
     fun loadBudgets(onComplete: (Boolean, String?) -> Unit) {
         coroutineScope.launch {
@@ -56,11 +79,16 @@ fun BudgetsScreen(
 
                 val loadedBudgets = apiRepository.getAllBudgets()
 
+                // Ordenar por fecha, de más reciente a más antigua
+                val sortedBudgets = loadedBudgets.sortedByDescending { budget ->
+                    parseDate(budget.fechaCreacion)
+                }
+
                 // Filtrar por username si se especificó
                 val filteredBudgets = if (searchUsername.isNotBlank()) {
-                    loadedBudgets.filter { it.username.contains(searchUsername, ignoreCase = true) }
+                    sortedBudgets.filter { it.username.contains(searchUsername, ignoreCase = true) }
                 } else {
-                    loadedBudgets
+                    sortedBudgets
                 }
 
                 budgets = filteredBudgets

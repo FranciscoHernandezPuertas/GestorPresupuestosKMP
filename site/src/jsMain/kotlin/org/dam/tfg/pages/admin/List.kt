@@ -449,6 +449,15 @@ fun BudgetCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(all = 16.px)
+                    .backgroundColor(rgba(245, 245, 250, 0.95))
+                    .boxShadow(
+                        offsetX = 0.px,
+                        offsetY = 4.px,
+                        blurRadius = 8.px,
+                        color = rgba(0, 0, 0, 0.15)
+                    )
+                    .border(1.px, color = rgba(200, 200, 220, 0.5))
+                    .borderRadius(bottomLeft = 8.px, bottomRight = 8.px)
             ) {
                 // Precio total destacado
                 Box(
@@ -2104,3 +2113,4 @@ fun BudgetEditForm(
     }
 
 }
+

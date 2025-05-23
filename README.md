@@ -62,9 +62,9 @@ La aplicación sigue el patrón de diseño MVVM (Model-View-ViewModel) con clara
 El proyecto está organizado en módulos:
 
 - **commonMain**: Código compartido entre plataformas
-- **jsMain**: Implementación específica para web usando Compose HTML
+- **jsMain**: Implementación específica para web usando Compose HTML y Kobweb
 - **jvmMain**: Backend con Kobweb y MongoDB
-- **androidMain**: (Pendiente) Implementación para Android
+- **androidapp**: Implementación para Android
 
 ### Componentes principales
 
@@ -80,7 +80,8 @@ El proyecto está organizado en módulos:
 3. **TableSelector**: Configuración del tipo de mesa (1-4 tramos) y sus dimensiones
 4. **TableElements**: Selección de elementos adicionales para la mesa (cubetas, petos, etc.)
 5. **TableModules**: Selección de módulos para la mesa (bastidores, armarios, etc.)
-6. **Summary**: Resumen del presupuesto y generación final
+6. **Resume**: Resumen del presupuesto y generación final
+7. **PDFGenerator**: Generación de un PDF con el presupuesto y envío a la base de datos
 
 ## Seguridad
 
@@ -94,7 +95,7 @@ El sistema implementa varias capas de seguridad:
 
 Progreso:
 
-![Progreso](https://progress-bar.xyz/95)
+![Progreso](https://progress-bar.xyz/97)
 
 ### Implementado (✅)
 - Sistema completo de autenticación con JWT

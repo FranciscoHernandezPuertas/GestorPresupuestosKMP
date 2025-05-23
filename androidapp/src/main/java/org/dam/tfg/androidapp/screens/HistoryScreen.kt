@@ -236,12 +236,30 @@ fun HistoryItem(history: History) {
     }
 }
 
+// Función para parsear las diferentes fechas y convertirlas a un formato estándar
+private fun parseDate(dateString: String): Date? {
+    val formats = listOf(
+        SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US),
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US),
+        SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+    )
+
+    for (format in formats) {
+        try {
+            return format.parse(dateString)
+        } catch (e: Exception) {
+            // Intentar con el siguiente formato
+        }
+    }
+    return null
+}
+
 private fun formatDate(dateString: String): String {
     try {
-        val inputFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US)
-        val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-        val date = inputFormat.parse(dateString)
-        return date?.let { outputFormat.format(it) } ?: dateString
+        val date = parseDate(dateString)
+        return date?.let {
+            SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(it)
+        } ?: dateString
     } catch (e: Exception) {
         return dateString
     }
@@ -253,7 +271,11 @@ private suspend fun loadHistory(
 ) {
     try {
         val history = apiRepository.getAllHistory()
-        onResult(history, if (history.isEmpty()) "No se encontraron registros de historial" else null)
+        // Ordenar por fecha, más reciente primero
+        val sortedHistory = history.sortedByDescending { historyItem ->
+            parseDate(historyItem.timestamp)
+        }
+        onResult(sortedHistory, if (sortedHistory.isEmpty()) "No se encontraron registros de historial" else null)
     } catch (e: Exception) {
         onResult(emptyList(), e.message)
     }
