@@ -102,10 +102,24 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
 
 /**
  * Obtener fórmula por ID
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo GET de la ruta
  */
-@Api(routeOverride = "GET formulas/{id}")
+@Api(routeOverride = "formulas/{id}")
 suspend fun getAndroidFormulaById(context: ApiContext) {
+    // Verificar que la petición es un GET
+    if (context.req.method.toString().lowercase() != "get") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Formula>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
         println("=== GET FORMULA BY ID ===")
@@ -179,269 +193,99 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
 
 /**
  * Crear una nueva fórmula
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo POST de la ruta
  */
-@Api(routeOverride = "POST formulas")
+@Api(routeOverride = "formulas")
 suspend fun createAndroidFormula(context: ApiContext) {
+    // Verificar que la petición es un POST
+    if (context.req.method.toString().lowercase() != "post") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Formula>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== CREATE FORMULA ===")
-
-        // Verificar que la petición es un POST
-        if (context.req.method.toString().lowercase() != "post") {
-            throw Exception("Método no permitido")
-        }
 
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de la fórmula")
 
         println("Body received: $bodyText")
 
-        // Primero parseamos como JsonObject para manejar id/_id correctamente
-        val jsonElement = json.parseToJsonElement(bodyText)
-        val jsonObject = jsonElement.jsonObject
-
-        // Extraer campos, con preferencia por _id
-        val formulaId = (jsonObject["_id"] ?: jsonObject["id"])?.jsonPrimitive?.content ?: ""
-        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
-        val formulaText = jsonObject["formula"]?.jsonPrimitive?.content ?: ""
-        val formulaEncrypted = jsonObject["formulaEncrypted"]?.jsonPrimitive?.content?.toBoolean() ?: false
-
-        // Extraer variables (que es un objeto anidado)
-        val variablesObject = jsonObject["variables"]?.jsonObject
-        val variables = variablesObject?.let { obj ->
-            obj.entries.associate { entry ->
-                entry.key to (entry.value.jsonPrimitive.content)
-            }
-        } ?: emptyMap()
-
-        // Validaciones básicas
-        if (name.isBlank()) {
-            throw Exception("El nombre de la fórmula no puede estar vacío")
-        }
-
-        if (formulaText.isBlank()) {
-            throw Exception("La fórmula no puede estar vacía")
-        }
-
-        // Encriptar la fórmula si no está encriptada
-        val encryptedFormula = if (!formulaEncrypted) {
-            println("Encrypting formula text")
-            FormulaEncryption.encrypt(formulaText)
-        } else {
-            println("Formula is already encrypted")
-            formulaText
-        }
-
-        // Crear fórmula con ID generado si no tiene uno
-        val newFormula = Formula(
-            id = if (formulaId.isBlank()) ObjectId().toHexString() else formulaId,
-            name = name.trim(),
-            formula = encryptedFormula,
-            formulaEncrypted = true, // Siempre marcamos como encriptada
-            variables = variables
-        )
-
-        println("Creating formula with ID: ${newFormula.id}")
-        val success = context.data.getValue<MongoDB>().addFormula(newFormula)
-
-        if (success) {
-            println("Formula created successfully")
-            context.res.status = 201 // Created
-
-            // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
-            val variablesMap = newFormula.variables.map { entry ->
-                entry.key to JsonPrimitive(entry.value)
-            }.toMap()
-
-            val responseJsonObject = JsonObject(mapOf(
-                "success" to JsonPrimitive(true),
-                "data" to JsonObject(mapOf(
-                    "_id" to JsonPrimitive(newFormula.id),
-                    "id" to JsonPrimitive(newFormula.id),
-                    "name" to JsonPrimitive(newFormula.name),
-                    "formula" to JsonPrimitive(newFormula.formula),
-                    "formulaEncrypted" to JsonPrimitive(newFormula.formulaEncrypted),
-                    "variables" to JsonObject(variablesMap)
-                ))
-            ))
-
-            context.res.setBodyText(json.encodeToString(responseJsonObject))
-        } else {
-            throw Exception("No se pudo crear la fórmula")
-        }
+        // ...existing code...
     } catch (e: Exception) {
-        println("Error creating formula: ${e.message}")
-        e.printStackTrace()
-        context.res.status = 400 // Bad Request
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse<Formula>(
-                    success = false,
-                    error = e.message ?: "Error desconocido"
-                )
-            )
-        )
+        // ...existing code...
     }
 }
 
 /**
  * Actualizar una fórmula existente
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo PUT de la ruta
  */
-@Api(routeOverride = "PUT formulas/{id}")
+@Api(routeOverride = "formulas/{id}")
 suspend fun updateAndroidFormula(context: ApiContext) {
-    try {
-        println("=== UPDATE FORMULA ===")
-
-        // Verificar que la petición es un PUT
-        if (context.req.method.toString().lowercase() != "put") {
-            throw Exception("Método no permitido")
-        }
-
-        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
-        println("Updating formula ID: $id")
-
-        if (id.isBlank()) {
-            throw Exception("ID de fórmula no puede estar vacío")
-        }
-
-        val bodyText = context.req.body?.decodeToString()
-            ?: throw Exception("No se proporcionaron datos de la fórmula")
-
-        println("Body received: $bodyText")
-
-        // Primero parseamos como JsonObject para manejar correctamente
-        val jsonElement = json.parseToJsonElement(bodyText)
-        val jsonObject = jsonElement.jsonObject
-
-        // Extraer campos
-        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
-        val formulaText = jsonObject["formula"]?.jsonPrimitive?.content ?: ""
-        val formulaEncrypted = jsonObject["formulaEncrypted"]?.jsonPrimitive?.content?.toBoolean() ?: false
-
-        // Extraer variables (que es un objeto anidado)
-        val variablesObject = jsonObject["variables"]?.jsonObject
-        val variables = variablesObject?.let { obj ->
-            obj.entries.associate { entry ->
-                entry.key to (entry.value.jsonPrimitive.content)
-            }
-        } ?: emptyMap()
-
-        // Validaciones
-        if (name.isBlank()) {
-            throw Exception("El nombre de la fórmula no puede estar vacío")
-        }
-
-        if (formulaText.isBlank()) {
-            throw Exception("La fórmula no puede estar vacía")
-        }
-
-        // Encriptar la fórmula si no está encriptada
-        val encryptedFormula = if (!formulaEncrypted) {
-            println("Encrypting formula text for update")
-            FormulaEncryption.encrypt(formulaText)
-        } else {
-            println("Formula for update is already encrypted")
-            formulaText
-        }
-
-        // Asegurar que el ID en el path coincida con el ID en el cuerpo
-        val formulaToUpdate = Formula(
-            id = id,
-            name = name.trim(),
-            formula = encryptedFormula,
-            formulaEncrypted = true, // Siempre marcamos como encriptada
-            variables = variables
-        )
-
-        println("Updating formula: name=${formulaToUpdate.name}")
-        val success = context.data.getValue<MongoDB>().updateFormula(formulaToUpdate)
-
-        if (success) {
-            println("Formula updated successfully")
-            // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
-            val variablesMap = formulaToUpdate.variables.map { entry ->
-                entry.key to JsonPrimitive(entry.value)
-            }.toMap()
-
-            val responseJsonObject = JsonObject(mapOf(
-                "success" to JsonPrimitive(true),
-                "data" to JsonObject(mapOf(
-                    "_id" to JsonPrimitive(formulaToUpdate.id),
-                    "id" to JsonPrimitive(formulaToUpdate.id),
-                    "name" to JsonPrimitive(formulaToUpdate.name),
-                    "formula" to JsonPrimitive(formulaToUpdate.formula),
-                    "formulaEncrypted" to JsonPrimitive(formulaToUpdate.formulaEncrypted),
-                    "variables" to JsonObject(variablesMap)
-                ))
-            ))
-
-            context.res.setBodyText(json.encodeToString(responseJsonObject))
-        } else {
-            throw Exception("No se pudo actualizar la fórmula. Posiblemente no existe.")
-        }
-    } catch (e: Exception) {
-        println("Error updating formula: ${e.message}")
-        e.printStackTrace()
-        context.res.status = 400 // Bad Request
+    // Verificar que la petición es un PUT
+    if (context.req.method.toString().lowercase() != "put") {
+        context.res.status = 405 // Method Not Allowed
         context.res.setBodyText(
             json.encodeToString(
                 ApiResponse<Formula>(
                     success = false,
-                    error = e.message ?: "Error desconocido"
+                    error = "Método no permitido"
                 )
             )
         )
+        return
+    }
+
+    try {
+        println("=== UPDATE FORMULA ===")
+
+        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Updating formula ID: $id")
+
+        // ...existing code...
+    } catch (e: Exception) {
+        // ...existing code...
     }
 }
 
 /**
  * Eliminar una fórmula
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo DELETE de la ruta
  */
-@Api(routeOverride = "DELETE formulas/{id}")
+@Api(routeOverride = "formulas/{id}")
 suspend fun deleteAndroidFormula(context: ApiContext) {
-    try {
-        println("=== DELETE FORMULA ===")
-
-        // Verificar que la petición es un DELETE
-        if (context.req.method.toString().lowercase() != "delete") {
-            throw Exception("Método no permitido")
-        }
-
-        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
-        println("Deleting formula ID: $id")
-
-        if (id.isBlank()) {
-            throw Exception("ID de fórmula no puede estar vacío")
-        }
-
-        val success = context.data.getValue<MongoDB>().deleteFormula(id)
-
-        if (success) {
-            println("Formula deleted successfully")
-            // Crear respuesta adaptada para Android
-            val responseJsonObject = JsonObject(mapOf(
-                "success" to JsonPrimitive(true),
-                "data" to JsonPrimitive(true)
-            ))
-
-            context.res.setBodyText(json.encodeToString(responseJsonObject))
-        } else {
-            throw Exception("No se pudo eliminar la fórmula. Posiblemente no existe.")
-        }
-    } catch (e: Exception) {
-        println("Error deleting formula: ${e.message}")
-        e.printStackTrace()
-        context.res.status = 400 // Bad Request
+    // Verificar que la petición es un DELETE
+    if (context.req.method.toString().lowercase() != "delete") {
+        context.res.status = 405 // Method Not Allowed
         context.res.setBodyText(
             json.encodeToString(
                 ApiResponse<Boolean>(
                     success = false,
-                    error = e.message ?: "Error desconocido"
+                    error = "Método no permitido"
                 )
             )
         )
+        return
+    }
+
+    try {
+        println("=== DELETE FORMULA ===")
+
+        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Deleting formula ID: $id")
+
+        // ...existing code...
+    } catch (e: Exception) {
+        // ...existing code...
     }
 }
 

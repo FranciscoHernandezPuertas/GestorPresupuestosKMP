@@ -66,10 +66,24 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
 
 /**
  * Obtener material por ID
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Ruta adecuada para Kobweb considerando el prefijo de paquete
  */
-@Api(routeOverride = "GET materials/{id}")
+@Api(routeOverride = "materials/{id}")
 suspend fun getAndroidMaterialById(context: ApiContext) {
+    // Verificar que la petición es un GET
+    if (context.req.method.toString().lowercase() != "get") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Material>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
         println("=== GET MATERIAL BY ID ===")
@@ -114,17 +128,26 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
 
 /**
  * Crear un nuevo material
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo POST de la ruta
  */
-@Api(routeOverride = "POST materials")
+@Api(routeOverride = "materials")
 suspend fun createAndroidMaterial(context: ApiContext) {
+    // Verificar que la petición es un POST
+    if (context.req.method.toString().lowercase() != "post") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Material>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== CREATE MATERIAL ===")
-
-        // Verificar que la petición es un POST
-        if (context.req.method.toString().lowercase() != "post") {
-            throw Exception("Método no permitido")
-        }
 
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos del material")
@@ -195,17 +218,26 @@ suspend fun createAndroidMaterial(context: ApiContext) {
 
 /**
  * Actualizar un material existente
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo PUT de la ruta
  */
-@Api(routeOverride = "PUT materials/{id}")
+@Api(routeOverride = "materials/{id}")
 suspend fun updateAndroidMaterial(context: ApiContext) {
+    // Verificar que la petición es un PUT
+    if (context.req.method.toString().lowercase() != "put") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Material>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== UPDATE MATERIAL ===")
-
-        // Verificar que la petición es un PUT
-        if (context.req.method.toString().lowercase() != "put") {
-            throw Exception("Método no permitido")
-        }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
         println("Updating material ID: $id")
@@ -280,17 +312,26 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
 
 /**
  * Eliminar un material
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo DELETE de la ruta
  */
-@Api(routeOverride = "DELETE materials/{id}")
+@Api(routeOverride = "materials/{id}")
 suspend fun deleteAndroidMaterial(context: ApiContext) {
+    // Verificar que la petición es un DELETE
+    if (context.req.method.toString().lowercase() != "delete") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Boolean>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== DELETE MATERIAL ===")
-
-        // Verificar que la petición es un DELETE
-        if (context.req.method.toString().lowercase() != "delete") {
-            throw Exception("Método no permitido")
-        }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
         println("Deleting material ID: $id")

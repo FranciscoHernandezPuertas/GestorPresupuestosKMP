@@ -71,10 +71,24 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
 
 /**
  * Obtener usuario por ID
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo GET de la ruta
  */
-@Api(routeOverride = "GET users/{id}")
+@Api(routeOverride = "users/{id}")
 suspend fun getAndroidUserById(context: ApiContext) {
+    // Verificar que la petición es un GET
+    if (context.req.method.toString().lowercase() != "get") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<User>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== GET USER BY ID ===")
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
@@ -119,10 +133,24 @@ suspend fun getAndroidUserById(context: ApiContext) {
 
 /**
  * Crear un nuevo usuario
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo POST de la ruta
  */
-@Api(routeOverride = "POST users")
+@Api(routeOverride = "users")
 suspend fun createAndroidUser(context: ApiContext) {
+    // Verificar que la petición es un POST
+    if (context.req.method.toString().lowercase() != "post") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<User>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== CREATE USER ===")
         println("Method: ${context.req.method}")
@@ -198,10 +226,24 @@ suspend fun createAndroidUser(context: ApiContext) {
 
 /**
  * Actualizar un usuario existente
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo PUT de la ruta
  */
-@Api(routeOverride = "PUT users/{id}")
+@Api(routeOverride = "users/{id}")
 suspend fun updateAndroidUser(context: ApiContext) {
+    // Verificar que la petición es un PUT
+    if (context.req.method.toString().lowercase() != "put") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<User>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== UPDATE USER ===")
         println("Method: ${context.req.method}")
@@ -280,10 +322,24 @@ suspend fun updateAndroidUser(context: ApiContext) {
 
 /**
  * Eliminar un usuario
- * CORREGIDO: Ruta simplificada y método HTTP especificado
+ * CORREGIDO: Eliminado el prefijo DELETE de la ruta
  */
-@Api(routeOverride = "DELETE users/{id}")
+@Api(routeOverride = "users/{id}")
 suspend fun deleteAndroidUser(context: ApiContext) {
+    // Verificar que la petición es un DELETE
+    if (context.req.method.toString().lowercase() != "delete") {
+        context.res.status = 405 // Method Not Allowed
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Boolean>(
+                    success = false,
+                    error = "Método no permitido"
+                )
+            )
+        )
+        return
+    }
+
     try {
         println("=== DELETE USER ===")
         println("Method: ${context.req.method}")
