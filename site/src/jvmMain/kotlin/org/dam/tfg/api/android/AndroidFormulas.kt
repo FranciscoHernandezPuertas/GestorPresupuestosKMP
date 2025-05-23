@@ -216,9 +216,106 @@ suspend fun createAndroidFormula(context: ApiContext) {
 
         println("Body received: $bodyText")
 
-        // ...existing code...
+        // Primero parseamos como JsonObject para manejar id/_id correctamente
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
+
+        // Extraer campos, con preferencia por _id
+        val id = (jsonObject["_id"] ?: jsonObject["id"])?.jsonPrimitive?.content?.takeIf { it.isNotBlank() }
+            ?: ObjectId().toHexString()
+        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
+        val formulaText = jsonObject["formula"]?.jsonPrimitive?.content ?: ""
+
+        // Extraer variables
+        val variablesMap = mutableMapOf<String, String>()
+        jsonObject["variables"]?.let { variablesElement ->
+            if (variablesElement is JsonObject) {
+                variablesElement.entries.forEach { (key, value) ->
+                    if (value is JsonPrimitive && value.isString) {
+                        variablesMap[key] = value.content
+                    }
+                }
+            }
+        }
+
+        // Validaciones
+        if (name.isBlank()) {
+            throw Exception("El nombre de la fórmula no puede estar vacío")
+        }
+
+        if (formulaText.isBlank()) {
+            throw Exception("La fórmula no puede estar vacía")
+        }
+
+        // Obtener el tipo de usuario para determinar si necesitamos encriptar
+        val userType = context.req.headers["X-User-Type"] ?: "user"
+        println("User type for formula creation: $userType")
+
+        // Siempre encriptar la fórmula al guardarla
+        val encryptedFormula = FormulaEncryption.encrypt(formulaText)
+        println("Formula encrypted successfully")
+
+        // Crear la fórmula con la fórmula encriptada
+        val newFormula = Formula(
+            id = id,
+            name = name,
+            formula = encryptedFormula,
+            formulaEncrypted = true, // Siempre true porque encriptamos
+            variables = variablesMap
+        )
+
+        val success = context.data.getValue<MongoDB>().addFormula(newFormula)
+
+        if (success) {
+            println("Formula created successfully with ID: ${newFormula.id}")
+            context.res.status = 201 // Created
+
+            // Si el usuario puede ver fórmulas desencriptadas, devolvemos la versión desencriptada
+            val resultFormula = if (FormulaEncryption.canViewFormula(userType.toString())) {
+                Formula(
+                    id = newFormula.id,
+                    name = newFormula.name,
+                    formula = formulaText, // La fórmula original sin encriptar
+                    formulaEncrypted = false,
+                    variables = newFormula.variables
+                )
+            } else {
+                newFormula
+            }
+
+            // Crear respuesta adaptada para Android
+            val variablesJsonObject = JsonObject(resultFormula.variables.map { entry ->
+                entry.key to JsonPrimitive(entry.value)
+            }.toMap())
+
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "_id" to JsonPrimitive(resultFormula.id),
+                    "id" to JsonPrimitive(resultFormula.id),
+                    "name" to JsonPrimitive(resultFormula.name),
+                    "formula" to JsonPrimitive(resultFormula.formula),
+                    "formulaEncrypted" to JsonPrimitive(resultFormula.formulaEncrypted),
+                    "variables" to variablesJsonObject
+                ))
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
+        } else {
+            throw Exception("No se pudo crear la fórmula")
+        }
     } catch (e: Exception) {
-        // ...existing code...
+        println("Error creating formula: ${e.message}")
+        e.printStackTrace()
+        context.res.status = 400 // Bad Request
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Formula>(
+                    success = false,
+                    error = e.message ?: "Error desconocido"
+                )
+            )
+        )
     }
 }
 
@@ -247,9 +344,116 @@ suspend fun updateAndroidFormula(context: ApiContext) {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
         println("Updating formula ID: $id")
 
-        // ...existing code...
+        if (id.isBlank()) {
+            throw Exception("ID de fórmula no puede estar vacío")
+        }
+
+        // Verificar que la fórmula existe
+        val existingFormula = context.data.getValue<MongoDB>().getFormulaById(id)
+            ?: throw Exception("Fórmula no encontrada con el ID: $id")
+
+        val bodyText = context.req.body?.decodeToString()
+            ?: throw Exception("No se proporcionaron datos de la fórmula")
+
+        println("Body received: $bodyText")
+
+        // Parsear el cuerpo como JsonObject
+        val jsonElement = json.parseToJsonElement(bodyText)
+        val jsonObject = jsonElement.jsonObject
+
+        // Extraer campos
+        val name = jsonObject["name"]?.jsonPrimitive?.content ?: ""
+        val formulaText = jsonObject["formula"]?.jsonPrimitive?.content ?: ""
+
+        // Extraer variables
+        val variablesMap = mutableMapOf<String, String>()
+        jsonObject["variables"]?.let { variablesElement ->
+            if (variablesElement is JsonObject) {
+                variablesElement.entries.forEach { (key, value) ->
+                    if (value is JsonPrimitive && value.isString) {
+                        variablesMap[key] = value.content
+                    }
+                }
+            }
+        }
+
+        // Validaciones
+        if (name.isBlank()) {
+            throw Exception("El nombre de la fórmula no puede estar vacío")
+        }
+
+        if (formulaText.isBlank()) {
+            throw Exception("La fórmula no puede estar vacía")
+        }
+
+        // Obtener el tipo de usuario para determinar si puede ver fórmulas desencriptadas
+        val userType = context.req.headers["X-User-Type"] ?: "user"
+        println("User type for formula update: $userType")
+
+        // Siempre encriptar la fórmula al guardarla
+        val encryptedFormula = FormulaEncryption.encrypt(formulaText)
+        println("Formula encrypted successfully for update")
+
+        // Crear la fórmula actualizada con la fórmula encriptada
+        val updatedFormula = Formula(
+            id = id,
+            name = name,
+            formula = encryptedFormula,
+            formulaEncrypted = true, // Siempre true porque encriptamos
+            variables = variablesMap
+        )
+
+        val success = context.data.getValue<MongoDB>().updateFormula(updatedFormula)
+
+        if (success) {
+            println("Formula updated successfully: ${updatedFormula.id}")
+
+            // Si el usuario puede ver fórmulas desencriptadas, devolvemos la versión desencriptada
+            val resultFormula = if (FormulaEncryption.canViewFormula(userType.toString())) {
+                Formula(
+                    id = updatedFormula.id,
+                    name = updatedFormula.name,
+                    formula = formulaText, // La fórmula original sin encriptar
+                    formulaEncrypted = false,
+                    variables = updatedFormula.variables
+                )
+            } else {
+                updatedFormula
+            }
+
+            // Crear respuesta adaptada para Android
+            val variablesJsonObject = JsonObject(resultFormula.variables.map { entry ->
+                entry.key to JsonPrimitive(entry.value)
+            }.toMap())
+
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonObject(mapOf(
+                    "_id" to JsonPrimitive(resultFormula.id),
+                    "id" to JsonPrimitive(resultFormula.id),
+                    "name" to JsonPrimitive(resultFormula.name),
+                    "formula" to JsonPrimitive(resultFormula.formula),
+                    "formulaEncrypted" to JsonPrimitive(resultFormula.formulaEncrypted),
+                    "variables" to variablesJsonObject
+                ))
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
+        } else {
+            throw Exception("No se pudo actualizar la fórmula")
+        }
     } catch (e: Exception) {
-        // ...existing code...
+        println("Error updating formula: ${e.message}")
+        e.printStackTrace()
+        context.res.status = 400 // Bad Request
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Formula>(
+                    success = false,
+                    error = e.message ?: "Error desconocido"
+                )
+            )
+        )
     }
 }
 
@@ -278,9 +482,37 @@ suspend fun deleteAndroidFormula(context: ApiContext) {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
         println("Deleting formula ID: $id")
 
-        // ...existing code...
+        if (id.isBlank()) {
+            throw Exception("ID de fórmula no puede estar vacío")
+        }
+
+        val success = context.data.getValue<MongoDB>().deleteFormula(id)
+
+        if (success) {
+            println("Formula deleted successfully: $id")
+
+            // Crear respuesta adaptada para Android
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonPrimitive(true)
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
+        } else {
+            throw Exception("No se pudo eliminar la fórmula. Posiblemente no existe.")
+        }
     } catch (e: Exception) {
-        // ...existing code...
+        println("Error deleting formula: ${e.message}")
+        e.printStackTrace()
+        context.res.status = 400 // Bad Request
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Boolean>(
+                    success = false,
+                    error = e.message ?: "Error desconocido"
+                )
+            )
+        )
     }
 }
 
