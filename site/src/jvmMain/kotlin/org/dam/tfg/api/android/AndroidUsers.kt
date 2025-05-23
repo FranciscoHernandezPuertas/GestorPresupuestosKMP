@@ -8,6 +8,9 @@ import com.varabyte.kobweb.api.data.getValue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonArray
 import org.dam.tfg.data.MongoDB
 import org.dam.tfg.models.User
 import org.dam.tfg.models.UserWithoutPassword
@@ -34,14 +37,23 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
         val users = context.data.getValue<MongoDB>().getAllUsers()
         println("Found ${users.size} users")
 
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse(
-                    success = true,
-                    data = users
-                )
-            )
-        )
+        // Crear respuesta adaptada para Android (con el campo "_id" para compatibilidad)
+        val usersJsonArray = users.map { user ->
+            JsonObject(mapOf(
+                "_id" to JsonPrimitive(user.id),
+                "id" to JsonPrimitive(user.id),
+                "username" to JsonPrimitive(user.username),
+                "password" to JsonPrimitive(""), // No enviar la contraseña
+                "type" to JsonPrimitive(user.type)
+            ))
+        }
+
+        val responseJsonObject = JsonObject(mapOf(
+            "success" to JsonPrimitive(true),
+            "data" to JsonArray(usersJsonArray)
+        ))
+
+        context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
         println("Error getting all users: ${e.message}")
         e.printStackTrace()
@@ -77,14 +89,19 @@ suspend fun getAndroidUserById(context: ApiContext) {
 
         println("User found: ${user.username}")
 
-        context.res.setBodyText(
-            json.encodeToString(
-                ApiResponse(
-                    success = true,
-                    data = user
-                )
-            )
-        )
+        // Crear respuesta adaptada para Android (con el campo "_id" para compatibilidad)
+        val responseJsonObject = JsonObject(mapOf(
+            "success" to JsonPrimitive(true),
+            "data" to JsonObject(mapOf(
+                "_id" to JsonPrimitive(user.id),
+                "id" to JsonPrimitive(user.id),
+                "username" to JsonPrimitive(user.username),
+                "password" to JsonPrimitive(""), // No enviar la contraseña
+                "type" to JsonPrimitive(user.type)
+            ))
+        ))
+
+        context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
         println("Error getting user by ID: ${e.message}")
         val status = if (e.message?.contains("no encontrado") == true) 404 else 500

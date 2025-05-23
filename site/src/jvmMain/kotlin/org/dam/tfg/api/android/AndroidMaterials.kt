@@ -29,11 +29,14 @@ private val json = Json {
 @Api(routeOverride = "materials")
 suspend fun getAllAndroidMaterials(context: ApiContext) {
     try {
+        println("=== GET ALL MATERIALS ===")
         val materials = context.data.getValue<MongoDB>().getAllMaterials()
+        println("Found ${materials.size} materials")
 
-        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
         val materialsJsonArray = materials.map { material ->
             JsonObject(mapOf(
+                "_id" to JsonPrimitive(material.id),
                 "id" to JsonPrimitive(material.id),
                 "name" to JsonPrimitive(material.name),
                 "price" to JsonPrimitive(material.price)
@@ -47,6 +50,8 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
 
         context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
+        println("Error getting all materials: ${e.message}")
+        e.printStackTrace()
         context.res.status = 500
         context.res.setBodyText(
             json.encodeToString(
@@ -67,6 +72,8 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
 suspend fun getAndroidMaterialById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("=== GET MATERIAL BY ID ===")
+        println("Requested ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de material no puede estar vacío")
@@ -75,10 +82,13 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
         val material = context.data.getValue<MongoDB>().getMaterialById(id)
             ?: throw Exception("Material no encontrado")
 
-        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        println("Material found: ${material.name} with ID: ${material.id}")
+
+        // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
         val responseJsonObject = JsonObject(mapOf(
             "success" to JsonPrimitive(true),
             "data" to JsonObject(mapOf(
+                "_id" to JsonPrimitive(material.id),
                 "id" to JsonPrimitive(material.id),
                 "name" to JsonPrimitive(material.name),
                 "price" to JsonPrimitive(material.price)
@@ -87,6 +97,8 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
 
         context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
+        println("Error getting material by ID: ${e.message}")
+        e.printStackTrace()
         val status = if (e.message?.contains("no encontrado") == true) 404 else 500
         context.res.status = status
         context.res.setBodyText(
@@ -107,6 +119,8 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
 @Api(routeOverride = "POST materials")
 suspend fun createAndroidMaterial(context: ApiContext) {
     try {
+        println("=== CREATE MATERIAL ===")
+
         // Verificar que la petición es un POST
         if (context.req.method.toString().lowercase() != "post") {
             throw Exception("Método no permitido")
@@ -114,6 +128,8 @@ suspend fun createAndroidMaterial(context: ApiContext) {
 
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos del material")
+
+        println("Body received: $bodyText")
 
         // Primero parseamos como JsonObject para manejar id/_id correctamente
         val jsonElement = json.parseToJsonElement(bodyText)
@@ -140,15 +156,18 @@ suspend fun createAndroidMaterial(context: ApiContext) {
             price = price
         )
 
+        println("Creating material with ID: ${newMaterial.id}")
         val success = context.data.getValue<MongoDB>().addMaterial(newMaterial)
 
         if (success) {
+            println("Material created successfully")
             context.res.status = 201 // Created
 
-            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
                 "data" to JsonObject(mapOf(
+                    "_id" to JsonPrimitive(newMaterial.id),
                     "id" to JsonPrimitive(newMaterial.id),
                     "name" to JsonPrimitive(newMaterial.name),
                     "price" to JsonPrimitive(newMaterial.price)
@@ -160,6 +179,8 @@ suspend fun createAndroidMaterial(context: ApiContext) {
             throw Exception("No se pudo crear el material")
         }
     } catch (e: Exception) {
+        println("Error creating material: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(
@@ -179,12 +200,15 @@ suspend fun createAndroidMaterial(context: ApiContext) {
 @Api(routeOverride = "PUT materials/{id}")
 suspend fun updateAndroidMaterial(context: ApiContext) {
     try {
+        println("=== UPDATE MATERIAL ===")
+
         // Verificar que la petición es un PUT
         if (context.req.method.toString().lowercase() != "put") {
             throw Exception("Método no permitido")
         }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Updating material ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de material no puede estar vacío")
@@ -192,6 +216,8 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
 
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos del material")
+
+        println("Body received: $bodyText")
 
         // Primero parseamos como JsonObject para manejar id/_id correctamente
         val jsonElement = json.parseToJsonElement(bodyText)
@@ -217,13 +243,16 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
             price = price
         )
 
+        println("Updating material: name=${materialToUpdate.name}, price=${materialToUpdate.price}")
         val success = context.data.getValue<MongoDB>().updateMaterial(materialToUpdate)
 
         if (success) {
-            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            println("Material updated successfully")
+            // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
                 "data" to JsonObject(mapOf(
+                    "_id" to JsonPrimitive(materialToUpdate.id),
                     "id" to JsonPrimitive(materialToUpdate.id),
                     "name" to JsonPrimitive(materialToUpdate.name),
                     "price" to JsonPrimitive(materialToUpdate.price)
@@ -235,6 +264,8 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
             throw Exception("No se pudo actualizar el material. Posiblemente no existe.")
         }
     } catch (e: Exception) {
+        println("Error updating material: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(
@@ -254,12 +285,15 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
 @Api(routeOverride = "DELETE materials/{id}")
 suspend fun deleteAndroidMaterial(context: ApiContext) {
     try {
+        println("=== DELETE MATERIAL ===")
+
         // Verificar que la petición es un DELETE
         if (context.req.method.toString().lowercase() != "delete") {
             throw Exception("Método no permitido")
         }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Deleting material ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de material no puede estar vacío")
@@ -268,6 +302,7 @@ suspend fun deleteAndroidMaterial(context: ApiContext) {
         val success = context.data.getValue<MongoDB>().deleteMaterial(id)
 
         if (success) {
+            println("Material deleted successfully")
             // Crear respuesta adaptada para Android
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
@@ -279,6 +314,8 @@ suspend fun deleteAndroidMaterial(context: ApiContext) {
             throw Exception("No se pudo eliminar el material. Posiblemente no existe.")
         }
     } catch (e: Exception) {
+        println("Error deleting material: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(

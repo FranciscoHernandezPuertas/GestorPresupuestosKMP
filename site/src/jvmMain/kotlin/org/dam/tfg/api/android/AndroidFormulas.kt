@@ -30,10 +30,13 @@ private val json = Json {
 @Api(routeOverride = "formulas")
 suspend fun getAllAndroidFormulas(context: ApiContext) {
     try {
+        println("=== GET ALL FORMULAS ===")
         // Obtener el tipo de usuario para determinar si puede ver fórmulas desencriptadas
         val userType = context.req.headers["X-User-Type"] ?: "user"
+        println("User type: $userType")
 
         val formulas = context.data.getValue<MongoDB>().getAllFormulas()
+        println("Found ${formulas.size} formulas")
 
         // Si el usuario es admin, desencriptar las fórmulas
         val resultFormulas = if (FormulaEncryption.canViewFormula(userType.toString())) {
@@ -51,6 +54,7 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
                         formula
                     }
                 } catch (e: Exception) {
+                    println("Error decrypting formula ${formula.id}: ${e.message}")
                     // Si hay error al desencriptar una fórmula, la dejamos como está
                     formula
                 }
@@ -59,13 +63,14 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
             formulas
         }
 
-        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
         val formulasJsonArray = resultFormulas.map { formula ->
             val variablesMap = formula.variables.map { entry ->
                 entry.key to JsonPrimitive(entry.value)
             }.toMap()
 
             JsonObject(mapOf(
+                "_id" to JsonPrimitive(formula.id),
                 "id" to JsonPrimitive(formula.id),
                 "name" to JsonPrimitive(formula.name),
                 "formula" to JsonPrimitive(formula.formula),
@@ -81,6 +86,8 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
 
         context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
+        println("Error getting all formulas: ${e.message}")
+        e.printStackTrace()
         context.res.status = 500
         context.res.setBodyText(
             json.encodeToString(
@@ -101,8 +108,12 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
 suspend fun getAndroidFormulaById(context: ApiContext) {
     try {
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("=== GET FORMULA BY ID ===")
+        println("Requested ID: $id")
+
         // Obtener el tipo de usuario para determinar si puede ver fórmulas desencriptadas
         val userType = context.req.headers["X-User-Type"] ?: "user"
+        println("User type: $userType")
 
         if (id.isBlank()) {
             throw Exception("ID de fórmula no puede estar vacío")
@@ -110,6 +121,8 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
 
         val formula = context.data.getValue<MongoDB>().getFormulaById(id)
             ?: throw Exception("Fórmula no encontrada")
+
+        println("Formula found: ${formula.name} with ID: ${formula.id}")
 
         // Si el usuario es admin, desencriptar la fórmula
         val resultFormula = if (FormulaEncryption.canViewFormula(userType.toString()) && formula.formulaEncrypted) {
@@ -122,6 +135,7 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
                     variables = formula.variables
                 )
             } catch (e: Exception) {
+                println("Error decrypting formula: ${e.message}")
                 // Si hay error al desencriptar, la dejamos como está
                 formula
             }
@@ -129,7 +143,7 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
             formula
         }
 
-        // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+        // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
         val variablesMap = resultFormula.variables.map { entry ->
             entry.key to JsonPrimitive(entry.value)
         }.toMap()
@@ -137,6 +151,7 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
         val responseJsonObject = JsonObject(mapOf(
             "success" to JsonPrimitive(true),
             "data" to JsonObject(mapOf(
+                "_id" to JsonPrimitive(resultFormula.id),
                 "id" to JsonPrimitive(resultFormula.id),
                 "name" to JsonPrimitive(resultFormula.name),
                 "formula" to JsonPrimitive(resultFormula.formula),
@@ -147,6 +162,8 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
 
         context.res.setBodyText(json.encodeToString(responseJsonObject))
     } catch (e: Exception) {
+        println("Error getting formula by ID: ${e.message}")
+        e.printStackTrace()
         val status = if (e.message?.contains("no encontrada") == true) 404 else 500
         context.res.status = status
         context.res.setBodyText(
@@ -167,6 +184,8 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
 @Api(routeOverride = "POST formulas")
 suspend fun createAndroidFormula(context: ApiContext) {
     try {
+        println("=== CREATE FORMULA ===")
+
         // Verificar que la petición es un POST
         if (context.req.method.toString().lowercase() != "post") {
             throw Exception("Método no permitido")
@@ -174,6 +193,8 @@ suspend fun createAndroidFormula(context: ApiContext) {
 
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de la fórmula")
+
+        println("Body received: $bodyText")
 
         // Primero parseamos como JsonObject para manejar id/_id correctamente
         val jsonElement = json.parseToJsonElement(bodyText)
@@ -204,8 +225,10 @@ suspend fun createAndroidFormula(context: ApiContext) {
 
         // Encriptar la fórmula si no está encriptada
         val encryptedFormula = if (!formulaEncrypted) {
+            println("Encrypting formula text")
             FormulaEncryption.encrypt(formulaText)
         } else {
+            println("Formula is already encrypted")
             formulaText
         }
 
@@ -218,12 +241,14 @@ suspend fun createAndroidFormula(context: ApiContext) {
             variables = variables
         )
 
+        println("Creating formula with ID: ${newFormula.id}")
         val success = context.data.getValue<MongoDB>().addFormula(newFormula)
 
         if (success) {
+            println("Formula created successfully")
             context.res.status = 201 // Created
 
-            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
             val variablesMap = newFormula.variables.map { entry ->
                 entry.key to JsonPrimitive(entry.value)
             }.toMap()
@@ -231,6 +256,7 @@ suspend fun createAndroidFormula(context: ApiContext) {
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
                 "data" to JsonObject(mapOf(
+                    "_id" to JsonPrimitive(newFormula.id),
                     "id" to JsonPrimitive(newFormula.id),
                     "name" to JsonPrimitive(newFormula.name),
                     "formula" to JsonPrimitive(newFormula.formula),
@@ -244,6 +270,8 @@ suspend fun createAndroidFormula(context: ApiContext) {
             throw Exception("No se pudo crear la fórmula")
         }
     } catch (e: Exception) {
+        println("Error creating formula: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(
@@ -263,12 +291,15 @@ suspend fun createAndroidFormula(context: ApiContext) {
 @Api(routeOverride = "PUT formulas/{id}")
 suspend fun updateAndroidFormula(context: ApiContext) {
     try {
+        println("=== UPDATE FORMULA ===")
+
         // Verificar que la petición es un PUT
         if (context.req.method.toString().lowercase() != "put") {
             throw Exception("Método no permitido")
         }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Updating formula ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de fórmula no puede estar vacío")
@@ -276,6 +307,8 @@ suspend fun updateAndroidFormula(context: ApiContext) {
 
         val bodyText = context.req.body?.decodeToString()
             ?: throw Exception("No se proporcionaron datos de la fórmula")
+
+        println("Body received: $bodyText")
 
         // Primero parseamos como JsonObject para manejar correctamente
         val jsonElement = json.parseToJsonElement(bodyText)
@@ -305,8 +338,10 @@ suspend fun updateAndroidFormula(context: ApiContext) {
 
         // Encriptar la fórmula si no está encriptada
         val encryptedFormula = if (!formulaEncrypted) {
+            println("Encrypting formula text for update")
             FormulaEncryption.encrypt(formulaText)
         } else {
+            println("Formula for update is already encrypted")
             formulaText
         }
 
@@ -319,10 +354,12 @@ suspend fun updateAndroidFormula(context: ApiContext) {
             variables = variables
         )
 
+        println("Updating formula: name=${formulaToUpdate.name}")
         val success = context.data.getValue<MongoDB>().updateFormula(formulaToUpdate)
 
         if (success) {
-            // Crear respuesta adaptada para Android (con el campo "id" en lugar de "_id")
+            println("Formula updated successfully")
+            // Crear respuesta adaptada para Android (con ambos campos "id" y "_id" para compatibilidad)
             val variablesMap = formulaToUpdate.variables.map { entry ->
                 entry.key to JsonPrimitive(entry.value)
             }.toMap()
@@ -330,6 +367,7 @@ suspend fun updateAndroidFormula(context: ApiContext) {
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
                 "data" to JsonObject(mapOf(
+                    "_id" to JsonPrimitive(formulaToUpdate.id),
                     "id" to JsonPrimitive(formulaToUpdate.id),
                     "name" to JsonPrimitive(formulaToUpdate.name),
                     "formula" to JsonPrimitive(formulaToUpdate.formula),
@@ -343,6 +381,8 @@ suspend fun updateAndroidFormula(context: ApiContext) {
             throw Exception("No se pudo actualizar la fórmula. Posiblemente no existe.")
         }
     } catch (e: Exception) {
+        println("Error updating formula: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(
@@ -362,12 +402,15 @@ suspend fun updateAndroidFormula(context: ApiContext) {
 @Api(routeOverride = "DELETE formulas/{id}")
 suspend fun deleteAndroidFormula(context: ApiContext) {
     try {
+        println("=== DELETE FORMULA ===")
+
         // Verificar que la petición es un DELETE
         if (context.req.method.toString().lowercase() != "delete") {
             throw Exception("Método no permitido")
         }
 
         val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+        println("Deleting formula ID: $id")
 
         if (id.isBlank()) {
             throw Exception("ID de fórmula no puede estar vacío")
@@ -376,6 +419,7 @@ suspend fun deleteAndroidFormula(context: ApiContext) {
         val success = context.data.getValue<MongoDB>().deleteFormula(id)
 
         if (success) {
+            println("Formula deleted successfully")
             // Crear respuesta adaptada para Android
             val responseJsonObject = JsonObject(mapOf(
                 "success" to JsonPrimitive(true),
@@ -387,6 +431,8 @@ suspend fun deleteAndroidFormula(context: ApiContext) {
             throw Exception("No se pudo eliminar la fórmula. Posiblemente no existe.")
         }
     } catch (e: Exception) {
+        println("Error deleting formula: ${e.message}")
+        e.printStackTrace()
         context.res.status = 400 // Bad Request
         context.res.setBodyText(
             json.encodeToString(

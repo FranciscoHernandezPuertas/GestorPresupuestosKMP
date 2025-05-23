@@ -20,6 +20,11 @@ data class Formula(
     val variables: Map<String, String> = emptyMap()
 ) {
     fun getActualId(): String {
-        return _id.ifEmpty { id ?: "" }
+        val effectiveId = when {
+            _id.isNotBlank() -> _id
+            id != null && id.isNotBlank() -> id
+            else -> IdUtils.generateId()
+        }
+        return IdUtils.normalizeId(effectiveId)
     }
 }

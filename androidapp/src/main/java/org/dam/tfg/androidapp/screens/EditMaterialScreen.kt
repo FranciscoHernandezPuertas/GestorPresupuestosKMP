@@ -42,16 +42,20 @@ fun EditMaterialScreen(
         if (materialId != "new") {
             try {
                 Log.d(TAG, "Cargando material con ID: $materialId")
+                isLoading = true
+                errorMessage = null
+
                 val loadedMaterial = apiRepository.getMaterialById(materialId)
 
                 if (loadedMaterial != null) {
-                    Log.d(TAG, "Material cargado: ${loadedMaterial.name}")
+                    Log.d(TAG, "Material cargado correctamente: ${loadedMaterial.name}, ID: ${loadedMaterial._id}")
                     material = loadedMaterial
                     name = loadedMaterial.name
                     price = loadedMaterial.price.toString()
+                    Log.d(TAG, "Campos asignados - nombre: $name, precio: $price")
                 } else {
                     Log.e(TAG, "Material no encontrado con ID: $materialId")
-                    errorMessage = "Material no encontrado"
+                    errorMessage = "Material no encontrado. Verifique el ID."
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error al cargar el material: ${e.message}", e)

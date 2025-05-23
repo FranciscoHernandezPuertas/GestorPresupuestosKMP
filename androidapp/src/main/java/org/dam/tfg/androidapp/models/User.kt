@@ -22,6 +22,11 @@ data class User(
     val type: String = "user"
 ) : Parcelable {
     fun getActualId(): String {
-        return _id.ifEmpty { id ?: "" }
+        val effectiveId = when {
+            _id.isNotBlank() -> _id
+            id != null && id.isNotBlank() -> id
+            else -> IdUtils.generateId()
+        }
+        return IdUtils.normalizeId(effectiveId)
     }
 }

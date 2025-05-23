@@ -53,21 +53,20 @@ fun EditFormulaScreen(
                 val loadedFormula = apiRepository.getFormulaById(formulaId)
 
                 if (loadedFormula != null) {
-                    Log.d(TAG, "Fórmula cargada: ${loadedFormula.name}")
+                    Log.d(TAG, "Fórmula cargada correctamente: ${loadedFormula.name}, ID: ${loadedFormula._id}")
                     formula = loadedFormula
                     name = loadedFormula.name
-
-                    // La fórmula ya viene desencriptada de la API si el usuario es admin
                     formulaText = loadedFormula.formula
                     variables = loadedFormula.variables
+                    Log.d(TAG, "Campos asignados - nombre: $name, fórmula: $formulaText, variables: ${variables.size}")
                 } else {
                     Log.e(TAG, "Fórmula no encontrada con ID: $formulaId")
-                    errorMessage = "Fórmula no encontrada. Verifique el ID."
+                    errorMessage = "Fórmula no encontrada. Verifique el ID o cree una nueva."
                 }
-                isLoading = false
             } catch (e: Exception) {
                 Log.e(TAG, "Error al cargar la fórmula: ${e.message}", e)
                 errorMessage = "Error al cargar la fórmula: ${e.message?.take(100)}"
+            } finally {
                 isLoading = false
             }
         } else {

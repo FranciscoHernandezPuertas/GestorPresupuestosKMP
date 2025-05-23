@@ -104,11 +104,19 @@ class ApiRepository {
                     return@withContext emptyList()
                 }
 
-                val apiResponse = response.body()
-                if (apiResponse == null) {
-                    Log.e(TAG, "Respuesta nula al obtener usuarios")
+                val responseBody = response.body()
+                if (responseBody == null) {
+                    Log.e(TAG, "Cuerpo de respuesta nulo al obtener usuarios")
                     return@withContext emptyList()
                 }
+
+                val jsonString = responseBody.string()
+                Log.d(TAG, "Respuesta para usuarios: $jsonString")
+
+                val apiResponse = gson.fromJson<ApiResponse<List<User>>>(
+                    jsonString,
+                    object : TypeToken<ApiResponse<List<User>>>() {}.type
+                )
 
                 if (!apiResponse.success) {
                     Log.e(TAG, "Error en respuesta de API: ${apiResponse.error}")
@@ -133,8 +141,41 @@ class ApiRepository {
     suspend fun getUserById(id: String): User? {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Obteniendo usuario con ID: $id")
                 val response = ApiClient.userService.getUserById(id)
-                handleResponse(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error al obtener usuario: Código ${response.code()}")
+                    return@withContext null
+                }
+
+                val responseBody = response.body()
+                if (responseBody == null) {
+                    Log.e(TAG, "Cuerpo de respuesta nulo al obtener usuario")
+                    return@withContext null
+                }
+
+                val jsonString = responseBody.string()
+                Log.d(TAG, "Respuesta para usuario: $jsonString")
+
+                val apiResponse = gson.fromJson<ApiResponse<User>>(
+                    jsonString,
+                    object : TypeToken<ApiResponse<User>>() {}.type
+                )
+
+                if (!apiResponse.success) {
+                    Log.e(TAG, "Error en respuesta de API: ${apiResponse.error}")
+                    return@withContext null
+                }
+
+                val user = apiResponse.data
+                if (user == null) {
+                    Log.e(TAG, "Usuario no encontrado en respuesta")
+                    return@withContext null
+                }
+
+                Log.d(TAG, "Usuario obtenido correctamente: ${user.username}")
+                return@withContext user
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getUserById: ${e.message}", e)
                 null
@@ -145,9 +186,15 @@ class ApiRepository {
     suspend fun createUser(user: User): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                // No es necesario hashear la contraseña aquí, lo hará el servidor
+                Log.d(TAG, "Creando usuario: ${user.username}")
                 val response = ApiClient.userService.createUser(user)
-                handleResponseBoolean(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al crear usuario: ${response.code()} - ${response.message()}")
+                    return@withContext false
+                }
+
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en createUser: ${e.message}", e)
                 false
@@ -160,8 +207,16 @@ class ApiRepository {
             try {
                 // Usar getActualId para obtener el ID correcto sea _id o id
                 val actualId = user.getActualId()
+                Log.d(TAG, "Actualizando usuario con ID: $actualId")
+
                 val response = ApiClient.userService.updateUser(actualId, user)
-                handleResponseBoolean(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al actualizar usuario: ${response.code()} - ${response.message()}")
+                    return@withContext false
+                }
+
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en updateUser: ${e.message}", e)
                 false
@@ -172,8 +227,15 @@ class ApiRepository {
     suspend fun deleteUser(id: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Eliminando usuario con ID: $id")
                 val response = ApiClient.userService.deleteUser(id)
-                handleResponseBoolean(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al eliminar usuario: ${response.code()} - ${response.message()}")
+                    return@withContext false
+                }
+
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en deleteUser: ${e.message}", e)
                 false
@@ -198,8 +260,9 @@ class ApiRepository {
     suspend fun getMaterialById(id: String): Material? {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Obteniendo material con ID: $id")
-                val response = ApiClient.materialService.getMaterialById(id)
+                val normalizedId = IdUtils.normalizeId(id)
+                Log.d(TAG, "Obteniendo material con ID normalizado: $normalizedId (original: $id)")
+                val response = ApiClient.materialService.getMaterialById(normalizedId)
 
                 if (!response.isSuccessful) {
                     Log.e(TAG, "Error al obtener material: Código ${response.code()}")
@@ -231,7 +294,7 @@ class ApiRepository {
                     return@withContext null
                 }
 
-                Log.d(TAG, "Material obtenido correctamente: ${material.name}")
+                Log.d(TAG, "Material obtenido correctamente: ${material.name}, ID: ${material._id}")
                 return@withContext material
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getMaterialById: ${e.message}", e)
@@ -282,8 +345,11 @@ class ApiRepository {
     suspend fun getAllFormulas(): List<Formula> {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "getAllFormulas: Iniciando petición")
                 val response = ApiClient.formulaService.getAllFormulas()
-                handleResponse(response) ?: emptyList()
+                Log.d(TAG, "getAllFormulas response: ${response.isSuccessful}")
+
+                return@withContext handleResponseBody<List<Formula>>(response.body()) ?: emptyList()
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getAllFormulas: ${e.message}", e)
                 emptyList()
@@ -294,19 +360,28 @@ class ApiRepository {
     suspend fun getFormulaById(id: String): Formula? {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Obteniendo fórmula con ID: $id")
-                val response = ApiClient.formulaService.getFormulaById(id)
+                val normalizedId = IdUtils.normalizeId(id)
+                Log.d(TAG, "Obteniendo fórmula con ID normalizado: $normalizedId (original: $id)")
+                val response = ApiClient.formulaService.getFormulaById(normalizedId)
 
                 if (!response.isSuccessful) {
                     Log.e(TAG, "Error al obtener fórmula: Código ${response.code()}")
                     return@withContext null
                 }
 
-                val apiResponse = response.body()
-                if (apiResponse == null) {
+                val responseBody = response.body()
+                if (responseBody == null) {
                     Log.e(TAG, "Cuerpo de respuesta nulo al obtener fórmula")
                     return@withContext null
                 }
+
+                val jsonString = responseBody.string()
+                Log.d(TAG, "Respuesta para fórmula: $jsonString")
+
+                val apiResponse = gson.fromJson<ApiResponse<Formula>>(
+                    jsonString,
+                    object : TypeToken<ApiResponse<Formula>>() {}.type
+                )
 
                 if (!apiResponse.success) {
                     Log.e(TAG, "Error en respuesta de API: ${apiResponse.error}")
@@ -319,7 +394,7 @@ class ApiRepository {
                     return@withContext null
                 }
 
-                Log.d(TAG, "Fórmula obtenida correctamente: ${formula.name}")
+                Log.d(TAG, "Fórmula obtenida correctamente: ${formula.name}, ID: ${formula._id}")
                 return@withContext formula
             } catch (e: Exception) {
                 Log.e(TAG, "Error en getFormulaById: ${e.message}", e)
@@ -331,8 +406,15 @@ class ApiRepository {
     suspend fun createFormula(formula: Formula): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Creando fórmula: ${formula.name}")
                 val response = ApiClient.formulaService.createFormula(formula)
-                handleResponseBoolean(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al crear fórmula: ${response.code()} - ${response.message()}")
+                    return@withContext false
+                }
+
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en createFormula: ${e.message}", e)
                 false
@@ -345,8 +427,16 @@ class ApiRepository {
             try {
                 // Usar getActualId para obtener el ID correcto sea _id o id
                 val actualId = formula.getActualId()
+                Log.d(TAG, "Actualizando fórmula con ID: $actualId")
+
                 val response = ApiClient.formulaService.updateFormula(actualId, formula)
-                handleResponseBoolean(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al actualizar fórmula: ${response.code()} - ${response.message()}")
+                    return@withContext false
+                }
+
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en updateFormula: ${e.message}", e)
                 false
@@ -357,8 +447,15 @@ class ApiRepository {
     suspend fun deleteFormula(id: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "Eliminando fórmula con ID: $id")
                 val response = ApiClient.formulaService.deleteFormula(id)
-                handleResponseBoolean(response)
+
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Error HTTP al eliminar fórmula: ${response.code()} - ${response.message()}")
+                    return@withContext false
+                }
+
+                return@withContext handleResponseBodyBoolean(response.body())
             } catch (e: Exception) {
                 Log.e(TAG, "Error en deleteFormula: ${e.message}", e)
                 false
