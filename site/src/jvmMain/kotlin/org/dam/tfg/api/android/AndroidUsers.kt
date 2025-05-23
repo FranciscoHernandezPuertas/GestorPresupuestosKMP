@@ -26,9 +26,8 @@ private val json = Json {
 
 /**
  * Obtener todos los usuarios
- * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
-@Api(routeOverride = "users")
+@Api(routeOverride = "users/list")
 suspend fun getAllAndroidUsers(context: ApiContext) {
     try {
         println("=== GET ALL USERS ===")
@@ -71,9 +70,8 @@ suspend fun getAllAndroidUsers(context: ApiContext) {
 
 /**
  * Obtener usuario por ID
- * CORREGIDO: Eliminado el prefijo GET de la ruta
  */
-@Api(routeOverride = "users/{id}")
+@Api(routeOverride = "users/get/{id}")
 suspend fun getAndroidUserById(context: ApiContext) {
     // Verificar que la petición es un GET
     if (context.req.method.toString().lowercase() != "get") {
@@ -133,9 +131,8 @@ suspend fun getAndroidUserById(context: ApiContext) {
 
 /**
  * Crear un nuevo usuario
- * CORREGIDO: Eliminado el prefijo POST de la ruta
  */
-@Api(routeOverride = "users")
+@Api(routeOverride = "users/create")
 suspend fun createAndroidUser(context: ApiContext) {
     // Verificar que la petición es un POST
     if (context.req.method.toString().lowercase() != "post") {
@@ -226,9 +223,8 @@ suspend fun createAndroidUser(context: ApiContext) {
 
 /**
  * Actualizar un usuario existente
- * CORREGIDO: Eliminado el prefijo PUT de la ruta
  */
-@Api(routeOverride = "users/{id}")
+@Api(routeOverride = "users/update/{id}")
 suspend fun updateAndroidUser(context: ApiContext) {
     // Verificar que la petición es un PUT
     if (context.req.method.toString().lowercase() != "put") {
@@ -322,9 +318,8 @@ suspend fun updateAndroidUser(context: ApiContext) {
 
 /**
  * Eliminar un usuario
- * CORREGIDO: Eliminado el prefijo DELETE de la ruta
  */
-@Api(routeOverride = "users/{id}")
+@Api(routeOverride = "users/delete/{id}")
 suspend fun deleteAndroidUser(context: ApiContext) {
     // Verificar que la petición es un DELETE
     if (context.req.method.toString().lowercase() != "delete") {

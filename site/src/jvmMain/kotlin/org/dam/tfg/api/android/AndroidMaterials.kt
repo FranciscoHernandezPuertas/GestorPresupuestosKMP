@@ -24,9 +24,8 @@ private val json = Json {
 
 /**
  * Obtener todos los materiales
- * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
-@Api(routeOverride = "materials")
+@Api(routeOverride = "materials/list")
 suspend fun getAllAndroidMaterials(context: ApiContext) {
     try {
         println("=== GET ALL MATERIALS ===")
@@ -66,9 +65,8 @@ suspend fun getAllAndroidMaterials(context: ApiContext) {
 
 /**
  * Obtener material por ID
- * CORREGIDO: Ruta adecuada para Kobweb considerando el prefijo de paquete
  */
-@Api(routeOverride = "materials/{id}")
+@Api(routeOverride = "materials/get/{id}")
 suspend fun getAndroidMaterialById(context: ApiContext) {
     // Verificar que la petición es un GET
     if (context.req.method.toString().lowercase() != "get") {
@@ -128,9 +126,8 @@ suspend fun getAndroidMaterialById(context: ApiContext) {
 
 /**
  * Crear un nuevo material
- * CORREGIDO: Eliminado el prefijo POST de la ruta
  */
-@Api(routeOverride = "materials")
+@Api(routeOverride = "materials/create")
 suspend fun createAndroidMaterial(context: ApiContext) {
     // Verificar que la petición es un POST
     if (context.req.method.toString().lowercase() != "post") {
@@ -218,9 +215,8 @@ suspend fun createAndroidMaterial(context: ApiContext) {
 
 /**
  * Actualizar un material existente
- * CORREGIDO: Eliminado el prefijo PUT de la ruta
  */
-@Api(routeOverride = "materials/{id}")
+@Api(routeOverride = "materials/update/{id}")
 suspend fun updateAndroidMaterial(context: ApiContext) {
     // Verificar que la petición es un PUT
     if (context.req.method.toString().lowercase() != "put") {
@@ -312,9 +308,8 @@ suspend fun updateAndroidMaterial(context: ApiContext) {
 
 /**
  * Eliminar un material
- * CORREGIDO: Eliminado el prefijo DELETE de la ruta
  */
-@Api(routeOverride = "materials/{id}")
+@Api(routeOverride = "materials/delete/{id}")
 suspend fun deleteAndroidMaterial(context: ApiContext) {
     // Verificar que la petición es un DELETE
     if (context.req.method.toString().lowercase() != "delete") {

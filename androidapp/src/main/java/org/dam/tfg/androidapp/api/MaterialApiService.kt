@@ -10,18 +10,18 @@ import okhttp3.ResponseBody
  * Interfaz para operaciones CRUD de materiales
  */
 interface MaterialApiService {
-    @GET("api/android/materials")
+    @GET("api/android/materials/list")
     suspend fun getAllMaterials(): Response<ResponseBody>
 
-    @GET("api/android/materials/{id}")
+    @GET("api/android/materials/get/{id}")
     suspend fun getMaterialById(@Path("id") id: String): Response<ResponseBody>
 
-    @POST("api/android/materials")
+    @POST("api/android/materials/create")
     suspend fun createMaterial(@Body material: Material): Response<ResponseBody>
 
-    @PUT("api/android/materials/{id}")
+    @PUT("api/android/materials/update/{id}")
     suspend fun updateMaterial(@Path("id") id: String, @Body material: Material): Response<ResponseBody>
 
-    @DELETE("api/android/materials/{id}")
+    @DELETE("api/android/materials/delete/{id}")
     suspend fun deleteMaterial(@Path("id") id: String): Response<ResponseBody>
 }

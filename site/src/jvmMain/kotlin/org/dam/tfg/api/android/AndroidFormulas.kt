@@ -25,9 +25,8 @@ private val json = Json {
 
 /**
  * Obtener todas las fórmulas
- * CORREGIDO: Ruta simplificada, ya que Kobweb usa el package como prefijo
  */
-@Api(routeOverride = "formulas")
+@Api(routeOverride = "formulas/list")
 suspend fun getAllAndroidFormulas(context: ApiContext) {
     try {
         println("=== GET ALL FORMULAS ===")
@@ -102,9 +101,8 @@ suspend fun getAllAndroidFormulas(context: ApiContext) {
 
 /**
  * Obtener fórmula por ID
- * CORREGIDO: Eliminado el prefijo GET de la ruta
  */
-@Api(routeOverride = "formulas/{id}")
+@Api(routeOverride = "formulas/get/{id}")
 suspend fun getAndroidFormulaById(context: ApiContext) {
     // Verificar que la petición es un GET
     if (context.req.method.toString().lowercase() != "get") {
@@ -193,9 +191,8 @@ suspend fun getAndroidFormulaById(context: ApiContext) {
 
 /**
  * Crear una nueva fórmula
- * CORREGIDO: Eliminado el prefijo POST de la ruta
  */
-@Api(routeOverride = "formulas")
+@Api(routeOverride = "formulas/create")
 suspend fun createAndroidFormula(context: ApiContext) {
     // Verificar que la petición es un POST
     if (context.req.method.toString().lowercase() != "post") {
@@ -227,9 +224,8 @@ suspend fun createAndroidFormula(context: ApiContext) {
 
 /**
  * Actualizar una fórmula existente
- * CORREGIDO: Eliminado el prefijo PUT de la ruta
  */
-@Api(routeOverride = "formulas/{id}")
+@Api(routeOverride = "formulas/update/{id}")
 suspend fun updateAndroidFormula(context: ApiContext) {
     // Verificar que la petición es un PUT
     if (context.req.method.toString().lowercase() != "put") {
@@ -259,9 +255,8 @@ suspend fun updateAndroidFormula(context: ApiContext) {
 
 /**
  * Eliminar una fórmula
- * CORREGIDO: Eliminado el prefijo DELETE de la ruta
  */
-@Api(routeOverride = "formulas/{id}")
+@Api(routeOverride = "formulas/delete/{id}")
 suspend fun deleteAndroidFormula(context: ApiContext) {
     // Verificar que la petición es un DELETE
     if (context.req.method.toString().lowercase() != "delete") {
