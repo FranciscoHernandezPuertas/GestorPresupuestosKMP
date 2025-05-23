@@ -9,9 +9,10 @@ import javax.crypto.Cipher
 import javax.crypto.spec.SecretKeySpec
 
 object FormulaEncryption {
+    // Actualizado para que coincida con la app Android
     private val SECRET = System.getenv("SECRET") ?: run {
         System.err.println("SECRET no encontrado, usando URI por defecto")
-        "SECRET"
+        "SECRET12345"
     }
     private const val ISSUER = "formula-encryption"
     private val algorithm = Algorithm.HMAC256(SECRET)
@@ -73,3 +74,4 @@ object FormulaEncryption {
         return String(decryptedBytes)
     }
 }
+
