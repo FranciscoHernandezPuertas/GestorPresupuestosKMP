@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import org.dam.tfg.androidapp.repository.ApiRepository
 import org.dam.tfg.androidapp.models.Formula
 import org.dam.tfg.androidapp.models.User
+import org.dam.tfg.androidapp.util.FormulaEncryption
 import org.dam.tfg.androidapp.util.IdUtils
 
 private const val TAG = "EditFormulaScreen"
@@ -56,7 +57,21 @@ fun EditFormulaScreen(
                     Log.d(TAG, "Fórmula cargada correctamente: ${loadedFormula.name}, ID: ${loadedFormula._id}")
                     formula = loadedFormula
                     name = loadedFormula.name
-                    formulaText = loadedFormula.formula
+
+                    // Desencriptar la fórmula si viene encriptada
+                    formulaText = if (loadedFormula.formulaEncrypted) {
+                        try {
+                            Log.d(TAG, "Desencriptando fórmula: ${loadedFormula.formula.take(100)}...")
+                            FormulaEncryption.decrypt(loadedFormula.formula)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error al desencriptar fórmula: ${e.message}", e)
+                            errorMessage = "No se pudo desencriptar la fórmula: ${e.message?.take(100)}"
+                            loadedFormula.formula // Mostrar encriptada si falla la desencriptación
+                        }
+                    } else {
+                        loadedFormula.formula // Ya está en texto plano
+                    }
+
                     variables = loadedFormula.variables
                     Log.d(TAG, "Campos asignados - nombre: $name, fórmula: $formulaText, variables: ${variables.size}")
                 } else {
