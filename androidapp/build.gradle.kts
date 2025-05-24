@@ -26,6 +26,11 @@ android {
             buildConfigField("String", "MONGODB_URI", "\"$it\"")
         }
 
+        // Añadir BASE_URL desde local.properties si existe
+        localProperties["BASE_URL"]?.let {
+            buildConfigField("String", "BASE_URL", "\"$it\"")
+        } ?: buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:27017/\"")
+
     }
 
     buildTypes {
@@ -88,3 +93,4 @@ dependencies {
     implementation(libs.exp4j)
     implementation(libs.dnsjava)
 }
+

@@ -7,15 +7,18 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
+import org.dam.tfg.androidapp.BuildConfig
 
 /**
  * Cliente API centralizado para comunicarse con el servidor Kobweb
  */
 object ApiClient {
-    // Base URL del servidor Kobweb
-    private const val BASE_URL = "https://generadorpresupuestos.onrender.com/"
-    // También podemos configurar una URL alternativa para desarrollo local
-    private const val LOCAL_URL = "http://10.0.2.2:8080/" // Dirección localhost para el emulador Android
+    // URL alternativa para desarrollo local (emulador Android)
+    private const val LOCAL_URL = "http://10.0.2.2:27017/"
+    // Base URL del servidor Kobweb, obtenida desde BuildConfig
+    // Si está vacía o mal configurada, se usa la URL alternativa
+    private val BASE_URL = if (BuildConfig.BASE_URL.isNotBlank() && BuildConfig.BASE_URL.startsWith("http"))
+        BuildConfig.BASE_URL else LOCAL_URL
 
     // Configuración del cliente JSON
     private val json = Json {
