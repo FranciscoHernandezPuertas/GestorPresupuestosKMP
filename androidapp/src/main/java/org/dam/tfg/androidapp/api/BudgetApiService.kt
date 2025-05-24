@@ -22,6 +22,6 @@ interface BudgetApiService {
     @PUT("api/android/budgets/{id}")
     suspend fun updateBudget(@Path("id") id: String, @Body budget: Budget): Response<ResponseBody>
 
-    @DELETE("api/android/budgets/{id}")
+    @DELETE("api/android/budgets/delete/{id}")
     suspend fun deleteBudget(@Path("id") id: String): Response<ResponseBody>
 }

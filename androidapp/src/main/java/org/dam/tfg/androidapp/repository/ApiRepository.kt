@@ -566,6 +566,19 @@ class ApiRepository {
         }
     }
 
+    suspend fun deleteHistory(id: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Eliminando historial con ID: $id")
+                val response = ApiClient.historyService.deleteHistory(id)
+                return@withContext handleResponseBodyBoolean(response.body())
+            } catch (e: Exception) {
+                Log.e(TAG, "Error en deleteHistory: ${e.message}", e)
+                false
+            }
+        }
+    }
+
     // Funciones auxiliares para manejar respuestas
     private fun <T> handleResponse(response: Response<ApiResponse<T>>): T? {
         return if (response.isSuccessful) {

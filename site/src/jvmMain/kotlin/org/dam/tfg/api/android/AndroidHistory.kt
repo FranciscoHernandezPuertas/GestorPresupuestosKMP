@@ -186,3 +186,46 @@ suspend fun createAndroidHistory(context: ApiContext) {
         )
     }
 }
+
+/**
+ * Eliminar un registro de historial
+ */
+@Api(routeOverride = "history/delete/{id}")
+suspend fun deleteAndroidHistory(context: ApiContext) {
+    try {
+        // Verificar que la petición es un DELETE
+        if (context.req.method.toString().lowercase() != "delete") {
+            throw Exception("Método no permitido")
+        }
+
+        val id = context.req.params["id"] ?: throw Exception("ID no proporcionado")
+
+        if (id.isBlank()) {
+            throw Exception("ID de historial no puede estar vacío")
+        }
+
+        val success = context.data.getValue<MongoDB>().deleteHistory(id)
+
+        if (success) {
+            // Crear respuesta adaptada para Android
+            val responseJsonObject = JsonObject(mapOf(
+                "success" to JsonPrimitive(true),
+                "data" to JsonPrimitive(true)
+            ))
+
+            context.res.setBodyText(json.encodeToString(responseJsonObject))
+        } else {
+            throw Exception("No se pudo eliminar el registro de historial. Posiblemente no existe.")
+        }
+    } catch (e: Exception) {
+        context.res.status = 400 // Bad Request
+        context.res.setBodyText(
+            json.encodeToString(
+                ApiResponse<Boolean>(
+                    success = false,
+                    error = e.message ?: "Error desconocido"
+                )
+            )
+        )
+    }
+}

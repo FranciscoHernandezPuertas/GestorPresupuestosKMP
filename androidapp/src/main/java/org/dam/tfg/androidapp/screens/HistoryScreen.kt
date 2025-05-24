@@ -43,6 +43,32 @@ fun HistoryScreen(
         }
     }
     
+    // Función para eliminar un registro de historial
+    fun deleteHistoryItem(history: History) {
+        coroutineScope.launch {
+            try {
+                isLoading = true
+                val historyId = history.getActualId()
+
+                val success = apiRepository.deleteHistory(historyId)
+
+                if (success) {
+                    // Eliminar el registro de la lista local
+                    historyList = historyList.filter { it._id != history._id && it.id != history.id }
+
+                    // Limpiar mensaje de error si hay éxito
+                    errorMessage = null
+                } else {
+                    errorMessage = "Error al eliminar el registro de historial"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error al eliminar: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -183,7 +209,7 @@ fun HistoryScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(historyList) { historyItem ->
-                            HistoryItem(history = historyItem)
+                            HistoryItem(history = historyItem, onDelete = { deleteHistoryItem(it) })
                         }
                     }
                 }
@@ -193,7 +219,12 @@ fun HistoryScreen(
 }
 
 @Composable
-fun HistoryItem(history: History) {
+fun HistoryItem(
+    history: History,
+    onDelete: (History) -> Unit = {}
+) {
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -232,7 +263,52 @@ fun HistoryItem(history: History) {
                 text = "Detalles: ${history.details}",
                 style = MaterialTheme.typography.bodySmall
             )
+
+            // Añadir botón de eliminar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = { showDeleteConfirmation = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
+    }
+
+    // Diálogo de confirmación para eliminar
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Está seguro que desea eliminar este registro de historial? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDelete(history)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 

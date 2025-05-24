@@ -12,8 +12,7 @@ data class Budget(
     val _id: String = IdUtils.generateId(),
 
     // Agregamos una propiedad para manejar "id" y convertirlo a "_id" si es necesario
-    @SerialName("id")
-    private val id: String? = null,
+    @SerialName("id") val id: String? = null,
 
     val tipo: String = "",
     val tramos: List<Tramo> = emptyList(),

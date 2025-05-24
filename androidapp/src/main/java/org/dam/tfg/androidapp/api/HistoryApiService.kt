@@ -18,4 +18,7 @@ interface HistoryApiService {
 
     @POST("api/android/history")
     suspend fun createHistory(@Body history: History): Response<ResponseBody>
+
+    @DELETE("api/android/history/delete/{id}")
+    suspend fun deleteHistory(@Path("id") id: String): Response<ResponseBody>
 }

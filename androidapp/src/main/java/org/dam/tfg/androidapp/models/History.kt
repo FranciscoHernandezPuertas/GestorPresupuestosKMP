@@ -11,8 +11,7 @@ data class History(
     val _id: String = "",
 
     // Agregamos una propiedad para manejar "id" y convertirlo a "_id" si es necesario
-    @SerialName("id")
-    private val id: String? = null,
+    @SerialName("id") val id: String? = null,
 
     val userId: String = "",
     val action: String = "",

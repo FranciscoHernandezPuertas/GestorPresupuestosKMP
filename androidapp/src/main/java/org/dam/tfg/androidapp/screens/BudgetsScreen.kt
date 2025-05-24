@@ -115,6 +115,34 @@ fun BudgetsScreen(
         }
     }
 
+    // Función para eliminar un presupuesto
+    fun deleteBudget(budget: Budget) {
+        coroutineScope.launch {
+            try {
+                isLoading = true
+                val budgetId = budget.getActualId()
+                Log.d(TAG, "Eliminando presupuesto con ID: $budgetId")
+
+                val success = apiRepository.deleteBudget(budgetId)
+
+                if (success) {
+                    // Eliminar el presupuesto de la lista local
+                    budgets = budgets.filter { it._id != budget._id && it.id != budget.id }
+
+                    // Mostrar mensaje de éxito
+                    errorMessage = null
+                } else {
+                    errorMessage = "Error al eliminar el presupuesto"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al eliminar presupuesto: ${e.message}", e)
+                errorMessage = "Error al eliminar presupuesto: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -259,7 +287,8 @@ fun BudgetsScreen(
                                 onClick = {
                                     selectedBudget = budget
                                     showDetailDialog = true
-                                }
+                                },
+                                onDelete = { deleteBudget(it) }
                             )
                         }
                     }
@@ -283,8 +312,11 @@ fun BudgetsScreen(
 @Composable
 fun BudgetItem(
     budget: Budget,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: (Budget) -> Unit = {}
 ) {
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -357,25 +389,71 @@ fun BudgetItem(
                 style = MaterialTheme.typography.bodySmall
             )
 
+            // Fila de acciones
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Ver detalle",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Pulsa para ver detalles",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                // Botón para ver detalles
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Ver detalle",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Ver detalles",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Botón de eliminar
+                IconButton(
+                    onClick = { showDeleteConfirmation = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
+    }
+
+    // Diálogo de confirmación para eliminar
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Está seguro que desea eliminar este presupuesto? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDelete(budget)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 

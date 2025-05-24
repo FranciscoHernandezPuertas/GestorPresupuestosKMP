@@ -264,7 +264,7 @@ suspend fun updateAndroidBudget(context: ApiContext) {
  * Eliminar un presupuesto
  * CORREGIDO: Ruta simplificada y método HTTP especificado
  */
-@Api(routeOverride = "DELETE budgets/{id}")
+@Api(routeOverride = "budgets/delete/{id}")
 suspend fun deleteAndroidBudget(context: ApiContext) {
     try {
         // Verificar que la petición es un DELETE
